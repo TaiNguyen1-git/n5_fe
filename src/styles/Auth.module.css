@@ -1,0 +1,200 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.authBox {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  overflow: hidden;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  gap: 12px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.logo img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.logo h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #213f8f;
+  font-weight: 600;
+}
+
+.formContainer {
+  padding: 30px;
+}
+
+.formContainer h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  color: #666;
+  margin-bottom: 25px;
+  font-size: 0.95rem;
+}
+
+.errorMessage {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #213f8f;
+}
+
+.passwordContainer {
+  position: relative;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #777;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 5px;
+}
+
+.passwordToggle:hover {
+  color: #213f8f;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 14px;
+  background-color: #213f8f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 10px;
+}
+
+.submitButton:hover {
+  background-color: #17296b;
+}
+
+.submitButton:disabled {
+  background-color: #8c9bbd;
+  cursor: not-allowed;
+}
+
+.createAccount, .loginLink {
+  text-align: center;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.createAccount span {
+  color: #213f8f;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.loginLink a {
+  color: #213f8f;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.loginLink a:hover {
+  text-decoration: underline;
+}
+
+.checkboxGroup {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.checkboxGroup input {
+  margin-top: 3px;
+}
+
+.checkboxGroup label {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.checkboxGroup a {
+  color: #213f8f;
+  text-decoration: none;
+}
+
+.checkboxGroup a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .formContainer {
+    padding: 20px;
+  }
+  
+  .authBox {
+    box-shadow: none;
+  }
+  
+  .container {
+    padding: 0;
+    background-color: white;
+  }
+} 
