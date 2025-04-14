@@ -3,57 +3,87 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-image: url('/hotel-tourism-background.jpg');
+  background-size: cover;
+  background-position: center;
   padding: 20px;
+  position: relative;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.85) 100%);
+  z-index: 1;
 }
 
 .authBox {
   width: 100%;
   max-width: 500px;
   border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  background-color: white;
+  
+  background-color: rgba(255, 255, 255, 0.92);
   overflow: hidden;
+  position: relative;
+  z-index: 2;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .logo {
   display: flex;
   align-items: center;
-  padding: 20px;
-  gap: 12px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  padding: 5px;
+  background-color: #fff;
+  justify-content: center;
+  gap: 15px;
 }
 
 .logo img {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 5px;
+  padding: 5px;
+  transition: transform 0.3s ease;
+  filter: brightness(0) invert(1);
+}
+
+.logo img:hover {
+  transform: scale(1.05);
 }
 
 .logo h1 {
   margin: 0;
-  font-size: 1.5rem;
-  color: #213f8f;
-  font-weight: 600;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #0078c2;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .formContainer {
   padding: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230078c2' fill-opacity='0.05'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
 .formContainer h2 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 600;
   color: #333;
   margin-bottom: 5px;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.05);
 }
 
 .subtitle {
   color: #666;
   margin-bottom: 25px;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .errorMessage {
@@ -72,23 +102,35 @@
 .formGroup label {
   display: block;
   margin-bottom: 8px;
-  color: #555;
-  font-size: 0.9rem;
-  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .input {
   width: 100%;
   padding: 12px 15px;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 1rem;
   transition: border-color 0.2s;
+  background-color: #f5f5f5;
+  color: #333;
 }
 
 .input:focus {
   outline: none;
-  border-color: #213f8f;
+  border-color: #0078c2;
+  background-color: #f0f7ff;
+}
+
+.input::placeholder {
+  color: #888;
+  opacity: 1;
+}
+
+.input:focus::placeholder {
+  opacity: 0.7;
 }
 
 .passwordContainer {
@@ -104,34 +146,44 @@
   border: none;
   color: #777;
   cursor: pointer;
-  font-size: 0.85rem;
-  padding: 5px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
 }
 
 .passwordToggle:hover {
-  color: #213f8f;
+  color: #0078c2;
 }
 
 .submitButton {
   width: 100%;
   padding: 14px;
-  background-color: #213f8f;
+  background-color: #0078c2;
   color: white;
   border: none;
   border-radius: 4px;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
   margin-top: 10px;
+  background-image: linear-gradient(135deg, #0078c2 0%, #005d99 100%);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .submitButton:hover {
-  background-color: #17296b;
+  background-color: #005d99;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
 }
 
 .submitButton:disabled {
-  background-color: #8c9bbd;
+  background-color: #999;
+  background-image: none;
+  transform: none;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -139,19 +191,37 @@
   text-align: center;
   margin-top: 25px;
   padding-top: 20px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(245, 245, 245, 0.5);
+  padding: 20px;
+  border-radius: 0 0 10px 10px;
+}
+
+.createAccount p {
+  margin: 0;
+  color: #333;
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .createAccount span {
-  color: #213f8f;
-  font-weight: 500;
+  color: #333;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.loginLink a {
-  color: #213f8f;
+.loginLink p {
+  margin: 0;
+  color: #333;
   font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.loginLink a {
+  color: #333;
+  font-weight: 600;
   text-decoration: none;
+  margin-left: 5px;
 }
 
 .loginLink a:hover {
@@ -167,16 +237,46 @@
 
 .checkboxGroup input {
   margin-top: 3px;
+  background-color: #f5f5f5;
+  border: 1px solid #aaa;
+  width: 16px;
+  height: 16px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.checkboxGroup input:checked {
+  background-color: #333;
+  border-color: #333;
+}
+
+.checkboxGroup input:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .checkboxGroup label {
-  font-size: 0.9rem;
-  color: #555;
+  font-size: 0.95rem;
+  color: #333;
+  font-weight: 500;
 }
 
 .checkboxGroup a {
-  color: #213f8f;
+  color: #333;
   text-decoration: none;
+  font-weight: 600;
 }
 
 .checkboxGroup a:hover {

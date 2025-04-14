@@ -200,6 +200,7 @@ export default function RoomDetail() {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>
+          <img src="/hotel-loading.jpg" alt="Loading" className={styles.loadingImage} />
           <p>Đang tải thông tin phòng...</p>
         </div>
       </div>
@@ -225,16 +226,17 @@ export default function RoomDetail() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            <img src="/logo.png" alt="Thanh Long" />
-            <span>Thanh Long</span>
-          </Link>
+          <div className={styles.logo}>
+            <Link href="/">
+              <h1 style={{ color: '#0078c2' }}>NHÓM 5</h1>
+            </Link>
+          </div>
           <div className={styles.headerRight}>
             <div className={styles.contact}>
               <span>Thời gian hỗ trợ</span>
               <div className={styles.phoneNumber}>
-                <img src="/phone-icon.png" alt="Phone" className={styles.icon} />
-                <span>Điện thoại</span>
+                <img src="/phone-support-icon.png" alt="Phone" className={styles.icon} />
+                <span>+84 123 456 789</span>
               </div>
             </div>
             <Link href="/login" className={styles.loginButton}>
@@ -304,7 +306,7 @@ export default function RoomDetail() {
             {bookingSuccess ? (
               <div className={styles.bookingSuccess}>
                 <h3>Đặt phòng thành công!</h3>
-                <p>Cảm ơn bạn đã đặt phòng tại Khách sạn Thanh Long. Chúng tôi đã gửi thông tin xác nhận đến email của bạn.</p>
+                <p>Cảm ơn bạn đã đặt phòng tại Khách sạn Nhóm 5. Chúng tôi đã gửi thông tin xác nhận đến email của bạn.</p>
                 <button 
                   onClick={() => setBookingSuccess(false)}
                   className={styles.newBookingButton}
@@ -413,7 +415,7 @@ export default function RoomDetail() {
       {/* Footer */}
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
-          <p>&copy; {new Date().getFullYear()} Khách sạn Thanh Long. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Khách sạn Nhóm 5. All rights reserved.</p>
         </div>
       </footer>
     </div>

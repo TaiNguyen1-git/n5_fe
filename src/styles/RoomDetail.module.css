@@ -42,6 +42,18 @@
   color: #213f8f;
 }
 
+.logo a {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.logo a:hover {
+  transform: scale(1.05);
+}
+
 .headerRight {
   display: flex;
   align-items: center;
@@ -62,16 +74,32 @@
 .phoneNumber {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
+  background-color: #f5f5f5;
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
-.icon {
-  width: 16px;
-  height: 16px;
+.phoneNumber:hover {
+  background-color: #e8f4ff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.phoneNumber .icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.phoneNumber span {
+  font-weight: 600;
+  color: #0078c2;
 }
 
 .loginButton {
-  background-color: #213f8f;
+  background-color: #0078c2;
   color: white;
   padding: 8px 20px;
   border-radius: 4px;
@@ -81,7 +109,7 @@
 }
 
 .loginButton:hover {
-  background-color: #17296b;
+  background-color: #005d99;
 }
 
 /* Content styles */
@@ -173,6 +201,17 @@
   font-size: 1.3rem;
   margin-bottom: 15px;
   color: #333;
+  padding: 10px;
+  background-color: #f0f7ff;
+  border-radius: 5px;
+  border-left: 3px solid #0078c2;
+}
+
+.roomDescription p {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #333;
+  padding: 0 10px;
 }
 
 .roomFeatures ul {
@@ -181,8 +220,24 @@
 }
 
 .roomFeatures li {
-  padding: 8px 0;
+  padding: 10px;
   border-bottom: 1px solid #eee;
+  color: #333;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #fff;
+}
+
+.roomFeatures li:before {
+  content: '✓';
+  color: #0078c2;
+  font-weight: bold;
+}
+
+.roomFeatures li:hover {
+  background-color: #f0f7ff;
 }
 
 .roomFeatures li:last-child {
@@ -237,10 +292,20 @@
 .formGroup input,
 .formGroup select {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
+  padding: 12px 15px;
+  border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 1rem;
+  background-color: white;
+  color: #333;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: #0078c2;
+  box-shadow: 0 0 0 3px rgba(0, 120, 194, 0.1);
 }
 
 .totalPrice {
@@ -261,7 +326,7 @@
 .bookButton {
   width: 100%;
   padding: 14px;
-  background-color: #213f8f;
+  background-color: #0078c2;
   color: white;
   border: none;
   border-radius: 4px;
@@ -272,7 +337,7 @@
 }
 
 .bookButton:hover {
-  background-color: #17296b;
+  background-color: #005d99;
 }
 
 .bookButton:disabled {
@@ -309,7 +374,7 @@
 .newBookingButton {
   display: inline-block;
   padding: 10px 20px;
-  background-color: #213f8f;
+  background-color: #0078c2;
   color: white;
   border: none;
   border-radius: 4px;
@@ -319,13 +384,60 @@
 }
 
 .newBookingButton:hover {
-  background-color: #17296b;
+  background-color: #005d99;
 }
 
 /* Loading state */
 .loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  background-color: white;
+  color: #0078c2;
   text-align: center;
-  padding: 80px 20px;
+  padding: 20px;
+}
+
+.loading p {
+  margin-top: 20px;
+  font-size: 1.5rem;
+  font-weight: 500;
+  animation: pulse 1.5s infinite;
+}
+
+.loadingImage {
+  width: 200px;
+  height: 150px;
+  object-fit: contain;
+  border-radius: 10px;
+  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 5px 15px rgba(0, 120, 194, 0.2);
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 /* Not found styles */
@@ -343,7 +455,7 @@
   display: inline-block;
   margin-top: 20px;
   padding: 10px 20px;
-  background-color: #213f8f;
+  background-color: #0078c2;
   color: white;
   text-decoration: none;
   border-radius: 4px;
@@ -352,12 +464,12 @@
 }
 
 .backButton:hover {
-  background-color: #17296b;
+  background-color: #005d99;
 }
 
 /* Footer styles */
 .footer {
-  background-color: #213f8f;
+  background-color: #0078c2;
   color: white;
   padding: 30px 0;
 }
@@ -400,4 +512,25 @@
   .mainImage {
     height: 300px;
   }
+}
+
+/* Date inputs */
+.formGroup input[type="date"] {
+  position: relative;
+  padding-right: 30px;
+  cursor: pointer;
+  background-image: url('/calendar-icon.png');
+  background-repeat: no-repeat;
+  background-position: calc(100% - 10px) center;
+  background-size: 16px 16px;
+}
+
+.formGroup input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: pointer;
 } 

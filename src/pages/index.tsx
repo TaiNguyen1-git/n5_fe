@@ -96,14 +96,13 @@ export default function Home() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.logo}>
-            <img src="/logo.png" alt="Thanh Long" />
-            <span>Thanh Long</span>
+            <h1 style={{ color: '#0078c2' }}>Nhóm 5</h1>
           </div>
           <div className={styles.headerRight}>
             <div className={styles.contact}>
               <span>Thời gian hỗ trợ</span>
               <div className={styles.phoneNumber}>
-                <img src="/phone-icon.png" alt="Phone" className={styles.icon} />
+                <img src="/phone-support-icon.png" alt="Phone" className={styles.icon} />
                 <span>Điện thoại</span>
               </div>
             </div>
@@ -118,7 +117,7 @@ export default function Home() {
       <div className={styles.hero}>
         <div className={styles.heroContent}>
           <h1 className={styles.heroTitle}>
-            Khách sạn Thanh Long tốt nhất thành phố Hồ Chí Minh
+            Khách sạn Nhóm 5 tốt nhất thành phố Hồ Chí Minh
           </h1>
           
           {/* Search box */}
@@ -238,7 +237,7 @@ export default function Home() {
       {/* Footer */}
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
-          <p>&copy; {new Date().getFullYear()} Khách sạn Thanh Long. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Khách sạn Nhóm 5. All rights reserved.</p>
         </div>
       </footer>
     </div>
