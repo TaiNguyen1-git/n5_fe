@@ -19,6 +19,16 @@ type ResponseData = {
   data?: any;
 }
 
+// In-memory user storage (in a real app, this would be a database)
+let users: {
+  id: string;
+  username: string;
+  password: string;
+  email: string;
+  fullName: string;
+  phoneNumber?: string;
+}[] = [];
+
 export default function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
@@ -46,16 +56,21 @@ function handleLogin(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
   try {
     const { username, password } = req.body as LoginData;
     
-    // This is a mock implementation. In a real app, you would validate credentials against a database
-    if (username === 'test' && password === 'password') {
+    // Find user by username
+    const user = users.find(u => u.username === username);
+    
+    // Check if user exists and password matches
+    if (user && user.password === password) {
+      // In a real app, you would use proper password hashing and JWT tokens
       return res.status(200).json({
         success: true,
         message: 'Login successful',
         data: {
           user: {
-            id: '1',
-            username,
-            fullName: 'Test User',
+            id: user.id,
+            username: user.username,
+            fullName: user.fullName,
+            email: user.email
           },
           token: 'mock-jwt-token'
         }
@@ -63,7 +78,7 @@ function handleLogin(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
     } else {
       return res.status(401).json({
         success: false, 
-        message: 'Invalid credentials'
+        message: 'Tên đăng nhập hoặc mật khẩu không chính xác'
       });
     }
   } catch (error) {
@@ -84,18 +99,37 @@ function handleRegister(req: NextApiRequest, res: NextApiResponse<ResponseData>)
       });
     }
     
-    // This is a mock implementation. In a real app, you would store the user in a database
-    // and handle things like password hashing, email verification, etc.
+    // Check if username already exists
+    if (users.some(u => u.username === username)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username already exists'
+      });
+    }
+    
+    // Create new user
+    const newUser = {
+      id: Date.now().toString(), // Simple ID generation (use UUID in real app)
+      username,
+      password, // In a real app, this would be hashed
+      email,
+      fullName,
+      phoneNumber
+    };
+    
+    // Add user to storage
+    users.push(newUser);
+    
     return res.status(201).json({
       success: true,
       message: 'Registration successful',
       data: {
         user: {
-          id: '2',
-          username,
-          email,
-          fullName,
-          phoneNumber: phoneNumber || '',
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          fullName: newUser.fullName,
+          phoneNumber: newUser.phoneNumber || '',
         }
       }
     });

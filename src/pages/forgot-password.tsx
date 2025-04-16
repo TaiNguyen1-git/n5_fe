@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { login } from '../services/authService';
 import styles from '../styles/Auth.module.css';
 
-export default function Login() {
+export default function ForgotPassword() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,8 +15,15 @@ export default function Login() {
     e.preventDefault();
     
     // Basic validation
-    if (!username || !password) {
-      setError('Vui lòng nhập tên đăng nhập và mật khẩu');
+    if (!phoneNumber || !newPassword) {
+      setError('Vui lòng nhập số điện thoại và mật khẩu mới');
+      return;
+    }
+
+    // Phone number validation
+    const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
+    if (!phoneRegex.test(phoneNumber)) {
+      setError('Số điện thoại không hợp lệ');
       return;
     }
     
@@ -25,14 +31,8 @@ export default function Login() {
     setError('');
     
     try {
-      const response = await login({ username, password });
-      
-      if (response.success) {
-        // Redirect to home page or dashboard
-        router.push('/');
-      } else {
-        setError('Tên đăng nhập hoặc mật khẩu không chính xác');
-      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      router.push('/login');
     } catch (err) {
       setError('Có lỗi xảy ra. Vui lòng thử lại sau.');
     } finally {
@@ -48,34 +48,33 @@ export default function Login() {
         </div>
         
         <div className={styles.formContainer}>
-          <h2>Xin Chào</h2>
-          <p className={styles.subtitle}>Đăng nhập để tiếp tục</p>
+          <h2>Khôi phục mật khẩu</h2>
           
           {error && <div className={styles.errorMessage}>{error}</div>}
           
           <form onSubmit={handleSubmit}>
             <div className={styles.formGroup}>
-              <label htmlFor="username">Tên đăng nhập</label>
+              <label htmlFor="phoneNumber">Số điện thoại</label>
               <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                type="tel"
+                id="phoneNumber"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
                 className={styles.input}
-                placeholder="Nhập tên đăng nhập"
+                placeholder="Nhập số điện thoại"
               />
             </div>
             
             <div className={styles.formGroup}>
-              <label htmlFor="password">Mật khẩu</label>
+              <label htmlFor="newPassword">Mật khẩu mới</label>
               <div className={styles.passwordContainer}>
                 <input
                   type={showPassword ? "text" : "password"}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="newPassword"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   className={styles.input}
-                  placeholder="Nhập mật khẩu"
+                  placeholder="Nhập mật khẩu mới"
                 />
                 <button 
                   type="button" 
@@ -98,21 +97,21 @@ export default function Login() {
               </div>
             </div>
             
-            <div className={styles.forgotPassword}>
-              <Link href="/forgot-password">Quên mật khẩu</Link>
-            </div>
-            
             <button 
               type="submit" 
               className={styles.submitButton}
               disabled={loading}
             >
-              {loading ? 'Đang xử lý...' : 'Đăng nhập'}
+              {loading ? 'Đang xử lý...' : 'Xác nhận'}
             </button>
           </form>
           
           <div className={styles.createAccount}>
-            <p>Chưa có tài khoản? <Link href="/register"><span>Tạo tài khoản</span></Link></p>
+            <Link href="/login">
+              <button className={styles.backButton}>
+                Trở về
+              </button>
+            </Link>
           </div>
         </div>
       </div>
