@@ -13,6 +13,12 @@ type RegisterData = {
   phoneNumber: string;
 }
 
+type ChangePasswordData = {
+  username: string;
+  currentPassword: string;
+  newPassword: string;
+}
+
 type ResponseData = {
   success: boolean;
   message: string;
@@ -43,6 +49,8 @@ export default function handler(
         return handleLogin(req, res);
       } else if (action === 'register') {
         return handleRegister(req, res);
+      } else if (action === 'change-password') {
+        return handleChangePassword(req, res);
       } else {
         return res.status(400).json({ success: false, message: 'Invalid action' });
       }
@@ -135,6 +143,42 @@ function handleRegister(req: NextApiRequest, res: NextApiResponse<ResponseData>)
     });
   } catch (error) {
     console.error('Registration error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}
+
+function handleChangePassword(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
+  try {
+    const { username, currentPassword, newPassword } = req.body as ChangePasswordData;
+    
+    // Find user by username
+    const userIndex = users.findIndex(u => u.username === username);
+    
+    if (userIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Người dùng không tồn tại'
+      });
+    }
+    
+    // Verify current password
+    if (users[userIndex].password !== currentPassword) {
+      return res.status(401).json({
+        success: false,
+        message: 'Mật khẩu hiện tại không chính xác'
+      });
+    }
+    
+    // Update password
+    users[userIndex].password = newPassword;
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Đổi mật khẩu thành công'
+    });
+    
+  } catch (error) {
+    console.error('Change password error:', error);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 } 

@@ -234,4 +234,39 @@ export const logout = (): void => {
   localStorage.removeItem('user');
   // Redirect to login page or home page after logout
   window.location.href = '/';
-}; 
+};
+
+export async function changePassword(currentPassword: string, newPassword: string) {
+  try {
+    // Get current user from localStorage
+    const user = getCurrentUser();
+    if (!user) {
+      throw new Error('Người dùng không tồn tại');
+    }
+
+    // Get all registered users
+    const users = getRegisteredUsers();
+    const storedUser = users[user.username];
+
+    // Verify current password
+    if (!storedUser || storedUser.password !== currentPassword) {
+      throw new Error('Mật khẩu hiện tại không chính xác');
+    }
+
+    // Update password in storage
+    users[user.username] = {
+      ...storedUser,
+      password: newPassword
+    };
+
+    // Save updated users back to storage
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+
+    return {
+      success: true,
+      message: 'Đổi mật khẩu thành công'
+    };
+  } catch (error: any) {
+    throw new Error(error.message || 'Có lỗi xảy ra khi đổi mật khẩu');
+  }
+} 
