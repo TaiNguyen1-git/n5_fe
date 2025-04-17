@@ -269,4 +269,50 @@ export async function changePassword(currentPassword: string, newPassword: strin
   } catch (error: any) {
     throw new Error(error.message || 'Có lỗi xảy ra khi đổi mật khẩu');
   }
-} 
+}
+
+/**
+ * Deletes the current user account
+ */
+export const deleteUser = async (): Promise<AuthResponse> => {
+  try {
+    // Check if user is authenticated
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      return {
+        success: false,
+        message: 'Không được xác thực',
+      };
+    }
+
+    // Get current user and registered users
+    const currentUser = getCurrentUser();
+    const users = getRegisteredUsers();
+
+    if (!currentUser || !users[currentUser.username]) {
+      return {
+        success: false,
+        message: 'Không tìm thấy thông tin người dùng',
+      };
+    }
+
+    // Delete user from registered users
+    delete users[currentUser.username];
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+
+    // Clear user session
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+
+    return {
+      success: true,
+      message: 'Tài khoản đã được xóa thành công',
+    };
+  } catch (error) {
+    console.error('Account deletion error:', error);
+    return {
+      success: false,
+      message: 'Có lỗi xảy ra. Vui lòng thử lại sau.',
+    };
+  }
+}; 

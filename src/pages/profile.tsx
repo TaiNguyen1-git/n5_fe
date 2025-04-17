@@ -333,6 +333,34 @@ export default function Profile() {
             >
               {loading ? 'Đang cập nhật...' : 'Chỉnh sửa'}
             </button>
+            
+            <div className={styles.dangerZone}>
+              <h3>Vùng nguy hiểm</h3>
+              <p>Các hành động dưới đây không thể hoàn tác. Hãy cân nhắc kỹ trước khi thực hiện.</p>
+              <button 
+                type="button" 
+                className={styles.deleteAccountButton}
+                onClick={() => {
+                  if (window.confirm('Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác.')) {
+                    import('../services/authService').then(({ deleteUser }) => {
+                      deleteUser().then(response => {
+                        if (response.success) {
+                          alert('Tài khoản đã được xóa thành công');
+                          router.push('/');
+                        } else {
+                          setError(response.message || 'Có lỗi xảy ra khi xóa tài khoản');
+                        }
+                      }).catch(err => {
+                        console.error('Error deleting account:', err);
+                        setError('Có lỗi xảy ra. Vui lòng thử lại sau.');
+                      });
+                    });
+                  }
+                }}
+              >
+                Xóa tài khoản
+              </button>
+            </div>
           </form>
 
           <div className={styles.createAccount}>
