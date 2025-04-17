@@ -8,10 +8,12 @@ import { isAuthenticated, getCurrentUser, logout } from '../services/authService
 export default function Home() {
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const roomsServicesDropdownRef = useRef<HTMLDivElement>(null);
   
   // User state
   const [user, setUser] = useState<any>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showRoomsServicesDropdown, setShowRoomsServicesDropdown] = useState(false);
   
   // Date state
   const [checkInDate, setCheckInDate] = useState('');
@@ -41,6 +43,9 @@ export default function Home() {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
+      }
+      if (roomsServicesDropdownRef.current && !roomsServicesDropdownRef.current.contains(event.target as Node)) {
+        setShowRoomsServicesDropdown(false);
       }
     };
 
@@ -143,6 +148,17 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, [showMobileMenu]);
 
+  // Handle rooms and services navigation
+  const handleRoomsClick = () => {
+    router.push('/rooms');
+    setShowRoomsServicesDropdown(false);
+  };
+
+  const handleServicesClick = () => {
+    router.push('/services');
+    setShowRoomsServicesDropdown(false);
+  };
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -178,6 +194,50 @@ export default function Home() {
                 </Link>
               </li>
               <li className={styles.navItem}>
+                <div className={styles.navLink} style={{ position: 'relative' }} ref={roomsServicesDropdownRef}>
+                  <div 
+                    onClick={() => setShowRoomsServicesDropdown(!showRoomsServicesDropdown)}
+                    style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.navIcon}>
+                      <path d="M3 22V8C3 7.46957 3.21071 6.96086 3.58579 6.58579C3.96086 6.21071 4.46957 6 5 6H19C19.5304 6 20.0391 6.21071 20.4142 6.58579C20.7893 6.96086 21 7.46957 21 8V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 6V2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M7 2H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span style={{ marginLeft: '6px' }}>Phòng & Dịch vụ</span>
+                    <svg 
+                      className={`${styles.dropdownIcon} ${showRoomsServicesDropdown ? styles.dropdownIconOpen : ''}`} 
+                      width="10" 
+                      height="6" 
+                      viewBox="0 0 10 6" 
+                      fill="none" 
+                      xmlns="http://www.w3.org/2000/svg"
+                      style={{ marginLeft: '5px' }}
+                    >
+                      <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  {showRoomsServicesDropdown && (
+                    <div className={styles.dropdown} style={{ top: '100%', left: '0', marginTop: '5px' }}>
+                      <button onClick={handleRoomsClick} className={styles.dropdownItem}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.itemIcon}>
+                          <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span>Phòng</span>
+                      </button>
+                      <button onClick={handleServicesClick} className={styles.dropdownItem}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.itemIcon}>
+                          <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.02-3.02a6 6 0 01-7.07 7.07l-2.68 2.68a2 2 0 01-2.83 0l-4.24-4.24a2 2 0 010-2.83l2.68-2.68a6 6 0 017.07-7.07l3.02 3.02z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span>Dịch vụ</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </li>
+              <li className={styles.navItem}>
                 <Link href="/about" className={styles.navLink}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.navIcon}>
                     <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -185,17 +245,6 @@ export default function Home() {
                     <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                   Giới thiệu
-                </Link>
-              </li>
-              <li className={styles.navItem}>
-                <Link href="/rooms" className={styles.navLink}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.navIcon}>
-                    <path d="M3 22V8C3 7.46957 3.21071 6.96086 3.58579 6.58579C3.96086 6.21071 4.46957 6 5 6H19C19.5304 6 20.0391 6.21071 20.4142 6.58579C20.7893 6.96086 21 7.46957 21 8V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 6V2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M7 2H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Phòng & Dịch vụ
                 </Link>
               </li>
               <li className={styles.navItem}>
