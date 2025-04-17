@@ -399,31 +399,6 @@ export default function Home() {
           <p>&copy; {new Date().getFullYear()} Khách sạn Nhóm 5. All rights reserved.</p>
           
           <div className={styles.devTools}>
-            <button 
-              onClick={() => {
-                const sampleUser = {
-                  id: '123456',
-                  username: 'testuser',
-                  password: 'password123',
-                  fullName: 'Người Dùng Test',
-                  email: 'test@example.com',
-                  phoneNumber: '0987654321',
-                  gender: 'Nam',
-                  birthDate: '',
-                  address: 'Hà Nội'
-                };
-
-                // Lưu vào localStorage
-                const users: Record<string, any> = {};
-                users[sampleUser.username] = sampleUser;
-                localStorage.setItem('registered_users', JSON.stringify(users));
-
-                alert('Đã tạo tài khoản mẫu!\nTên đăng nhập: testuser\nMật khẩu: password123');
-              }}
-              className={styles.devButton}
-            >
-              Tạo tài khoản mẫu để test
-            </button>
           </div>
         </div>
       </footer>
