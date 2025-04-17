@@ -755,3 +755,158 @@ a.secondary {
   width: 100%;
   height: 100%;
 }
+
+/* Navbar styles */
+.navbar {
+  display: flex;
+  align-items: center;
+  margin-left: 40px;
+}
+
+.navList {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 5px;
+}
+
+.navItem {
+  position: relative;
+}
+
+.navItem.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 10px;
+  right: 10px;
+  height: 3px;
+  background-color: #0078c2;
+  border-radius: 2px;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 15px;
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+}
+
+.navLink:hover {
+  background-color: rgba(0, 120, 194, 0.05);
+  color: #0078c2;
+}
+
+.navIcon {
+  color: #555;
+  transition: color 0.2s ease;
+}
+
+.navLink:hover .navIcon,
+.navItem.active .navIcon {
+  color: #0078c2;
+}
+
+.navItem.active .navLink {
+  color: #0078c2;
+  font-weight: 600;
+}
+
+/* Mobile navbar */
+.mobileMenuButton {
+  display: none;
+  background: none;
+  border: none;
+  padding: 8px;
+  margin-left: auto;
+  cursor: pointer;
+  color: #333;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.mobileMenuButton:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.navbarMobileOpen {
+  display: flex;
+}
+
+/* Responsive styles for navbar */
+@media (max-width: 1024px) {
+  .navbar {
+    margin-left: 20px;
+  }
+  
+  .navLink {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .headerContent {
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  
+  .mobileMenuButton {
+    display: flex;
+    order: 2;
+  }
+  
+  .navbar {
+    order: 3;
+    width: 100%;
+    margin: 15px 0 0;
+    display: none;
+  }
+  
+  .navbarMobileOpen {
+    display: flex;
+    animation: slideDown 0.3s ease;
+  }
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .navList {
+    flex-direction: column;
+    width: 100%;
+    gap: 0;
+  }
+  
+  .navItem {
+    width: 100%;
+  }
+  
+  .navLink {
+    padding: 12px 15px;
+    border-radius: 0;
+  }
+  
+  .navItem.active::after {
+    left: 0;
+    right: auto;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    height: auto;
+  }
+}
