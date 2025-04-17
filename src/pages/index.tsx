@@ -145,23 +145,52 @@ export default function Home() {
                 <button 
                   className={styles.userButton}
                   onClick={() => setShowDropdown(!showDropdown)}
+                  aria-label="User menu"
+                  aria-expanded={showDropdown}
                 >
-                  {user.fullName || user.username}
+                  <div className={styles.userAvatarContainer}>
+                    <div className={styles.userAvatar}>
+                      {user.fullName ? user.fullName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <span className={styles.userName}>{user.fullName || user.username}</span>
+                    <svg 
+                      className={`${styles.dropdownIcon} ${showDropdown ? styles.dropdownIconOpen : ''}`} 
+                      width="10" 
+                      height="6" 
+                      viewBox="0 0 10 6" 
+                      fill="none" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                 </button>
                 {showDropdown && (
                   <div className={styles.dropdown}>
                     <button onClick={handleProfileClick} className={styles.dropdownItem}>
-                      Hồ sơ của tôi
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.itemIcon}>
+                        <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M20 21C20 18.7909 20 17.6863 19.5607 16.8281C19.1878 16.0944 18.6059 15.5125 17.8722 15.1396C17.014 14.7002 15.9094 14.7002 13.7002 14.7002H10.2998C8.09058 14.7002 6.98601 14.7002 6.12779 15.1396C5.39412 15.5125 4.81221 16.0944 4.4393 16.8281C4 17.6863 4 18.7909 4 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>Hồ sơ của tôi</span>
                     </button>
+                    <div className={styles.dropdownDivider}></div>
                     <button onClick={handleLogout} className={styles.dropdownItem}>
-                      Đăng xuất
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.itemIcon}>
+                        <path d="M16 17L21 12M21 12L16 7M21 12H9M9 3H7.8C6.11984 3 5.27976 3 4.63803 3.32698C4.07354 3.6146 3.6146 4.07354 3.32698 4.63803C3 5.27976 3 6.11984 3 7.8V16.2C3 17.8802 3 18.7202 3.32698 19.362C3.6146 19.9265 4.07354 20.3854 4.63803 20.673C5.27976 21 6.11984 21 7.8 21H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>Đăng xuất</span>
                     </button>
                   </div>
                 )}
               </div>
             ) : (
               <Link href="/login" className={styles.loginButton}>
-                Đăng nhập
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.loginIcon}>
+                  <path d="M15 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21H15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M19 12L15 8M19 12L15 16M19 12H9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>Đăng nhập</span>
               </Link>
             )}
           </div>
@@ -293,6 +322,34 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
           <p>&copy; {new Date().getFullYear()} Khách sạn Nhóm 5. All rights reserved.</p>
+          
+          <div className={styles.devTools}>
+            <button 
+              onClick={() => {
+                const sampleUser = {
+                  id: '123456',
+                  username: 'testuser',
+                  password: 'password123',
+                  fullName: 'Người Dùng Test',
+                  email: 'test@example.com',
+                  phoneNumber: '0987654321',
+                  gender: 'Nam',
+                  birthDate: '',
+                  address: 'Hà Nội'
+                };
+
+                // Lưu vào localStorage
+                const users: Record<string, any> = {};
+                users[sampleUser.username] = sampleUser;
+                localStorage.setItem('registered_users', JSON.stringify(users));
+
+                alert('Đã tạo tài khoản mẫu!\nTên đăng nhập: testuser\nMật khẩu: password123');
+              }}
+              className={styles.devButton}
+            >
+              Tạo tài khoản mẫu để test
+            </button>
+          </div>
         </div>
       </footer>
     </div>
