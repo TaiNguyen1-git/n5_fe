@@ -1,11 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../styles/Home.module.css';
 import Link from 'next/link';
 import { getRooms, Room } from '../services/roomService';
+import { isAuthenticated, getCurrentUser, logout } from '../services/authService';
 
 export default function Home() {
   const router = useRouter();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // User state
+  const [user, setUser] = useState<any>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
   
   // Date state
   const [checkInDate, setCheckInDate] = useState('');
@@ -23,6 +29,23 @@ export default function Home() {
   
   useEffect(() => {
     fetchRooms();
+    // Check if user is logged in
+    if (isAuthenticated()) {
+      const currentUser = getCurrentUser();
+      setUser(currentUser);
+    }
+
+    // Add click outside handler
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
   
   const fetchRooms = async () => {
@@ -90,6 +113,17 @@ export default function Home() {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    setUser(null);
+    setShowDropdown(false);
+  };
+
+  const handleProfileClick = () => {
+    router.push('/profile');
+    setShowDropdown(false);
+  };
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -106,9 +140,30 @@ export default function Home() {
                 <span>Điện thoại</span>
               </div>
             </div>
-            <Link href="/login" className={styles.loginButton}>
-              Đăng nhập
-            </Link>
+            {user ? (
+              <div className={styles.userMenu} ref={dropdownRef}>
+                <button 
+                  className={styles.userButton}
+                  onClick={() => setShowDropdown(!showDropdown)}
+                >
+                  {user.fullName || user.username}
+                </button>
+                {showDropdown && (
+                  <div className={styles.dropdown}>
+                    <button onClick={handleProfileClick} className={styles.dropdownItem}>
+                      Hồ sơ của tôi
+                    </button>
+                    <button onClick={handleLogout} className={styles.dropdownItem}>
+                      Đăng xuất
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/login" className={styles.loginButton}>
+                Đăng nhập
+              </Link>
+            )}
           </div>
         </div>
       </header>

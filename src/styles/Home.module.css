@@ -287,7 +287,82 @@ a.secondary {
 }
 
 .loginButton:hover {
-  background-color: #005d99;
+  background-color: #006cae;
+}
+
+.userMenu {
+  position: relative;
+}
+
+.userButton {
+  background-color: #0078c2;
+  color: white;
+  padding: 8px 20px;
+  border-radius: 4px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+  min-width: 120px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userButton:hover {
+  background-color: #006cae;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 5px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  padding: 12px 20px;
+  text-align: left;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdownItem:hover {
+  background-color: #f5f5f5;
+  color: #0078c2;
+}
+
+.dropdownItem:first-child {
+  border-radius: 4px 4px 0 0;
+}
+
+.dropdownItem:last-child {
+  border-radius: 0 0 4px 4px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Hero section styles */
