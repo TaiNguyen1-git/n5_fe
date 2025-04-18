@@ -1,16 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { login } from '../services/authService';
+import { login, isAuthenticated } from '../services/authService';
 import styles from '../styles/Auth.module.css';
 
 export default function Login() {
   const router = useRouter();
+  const { redirect } = router.query;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const redirectPath = redirect && typeof redirect === 'string' 
+        ? decodeURIComponent(redirect) 
+        : '/';
+      router.push(redirectPath);
+    }
+  }, [redirect, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +39,11 @@ export default function Login() {
       const response = await login({ username, password });
       
       if (response.success) {
-        // Redirect to home page or dashboard
-        router.push('/');
+        // Redirect to where the user came from or home page
+        const redirectPath = redirect && typeof redirect === 'string' 
+          ? decodeURIComponent(redirect) 
+          : '/';
+        router.push(redirectPath);
       } else {
         setError('Tên đăng nhập hoặc mật khẩu không chính xác');
       }

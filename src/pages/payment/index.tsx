@@ -4,6 +4,8 @@ import { Form, Radio, Input, message, Dropdown, Menu } from 'antd';
 import { CreditCardOutlined, DollarOutlined, DownOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import styles from '@/styles/Payment.module.css';
+import { isAuthenticated, redirectToLoginIfNotAuthenticated, getCurrentUser } from '../../services/authService';
+import Navbar from '../../components/navbar';
 
 interface OrderItem {
   id: string | number;
@@ -22,6 +24,15 @@ const Payment = () => {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [total, setTotal] = useState(0);
+
+  // Check authentication on page load
+  useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!isAuthenticated()) {
+      message.error('Vui lòng đăng nhập để tiếp tục thanh toán');
+      redirectToLoginIfNotAuthenticated('/payment');
+    }
+  }, []);
 
   useEffect(() => {
     const { services } = router.query;
@@ -93,24 +104,7 @@ const Payment = () => {
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.logo}>
-            <Link href="/">
-              <h1 style={{ color: '#FF5722' }}>NHÓM 5</h1>
-            </Link>
-          </div>
-          <div className={styles.headerRight}>
-            <Dropdown overlay={userMenu} trigger={['click']}>
-              <div className={styles.userProfile}>
-                <div className={styles.userInitial}>N</div>
-                <span className={styles.userName}>Nguyễn Trung Tài</span>
-                <DownOutlined style={{ fontSize: '12px', color: '#666' }} />
-              </div>
-            </Dropdown>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <div className={styles.paymentContainer}>
         <div className={styles.orderSummary}>

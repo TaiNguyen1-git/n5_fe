@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../../styles/Services.module.css';
 import Link from 'next/link';
-import { Menu, Dropdown, message } from 'antd';
+import { Menu, Dropdown, message, Badge } from 'antd';
 import { DownOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import { isAuthenticated, redirectToLoginIfNotAuthenticated, getCurrentUser } from '../../services/authService';
+import Navbar from '../../components/navbar';
 
 interface Service {
   id: number;
@@ -103,12 +105,23 @@ export default function Services() {
 
   const userMenu = (
     <Menu>
-      <Menu.Item key="profile" onClick={() => router.push('/profile')}>
-        Thông tin cá nhân
-      </Menu.Item>
-      <Menu.Item key="logout" onClick={() => router.push('/login')}>
-        Đăng xuất
-      </Menu.Item>
+      {isAuthenticated() ? (
+        <>
+          <Menu.Item key="profile" onClick={() => router.push('/profile')}>
+            Thông tin cá nhân
+          </Menu.Item>
+          <Menu.Item key="logout" onClick={() => {
+            // Add logout logic here
+            router.push('/login');
+          }}>
+            Đăng xuất
+          </Menu.Item>
+        </>
+      ) : (
+        <Menu.Item key="login" onClick={() => router.push('/login')}>
+          Đăng nhập
+        </Menu.Item>
+      )}
     </Menu>
   );
 
@@ -147,15 +160,42 @@ export default function Services() {
   };
 
   const handlePayment = () => {
+    // Check if user is authenticated first, redirect to login if not
+    if (!isAuthenticated()) {
+      // Save cart to localStorage for use after login
+      localStorage.setItem('pendingServiceCart', JSON.stringify(cart));
+      
+      // Redirect to login page with return URL
+      redirectToLoginIfNotAuthenticated('/services');
+      return;
+    }
+    
     // Implement payment logic here
     router.push({
       pathname: '/payment',
       query: { 
-        items: JSON.stringify(cart),
+        services: JSON.stringify(cart),
         total: getTotalAmount()
       }
     });
   };
+
+  // Check for pending cart on component mount (in case user just logged in)
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const pendingCartStr = localStorage.getItem('pendingServiceCart');
+      if (pendingCartStr) {
+        try {
+          const pendingCart = JSON.parse(pendingCartStr);
+          setCart(pendingCart);
+          localStorage.removeItem('pendingServiceCart');
+          message.success('Giỏ dịch vụ của bạn đã được khôi phục');
+        } catch (e) {
+          console.error('Error parsing pending cart:', e);
+        }
+      }
+    }
+  }, []);
 
   const cartMenu = (
     <div className={styles.cartDropdown}>
@@ -221,38 +261,19 @@ export default function Services() {
       return 0;
     });
 
+  // Handle cart icon click in navbar
+  const handleCartIconClick = () => {
+    setIsCartVisible(!isCartVisible);
+  };
+
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            <span>NHÓM 5</span>
-          </Link>
-          <div className={styles.userSection}>
-            <Dropdown 
-              overlay={cartMenu} 
-              trigger={['click']}
-              visible={isCartVisible}
-              onVisibleChange={setIsCartVisible}
-            >
-              <div className={styles.cartButton}>
-                <ShoppingCartOutlined />
-                {cart.length > 0 && (
-                  <span className={styles.cartBadge}>{cart.length}</span>
-                )}
-              </div>
-            </Dropdown>
-            <Dropdown overlay={userMenu} trigger={['click']}>
-              <div className={styles.userProfile}>
-                <span className={styles.userInitial}>N</span>
-                <span className={styles.userName}>Nguyễn Trung Tài</span>
-                <DownOutlined style={{ fontSize: '12px', color: '#666' }} />
-              </div>
-            </Dropdown>
-          </div>
-        </div>
-      </header>
-
+      <Navbar 
+        cart={cart}
+        onCartClick={handleCartIconClick}
+        cartMenu={cartMenu}
+      />
+      
       <div className={styles.servicesContainer}>
         <div className={styles.filterSection}>
           <h2>Sắp xếp kết quả</h2>

@@ -6,6 +6,8 @@ import { getRooms, Room } from '../../services/roomService';
 import { FaUser } from 'react-icons/fa';
 import { Menu, Dropdown } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
+import { isAuthenticated, getCurrentUser, logout } from '../../services/authService';
+import Navbar from '../../components/navbar';
 
 export default function Rooms() {
   const router = useRouter();
@@ -53,42 +55,33 @@ export default function Rooms() {
     console.log('Applying filters:', { priceRange, sortOption });
   };
 
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
+
   const userMenu = (
     <Menu>
-      <Menu.Item key="profile" onClick={() => router.push('/profile')}>
-        Hồ sơ cá nhân
-      </Menu.Item>
-      <Menu.Item key="logout" onClick={() => {
-        // Add logout logic here
-        router.push('/login');
-      }}>
-        Đăng xuất
-      </Menu.Item>
+      {isAuthenticated() ? (
+        <>
+          <Menu.Item key="profile" onClick={() => router.push('/profile')}>
+            Hồ sơ cá nhân
+          </Menu.Item>
+          <Menu.Item key="logout" onClick={handleLogout}>
+            Đăng xuất
+          </Menu.Item>
+        </>
+      ) : (
+        <Menu.Item key="login" onClick={() => router.push('/login')}>
+          Đăng nhập
+        </Menu.Item>
+      )}
     </Menu>
   );
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            <span>NHÓM 5</span>
-          </Link>
-          <div className={styles.userSection}>
-            <Dropdown 
-              overlay={userMenu} 
-              trigger={['click']}
-              onOpenChange={setIsUserMenuOpen}
-            >
-              <div className={styles.userProfile}>
-                <span className={styles.userInitial}>N</span>
-                <span className={styles.userName}>Nguyễn Trung Tài</span>
-                <DownOutlined style={{ fontSize: '12px', color: '#666' }} />
-              </div>
-            </Dropdown>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <div className={styles.roomsContainer}>
         <div className={styles.filterSection}>

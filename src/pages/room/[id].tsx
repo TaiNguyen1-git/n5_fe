@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../../styles/RoomDetail.module.css';
 import { getRoomById, bookRoom, Room as RoomType, Booking } from '../../services/roomService';
+import { isAuthenticated, redirectToLoginIfNotAuthenticated } from '../../services/authService';
+import Navbar from '../../components/navbar';
 
 // Room type interface
 interface Room {
@@ -145,6 +147,23 @@ export default function RoomDetail() {
     
     if (!room) return;
     
+    // Check if user is authenticated first
+    if (!isAuthenticated()) {
+      // Store booking details in localStorage for after login
+      const bookingDetails = {
+        roomId: room.id,
+        checkInDate,
+        checkOutDate,
+        guests
+      };
+      localStorage.setItem('pendingBooking', JSON.stringify(bookingDetails));
+      
+      // Redirect to login page with return URL
+      const currentPath = window.location.pathname;
+      redirectToLoginIfNotAuthenticated(currentPath);
+      return;
+    }
+    
     if (!checkInDate || !checkOutDate) {
       setBookingError('Vui lòng chọn ngày nhận phòng và trả phòng');
       return;
@@ -185,6 +204,8 @@ export default function RoomDetail() {
         setCheckInDate('');
         setCheckOutDate('');
         setGuests(1);
+        // Remove any pending booking data
+        localStorage.removeItem('pendingBooking');
       } else {
         setBookingError(response.message || 'Có lỗi xảy ra khi đặt phòng. Vui lòng thử lại.');
       }
@@ -195,6 +216,26 @@ export default function RoomDetail() {
       setBookingLoading(false);
     }
   };
+  
+  // Check for pending booking data after login
+  useEffect(() => {
+    if (isAuthenticated() && room) {
+      const pendingBookingStr = localStorage.getItem('pendingBooking');
+      if (pendingBookingStr) {
+        try {
+          const pendingBooking = JSON.parse(pendingBookingStr);
+          // Only apply if it's for the same room
+          if (pendingBooking.roomId === room.id) {
+            setCheckInDate(pendingBooking.checkInDate);
+            setCheckOutDate(pendingBooking.checkOutDate);
+            setGuests(pendingBooking.guests);
+          }
+        } catch (e) {
+          console.error('Error parsing pending booking:', e);
+        }
+      }
+    }
+  }, [room]);
   
   if (loading) {
     return (
@@ -223,28 +264,7 @@ export default function RoomDetail() {
   
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.logo}>
-            <Link href="/">
-              <h1 style={{ color: '#0078c2' }}>NHÓM 5</h1>
-            </Link>
-          </div>
-          <div className={styles.headerRight}>
-            <div className={styles.contact}>
-              <span>Thời gian hỗ trợ</span>
-              <div className={styles.phoneNumber}>
-                <img src="/phone-support-icon.png" alt="Phone" className={styles.icon} />
-                <span>+84 123 456 789</span>
-              </div>
-            </div>
-            <Link href="/login" className={styles.loginButton}>
-              Đăng nhập
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Navbar />
       
       <div className={styles.content}>
         <div className={styles.roomDetailContainer}>
