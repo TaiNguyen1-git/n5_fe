@@ -1,0 +1,47 @@
+.serviceManagement {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.serviceTable {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.statusAvailable {
+  color: #52c41a;
+  font-weight: 500;
+}
+
+.statusUnavailable {
+  color: #f5222d;
+  font-weight: 500;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .header h2 {
+    margin-bottom: 10px;
+  }
+} 

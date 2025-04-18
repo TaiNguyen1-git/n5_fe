@@ -57,6 +57,16 @@ const saveRegisteredUser = (userData: any) => {
   localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
 };
 
+// Update User interface to include role
+interface User {
+  id: number;
+  username: string;
+  email?: string;
+  fullName?: string;
+  token?: string;
+  role?: string;  // 'customer', 'staff', 'admin', etc.
+}
+
 /**
  * Handles user login
  */
@@ -337,4 +347,32 @@ export const deleteUser = async (): Promise<AuthResponse> => {
       message: 'Có lỗi xảy ra. Vui lòng thử lại sau.',
     };
   }
+};
+
+// Thêm hàm để đăng nhập với vai trò mock cho mục đích test
+export const loginAsStaff = () => {
+  const mockStaffUser = {
+    id: 999,
+    username: 'staff_user',
+    fullName: 'Nhân Viên Test',
+    email: 'staff@hotel.com',
+    role: 'staff',
+    token: 'mock_staff_token_123'
+  };
+  
+  // Lưu token và thông tin người dùng
+  localStorage.setItem('auth_token', mockStaffUser.token);
+  localStorage.setItem('user', JSON.stringify(mockStaffUser));
+  
+  // Thêm vào danh sách người dùng đăng ký nếu chưa có
+  const users = getRegisteredUsers();
+  if (!users[mockStaffUser.username]) {
+    users[mockStaffUser.username] = {
+      ...mockStaffUser,
+      password: 'staff123' // Mật khẩu mặc định cho tài khoản staff
+    };
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  }
+  
+  return mockStaffUser;
 }; 

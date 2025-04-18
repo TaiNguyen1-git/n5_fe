@@ -221,9 +221,9 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', cart = [], onCartClick,
           <div className={styles.cartContainer} ref={cartDropdownRef}>
             {cartMenu ? (
               <Dropdown 
-                overlay={cartMenu}
-                visible={onCartClick ? undefined : showCartDropdown}
-                onVisibleChange={onCartClick ? undefined : setShowCartDropdown}
+                menu={{ items: [{ key: '1', label: cartMenu }] }}
+                open={onCartClick ? undefined : showCartDropdown}
+                onOpenChange={onCartClick ? undefined : setShowCartDropdown}
                 trigger={['click']}
               >
                 <button 
@@ -283,6 +283,15 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', cart = [], onCartClick,
                     </svg>
                     <span>Hồ sơ của tôi</span>
                   </button>
+                  {user?.role === 'staff' && (
+                    <button onClick={() => router.push('/staff')} className={styles.dropdownItem}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.itemIcon}>
+                        <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-2 0a2 2 0 01-2-2V5m0 16H7m0 0a2 2 0 01-2-2V5m0 0h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M9 9h6m-6 4h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      <span>Quản lý</span>
+                    </button>
+                  )}
                   <div className={styles.dropdownDivider}></div>
                   <button onClick={handleLogout} className={styles.dropdownItem}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.itemIcon}>
