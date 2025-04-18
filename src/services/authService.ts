@@ -236,6 +236,28 @@ export const logout = (): void => {
   window.location.href = '/';
 };
 
+/**
+ * Redirects to login page if user is not authenticated
+ * @param redirectPath Optional path to redirect to after login
+ */
+export const redirectToLoginIfNotAuthenticated = (redirectPath?: string): boolean => {
+  if (!isAuthenticated() && typeof window !== 'undefined') {
+    const redirectUrl = redirectPath ? `/login?redirect=${encodeURIComponent(redirectPath)}` : '/login';
+    window.location.href = redirectUrl;
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Checks if current route is a checkout or payment page
+ */
+export const isCheckoutPage = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname;
+  return path.includes('/payment') || path.includes('/checkout');
+};
+
 export async function changePassword(currentPassword: string, newPassword: string) {
   try {
     // Get current user from localStorage

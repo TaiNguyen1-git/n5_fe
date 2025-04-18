@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+<<<<<<< HEAD
 import styles from '../../styles/Payment.module.css';
 import Header from '../../components/Header';
+=======
+import { Form, Radio, Input, message, Dropdown, Menu } from 'antd';
+import { CreditCardOutlined, DollarOutlined, DownOutlined } from '@ant-design/icons';
+import Link from 'next/link';
+import styles from '@/styles/Payment.module.css';
+import { isAuthenticated, redirectToLoginIfNotAuthenticated, getCurrentUser } from '../../services/authService';
+import Navbar from '../../components/navbar';
+>>>>>>> 0e40bf244820ea157d53286fa01b28fb00ac10f9
 
 interface CartItem {
   id: number;
@@ -49,6 +58,15 @@ export default function Payment() {
   });
   const [errors, setErrors] = useState<PaymentFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check authentication on page load
+  useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!isAuthenticated()) {
+      message.error('Vui lòng đăng nhập để tiếp tục thanh toán');
+      redirectToLoginIfNotAuthenticated('/payment');
+    }
+  }, []);
 
   useEffect(() => {
     // Lấy thông tin giỏ hàng từ query params
@@ -170,11 +188,19 @@ export default function Payment() {
 
   return (
     <div className={styles.container}>
+<<<<<<< HEAD
       <Header />
       
       <main className={styles.main}>
         <div className={styles.content}>
           <h1 className={styles.title}>Thanh toán</h1>
+=======
+      <Navbar />
+
+      <div className={styles.paymentContainer}>
+        <div className={styles.orderSummary}>
+          <h2>Thông tin đơn hàng</h2>
+>>>>>>> 0e40bf244820ea157d53286fa01b28fb00ac10f9
           
           <div className={styles.grid}>
             <div className={styles.orderSummary}>

@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../../styles/Services.module.css';
+<<<<<<< HEAD
 import Header from '../../components/Header';
+=======
+import Link from 'next/link';
+import { Menu, Dropdown, message, Badge } from 'antd';
+import { DownOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import { isAuthenticated, redirectToLoginIfNotAuthenticated, getCurrentUser } from '../../services/authService';
+import Navbar from '../../components/navbar';
+>>>>>>> 0e40bf244820ea157d53286fa01b28fb00ac10f9
 
 interface Service {
   id: number;
@@ -136,11 +144,35 @@ export default function Services() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
 
+<<<<<<< HEAD
   const categories = ['all', ...new Set(hotelServices.map(service => service.category))];
 
   const filteredServices = selectedCategory === 'all' 
     ? hotelServices 
     : hotelServices.filter(service => service.category === selectedCategory);
+=======
+  const userMenu = (
+    <Menu>
+      {isAuthenticated() ? (
+        <>
+          <Menu.Item key="profile" onClick={() => router.push('/profile')}>
+            Thông tin cá nhân
+          </Menu.Item>
+          <Menu.Item key="logout" onClick={() => {
+            // Add logout logic here
+            router.push('/login');
+          }}>
+            Đăng xuất
+          </Menu.Item>
+        </>
+      ) : (
+        <Menu.Item key="login" onClick={() => router.push('/login')}>
+          Đăng nhập
+        </Menu.Item>
+      )}
+    </Menu>
+  );
+>>>>>>> 0e40bf244820ea157d53286fa01b28fb00ac10f9
 
   const addToCart = (service: Service) => {
     setCart(prevCart => {
@@ -175,16 +207,32 @@ export default function Services() {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
+<<<<<<< HEAD
   const handleCheckout = () => {
+=======
+  const handlePayment = () => {
+    // Check if user is authenticated first, redirect to login if not
+    if (!isAuthenticated()) {
+      // Save cart to localStorage for use after login
+      localStorage.setItem('pendingServiceCart', JSON.stringify(cart));
+      
+      // Redirect to login page with return URL
+      redirectToLoginIfNotAuthenticated('/services');
+      return;
+    }
+    
+    // Implement payment logic here
+>>>>>>> 0e40bf244820ea157d53286fa01b28fb00ac10f9
     router.push({
       pathname: '/payment',
       query: { 
-        items: JSON.stringify(cart),
+        services: JSON.stringify(cart),
         total: getTotalAmount()
       }
     });
   };
 
+<<<<<<< HEAD
   // Lấy icon tương ứng với danh mục
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -233,9 +281,97 @@ export default function Services() {
         return null;
     }
   };
+=======
+  // Check for pending cart on component mount (in case user just logged in)
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const pendingCartStr = localStorage.getItem('pendingServiceCart');
+      if (pendingCartStr) {
+        try {
+          const pendingCart = JSON.parse(pendingCartStr);
+          setCart(pendingCart);
+          localStorage.removeItem('pendingServiceCart');
+          message.success('Giỏ dịch vụ của bạn đã được khôi phục');
+        } catch (e) {
+          console.error('Error parsing pending cart:', e);
+        }
+      }
+    }
+  }, []);
+
+  const cartMenu = (
+    <div className={styles.cartDropdown}>
+      <h3>Giỏ dịch vụ</h3>
+      {cart.length === 0 ? (
+        <p className={styles.emptyCart}>Chưa có dịch vụ nào được chọn</p>
+      ) : (
+        <>
+          <div className={styles.cartItems}>
+            {cart.map(item => (
+              <div key={item.id} className={styles.cartItem}>
+                <div className={styles.cartItemInfo}>
+                  <h4>{item.name}</h4>
+                  <span className={styles.cartItemPrice}>{formatPrice(item.price)} đ</span>
+                </div>
+                <div className={styles.cartItemActions}>
+                  <button 
+                    className={styles.quantityBtn}
+                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                  >
+                    -
+                  </button>
+                  <span>{item.quantity}</span>
+                  <button 
+                    className={styles.quantityBtn}
+                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                  >
+                    +
+                  </button>
+                  <button 
+                    className={styles.removeBtn}
+                    onClick={() => removeFromCart(item.id)}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className={styles.cartFooter}>
+            <div className={styles.cartTotal}>
+              <span>Tổng tiền:</span>
+              <span className={styles.totalAmount}>{formatPrice(getTotalAmount())} đ</span>
+            </div>
+            <button 
+              className={styles.paymentButton}
+              onClick={handlePayment}
+            >
+              Thanh toán
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
+  const categories = ['all', ...new Set(hotelServices.map(service => service.category))];
+  const filteredServices = hotelServices
+    .filter(service => selectedCategory === 'all' || service.category === selectedCategory)
+    .sort((a, b) => {
+      if (sortOption === 'highest') return b.price - a.price;
+      if (sortOption === 'lowest') return a.price - b.price;
+      return 0;
+    });
+>>>>>>> 0e40bf244820ea157d53286fa01b28fb00ac10f9
+
+  // Handle cart icon click in navbar
+  const handleCartIconClick = () => {
+    setIsCartVisible(!isCartVisible);
+  };
 
   return (
     <div className={styles.container}>
+<<<<<<< HEAD
       <Header />
       
       <div className={styles.hero}>
@@ -261,6 +397,38 @@ export default function Services() {
                 </button>
               ))}
             </div>
+=======
+      <Navbar 
+        cart={cart}
+        onCartClick={handleCartIconClick}
+        cartMenu={cartMenu}
+      />
+      
+      <div className={styles.servicesContainer}>
+        <div className={styles.filterSection}>
+          <h2>Sắp xếp kết quả</h2>
+          <div className={styles.sortOptions}>
+            <label className={styles.radioLabel}>
+              <input
+                type="radio"
+                name="sort"
+                value="highest"
+                checked={sortOption === 'highest'}
+                onChange={(e) => setSortOption(e.target.value)}
+              />
+              <span>Giá cao nhất</span>
+            </label>
+            <label className={styles.radioLabel}>
+              <input
+                type="radio"
+                name="sort"
+                value="lowest"
+                checked={sortOption === 'lowest'}
+                onChange={(e) => setSortOption(e.target.value)}
+              />
+              <span>Giá thấp nhất</span>
+            </label>
+>>>>>>> 0e40bf244820ea157d53286fa01b28fb00ac10f9
           </div>
 
           <div className={styles.servicesSection}>
