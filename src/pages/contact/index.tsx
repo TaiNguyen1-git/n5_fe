@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../../styles/Contact.module.css';
 import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 
 interface ContactForm {
   name: string;
@@ -301,53 +302,7 @@ export default function Contact() {
         </div>
       </main>
       
-      <footer className={styles.footer}>
-        <div className={styles.footerContent}>
-          <div className={styles.footerSection}>
-            <h3>Về chúng tôi</h3>
-            <p>Khách sạn Nhóm 5 - Nơi nghỉ dưỡng lý tưởng với không gian sang trọng, tiện nghi hiện đại và dịch vụ chất lượng cao.</p>
-            <div className={styles.socialLinks}>
-              <a href="#"><i className="fab fa-facebook"></i></a>
-              <a href="#"><i className="fab fa-twitter"></i></a>
-              <a href="#"><i className="fab fa-instagram"></i></a>
-              <a href="#"><i className="fab fa-linkedin"></i></a>
-            </div>
-          </div>
-          
-          <div className={styles.footerSection}>
-            <h3>Liên kết nhanh</h3>
-            <ul>
-              <li><a href="/">Trang chủ</a></li>
-              <li><a href="/rooms">Phòng</a></li>
-              <li><a href="/services">Dịch vụ</a></li>
-              <li><a href="/about">Giới thiệu</a></li>
-              <li><a href="/contact">Liên hệ</a></li>
-            </ul>
-          </div>
-          
-          <div className={styles.footerSection}>
-            <h3>Dịch vụ</h3>
-            <ul>
-              <li><a href="#">Đặt phòng</a></li>
-              <li><a href="#">Nhà hàng</a></li>
-              <li><a href="#">Spa & Wellness</a></li>
-              <li><a href="#">Hội nghị & Sự kiện</a></li>
-              <li><a href="#">Dịch vụ đặc biệt</a></li>
-            </ul>
-          </div>
-          
-          <div className={styles.footerSection}>
-            <h3>Liên hệ</h3>
-            <p>10 Huỳnh Văn Nghệ, Bửu Long, Biên Hòa, Đồng Nai</p>
-            <p>Điện thoại: (0251) 382 2288</p>
-            <p>Email: info@lhu.edu.vn</p>
-          </div>
-        </div>
-        
-        <div className={styles.footerBottom}>
-          <p>&copy; {new Date().getFullYear()} Khách sạn Nhóm 5. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 } 

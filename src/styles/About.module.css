@@ -1,0 +1,882 @@
+/* Container styles */
+.container {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    color: #333;
+  }
+  
+  /* Header styles */
+  .header {
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .headerContent {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .logo h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  
+  .headerRight {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  /* User menu styles */
+  .userMenu {
+    position: relative;
+  }
+  
+  .userButton {
+    appearance: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+  }
+  
+  .userButton:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .userAvatarContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .userAvatar {
+    width: 32px;
+    height: 32px;
+    background-color: #0078c2;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  
+  .userName {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .dropdownIcon {
+    transition: transform 0.2s;
+  }
+  
+  .dropdownIconOpen {
+    transform: rotate(180deg);
+  }
+  
+  .dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    min-width: 200px;
+    z-index: 100;
+    margin-top: 8px;
+    padding: 8px;
+    animation: dropdownFadeIn 0.2s ease-out;
+  }
+  
+  @keyframes dropdownFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    width: 100%;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #333;
+  }
+  
+  .dropdownItem:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .dropdownItem svg {
+    color: #333;
+  }
+  
+  .dropdownDivider {
+    height: 1px;
+    background-color: rgba(0, 0, 0, 0.1);
+    margin: 8px 0;
+  }
+  
+  .itemIcon {
+    flex-shrink: 0;
+  }
+  
+  .loginButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #0078c2;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    text-decoration: none;
+  }
+  
+  .loginButton:hover {
+    background-color: #0062a3;
+    text-decoration: none;
+  }
+  
+  .loginIcon {
+    flex-shrink: 0;
+  }
+  
+  /* Navigation styles */
+  .navbar {
+    flex: 1;
+    margin-left: 40px;
+  }
+  
+  .navList {
+    display: flex;
+    gap: 5px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .navItem {
+    position: relative;
+  }
+  
+  .navItem.active::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 10px;
+    right: 10px;
+    height: 3px;
+    background-color: #0078c2;
+    border-radius: 3px;
+  }
+  
+  .navLink {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px;
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  
+  .navLink:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    text-decoration: none;
+  }
+  
+  .navIcon {
+    flex-shrink: 0;
+  }
+  
+  .navLink:hover .navIcon,
+  .navItem.active .navIcon {
+    color: #0078c2;
+  }
+  
+  .navItem.active .navLink {
+    color: #0078c2;
+    font-weight: 600;
+  }
+  
+  .mobileMenuButton {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #333;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+  }
+  
+  .mobileMenuButton:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .navbarMobileOpen {
+    display: flex;
+  }
+  
+  /* Main content styles */
+  .main {
+    flex: 1;
+    padding: 60px 0;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .aboutPage {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 80px;
+    align-items: center;
+  }
+  
+  .aboutHero {
+    width: 100%;
+    height: 400px;
+    background-image: url('/images/luxury-room.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 4rem;
+  }
+  
+  .aboutHero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    z-index: 1;
+  }
+  
+  .heroContent {
+    position: relative;
+    z-index: 2;
+    color: #ffffff;
+    text-align: center;
+    max-width: 800px;
+    padding: 0 20px;
+  }
+  
+  .aboutTitle {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  
+  .aboutDescription {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+  
+  .aboutSection {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto 80px;
+    padding: 0;
+    overflow: hidden;
+    background-color: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .aboutSection h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 30px;
+    text-align: center;
+    color: #333;
+    padding: 40px 0 10px;
+  }
+  
+  .aboutContent {
+    display: flex;
+    position: relative;
+    z-index: 1;
+    align-items: center;
+    flex-direction: row;
+  }
+  
+  .aboutText {
+    flex: 1;
+    padding: 0 40px 40px;
+  }
+  
+  .aboutText p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin: 0 0 20px;
+    color: #333;
+  }
+  
+  .aboutImage {
+    flex: 1.2;
+    height: 500px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 0 16px 0 0;
+  }
+  
+  .hotelImage {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.02);
+    transition: transform 0.5s ease;
+  }
+  
+  .aboutImage:hover .hotelImage {
+    transform: scale(1.08);
+  }
+  
+  .hotelGallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    justify-content: center;
+    margin: 40px 40px 40px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .galleryItem {
+    flex: 1;
+    min-width: 300px;
+    max-width: 350px;
+    height: 250px;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin-bottom: 20px;
+  }
+  
+  .galleryItem:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  }
+  
+  .galleryImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  
+  .galleryItem:hover .galleryImage {
+    transform: scale(1.05);
+  }
+  
+  /* Value section styles */
+  .valueSection {
+    background-color: #f8f9fa;
+    padding: 80px 0;
+    margin-bottom: 80px;
+  }
+  
+  .valueBanner {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto 50px;
+    padding: 0 20px;
+  }
+  
+  .valueBanner h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 20px;
+    color: #333;
+  }
+  
+  .valueBanner p {
+    font-size: 1.1rem;
+    color: #666;
+    margin: 0;
+  }
+  
+  .valuesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  
+  .valueItem {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 30px;
+    border: 1px solid #eee;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .valueItem:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .valueIcon {
+    margin-bottom: 20px;
+  }
+  
+  .valueItem h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0 0 15px;
+    color: #333;
+  }
+  
+  .valueItem p {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #666;
+    margin: 0;
+  }
+  
+  /* Team section styles */
+  .teamSection {
+    padding: 4rem 0;
+    background-color: #ffffff;
+    text-align: center;
+  }
+  
+  .teamSection h1 {
+    font-size: 2.5rem;
+    color: #333;
+    margin-bottom: 1rem;
+  }
+  
+  .teamIntro {
+    max-width: 800px;
+    margin: 0 auto 3rem;
+    color: #666;
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+  
+  .teamGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  
+  .teamMember {
+    background-color: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .teamMember:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  }
+  
+  .memberImage {
+    width: 100%;
+    height: 280px;
+    overflow: hidden;
+  }
+  
+  .memberImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  
+  .teamMember:hover .memberImage img {
+    transform: scale(1.05);
+  }
+  
+  .memberInfo {
+    padding: 1.5rem;
+    text-align: left;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .memberInfo h3 {
+    font-size: 1.4rem;
+    margin: 0 0 0.5rem;
+    color: #333;
+  }
+  
+  .memberInfo p {
+    font-size: 1rem;
+    color: #5a67d8;
+    font-weight: 600;
+    margin: 0 0 1rem;
+  }
+  
+  .memberBio {
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+  }
+  
+  .socialLinks {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .socialLink {
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    color: #5a67d8;
+    transition: all 0.3s ease;
+  }
+  
+  .socialLink:hover {
+    background-color: #5a67d8;
+    color: white;
+  }
+  
+  /* Facility section styles */
+  .facilitySection {
+    margin: 0 auto;
+    padding: 0 20px;
+    text-align: center;
+    width: 100%;
+    max-width: 1200px;
+  }
+  
+  .facilitySection h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 20px;
+    color: #333;
+  }
+  
+  .facilitySection p {
+    font-size: 1.1rem;
+    color: #666;
+    margin: 0 0 40px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .facilitiesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .facilityItem {
+    overflow: hidden;
+    border-radius: 12px;
+    background-color: #fff;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    border: 1px solid #eee;
+    padding: 30px 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .facilityItem:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 14px 24px rgba(0, 0, 0, 0.2);
+  }
+  
+  .facilityIcon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #f0f7ff;
+    margin-bottom: 20px;
+    color: #0078c2;
+    font-size: 32px;
+  }
+  
+  .facilityItem h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0 0 15px;
+    color: #333;
+  }
+  
+  .facilityItem p {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #666;
+    margin: 0;
+  }
+  
+  .footer {
+    background-color: #222;
+    color: white;
+    padding: 20px 0;
+  }
+  
+  .footerContent {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 1024px) {
+    .navbar {
+      margin-left: 20px;
+    }
+    
+    .navLink {
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+    
+    .valuesGrid,
+    .teamGrid,
+    .facilitiesGrid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 920px) {
+    .aboutContent {
+      flex-direction: column-reverse;
+    }
+    
+    .aboutImage {
+      flex: none;
+      height: 350px;
+      width: 100%;
+      border-radius: 0;
+    }
+    
+    .aboutText {
+      padding: 30px;
+    }
+    
+    .hotelGallery {
+      margin: 30px 30px 30px;
+      gap: 25px;
+    }
+    
+    .galleryItem {
+      min-width: 250px;
+      max-width: 320px;
+      height: 200px;
+      margin-bottom: 15px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .headerContent {
+      padding: 0 15px;
+    }
+    
+    .mobileMenuButton {
+      display: block;
+    }
+    
+    .navbar {
+      position: fixed;
+      top: 70px;
+      left: 0;
+      right: 0;
+      background-color: white;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      display: none;
+      margin-left: 0;
+    }
+    
+    .navbarMobileOpen {
+      display: block;
+      animation: slideDown 0.3s ease-out;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .navList {
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .navItem {
+      width: 100%;
+    }
+    
+    .navLink {
+      width: 100%;
+      padding: 12px;
+    }
+    
+    .navItem.active::after {
+      display: none;
+    }
+    
+    .aboutHeroContent h1 {
+      font-size: 2rem;
+    }
+    
+    .aboutHeroContent p {
+      font-size: 1.1rem;
+    }
+    
+    .textColumn h2,
+    .valueBanner h2,
+    .teamSection h2,
+    .facilitySection h2 {
+      font-size: 1.8rem;
+    }
+    
+    .valuesGrid,
+    .teamGrid,
+    .facilitiesGrid {
+      grid-template-columns: 1fr;
+    }
+    
+    .footerContent {
+      flex-direction: column;
+      gap: 20px;
+      text-align: center;
+    }
+    
+    .teamGrid {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+    
+    .memberImage {
+      height: 220px;
+    }
+    
+    .aboutSection h1 {
+      font-size: 2rem;
+      padding: 30px 0 0;
+    }
+    
+    .aboutImage {
+      height: 300px;
+    }
+    
+    .hotelGallery {
+      flex-direction: column;
+      align-items: center;
+      margin: 25px 20px 30px;
+      gap: 25px;
+    }
+    
+    .galleryItem {
+      width: 100%;
+      max-width: 100%;
+      height: 200px;
+      margin-bottom: 20px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .teamSection h1 {
+      font-size: 2rem;
+    }
+    
+    .teamGrid {
+      grid-template-columns: 1fr;
+    }
+    
+    .aboutImage {
+      height: 250px;
+    }
+  } 

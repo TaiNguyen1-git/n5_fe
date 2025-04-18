@@ -3,9 +3,8 @@ import { useRouter } from 'next/router';
 import styles from '../../styles/Rooms.module.css';
 import Link from 'next/link';
 import { getRooms, Room } from '../../services/roomService';
-import { FaUser } from 'react-icons/fa';
-import { Menu, Dropdown } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import Navbar from '../../components/navbar';
+import Footer from '../../components/Footer';
 
 export default function Rooms() {
   const router = useRouter();
@@ -16,27 +15,35 @@ export default function Rooms() {
     min: '1000000',
     max: '10000000'
   });
-  const [sortOption, setSortOption] = useState('');
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [selectedOption, setSelectedOption] = useState('');
 
   useEffect(() => {
     fetchRooms();
   }, []);
 
   const fetchRooms = async () => {
-    setLoading(true);
-    setError('');
     try {
-      const response = await getRooms();
-      if (response.success && response.data) {
-        setRooms(response.data);
-      } else {
-        setError('Failed to load rooms');
-      }
+      // Simulating room data for the UI demonstration
+      setRooms([
+        {
+          id: '101',
+          name: 'Phòng 101',
+          price: 100000,
+          imageUrl: 'https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+          capacity: 2
+        },
+        {
+          id: '102',
+          name: 'Phòng 102',
+          price: 150000,
+          imageUrl: 'https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+          capacity: 2
+        },
+      ]);
+      setLoading(false);
     } catch (err) {
       setError('An error occurred while fetching rooms');
       console.error(err);
-    } finally {
       setLoading(false);
     }
   };
@@ -50,49 +57,16 @@ export default function Rooms() {
 
   const handleApplyFilter = () => {
     // Implement filter logic here
-    console.log('Applying filters:', { priceRange, sortOption });
+    console.log('Applying filters:', { priceRange, selectedOption });
   };
 
-  const userMenu = (
-    <Menu>
-      <Menu.Item key="profile" onClick={() => router.push('/profile')}>
-        Hồ sơ cá nhân
-      </Menu.Item>
-      <Menu.Item key="logout" onClick={() => {
-        // Add logout logic here
-        router.push('/login');
-      }}>
-        Đăng xuất
-      </Menu.Item>
-    </Menu>
-  );
-
   const formatPrice = (price: number) => {
-    return price.toLocaleString('en-US') + ' đ';
+    return price.toLocaleString('vi-VN') + ' đ';
   };
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            <span>NHÓM 5</span>
-          </Link>
-          <div className={styles.userSection}>
-            <Dropdown 
-              overlay={userMenu} 
-              trigger={['click']}
-              onOpenChange={setIsUserMenuOpen}
-            >
-              <div className={styles.userProfile}>
-                <span className={styles.userInitial}>N</span>
-                <span className={styles.userName}>Nguyễn Trung Tài</span>
-                <DownOutlined style={{ fontSize: '12px', color: '#666' }} />
-              </div>
-            </Dropdown>
-          </div>
-        </div>
-      </header>
+      <Navbar cart={[]} />
 
       <div className={styles.roomsContainer}>
         <div className={styles.filterSection}>
@@ -103,8 +77,8 @@ export default function Rooms() {
                 type="radio"
                 name="sort"
                 value="highest"
-                checked={sortOption === 'highest'}
-                onChange={(e) => setSortOption(e.target.value)}
+                checked={selectedOption === 'highest'}
+                onChange={() => setSelectedOption('highest')}
               />
               <span>Giá cao nhất</span>
             </label>
@@ -113,8 +87,8 @@ export default function Rooms() {
                 type="radio"
                 name="sort"
                 value="lowest"
-                checked={sortOption === 'lowest'}
-                onChange={(e) => setSortOption(e.target.value)}
+                checked={selectedOption === 'lowest'}
+                onChange={() => setSelectedOption('lowest')}
               />
               <span>Giá thấp nhất</span>
             </label>
@@ -123,34 +97,35 @@ export default function Rooms() {
                 type="radio"
                 name="sort"
                 value="mostBooked"
-                checked={sortOption === 'mostBooked'}
-                onChange={(e) => setSortOption(e.target.value)}
+                checked={selectedOption === 'mostBooked'}
+                onChange={() => setSelectedOption('mostBooked')}
               />
-              <span>Thuê nhiều nhất</span>
+              <span>Phổ biến nhất</span>
             </label>
           </div>
 
           <div className={styles.priceFilter}>
-            <h2>Bộ lọc tìm kiếm</h2>
             <h3>Khoảng giá</h3>
             <div className={styles.priceInputs}>
               <div className={styles.priceInput}>
                 <label>Tối thiểu</label>
                 <input
-                  type="number"
+                  type="text"
                   value={priceRange.min}
                   onChange={(e) => handlePriceRangeChange('min', e.target.value)}
                   min="0"
+                  placeholder="1000000"
                 />
               </div>
               <span className={styles.priceSeparator}>—</span>
               <div className={styles.priceInput}>
                 <label>Tối đa</label>
                 <input
-                  type="number"
+                  type="text"
                   value={priceRange.max}
                   onChange={(e) => handlePriceRangeChange('max', e.target.value)}
                   min="0"
+                  placeholder="10000000"
                 />
               </div>
             </div>
@@ -177,11 +152,11 @@ export default function Rooms() {
                     <h3>{room.name}</h3>
                     <div className={styles.roomDetails}>
                       <div className={styles.occupancy}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z" stroke="currentColor" strokeWidth="2"/>
                           <path d="M20 21C20 18.87 18.33 17.1 16 16.29C14.83 15.82 13.45 15.58 12 15.58C10.55 15.58 9.17 15.82 8 16.29C5.67 17.1 4 18.87 4 21" stroke="currentColor" strokeWidth="2"/>
                         </svg>
-                        <span>2 người</span>
+                        <span>{room.capacity} người</span>
                       </div>
                       <div className={styles.price}>
                         {formatPrice(room.price)}
@@ -200,6 +175,8 @@ export default function Rooms() {
           )}
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 }
