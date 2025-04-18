@@ -1,255 +1,413 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Form, Radio, Input, message, Dropdown, Menu } from 'antd';
-import { CreditCardOutlined, DollarOutlined, DownOutlined } from '@ant-design/icons';
-import Link from 'next/link';
-import styles from '@/styles/Payment.module.css';
+import styles from '../../styles/Payment.module.css';
+import Header from '../../components/Header';
 
-interface OrderItem {
-  id: string | number;
+interface CartItem {
+  id: number;
   name: string;
+  description: string;
   price: number;
+  category: string;
   quantity: number;
-  type: 'service';
-  details?: {
-    category?: string;
-  };
 }
 
-const Payment = () => {
-  const [form] = Form.useForm();
+interface PaymentForm {
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  paymentMethod: 'credit' | 'transfer';
+  cardNumber: string;
+  cardExpiry: string;
+  cardCVC: string;
+  bankName: string;
+  accountNumber: string;
+}
+
+interface PaymentFormErrors extends Partial<PaymentForm> {
+  submit?: string;
+}
+
+export default function Payment() {
   const router = useRouter();
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [total, setTotal] = useState(0);
+  const [formData, setFormData] = useState<PaymentForm>({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    paymentMethod: 'credit',
+    cardNumber: '',
+    cardExpiry: '',
+    cardCVC: '',
+    bankName: '',
+    accountNumber: ''
+  });
+  const [errors, setErrors] = useState<PaymentFormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const { services } = router.query;
-    
-    if (services) {
+    // Lấy thông tin giỏ hàng từ query params
+    if (router.query.items) {
       try {
-        const serviceData = JSON.parse(services as string);
-        
-        // Transform service data
-        const serviceItems: OrderItem[] = serviceData.map((service: any) => ({
-          id: service.id,
-          name: service.name,
-          price: service.price,
-          quantity: service.quantity || 1,
-          type: 'service',
-          details: {
-            category: service.category
-          }
-        }));
-
-        setOrderItems(serviceItems);
-
-        // Calculate total
-        const total = serviceItems.reduce((acc, item) => {
-          return acc + (item.price * item.quantity);
-        }, 0);
-        
-        setTotal(total);
+        const items = JSON.parse(router.query.items as string);
+        setCartItems(items);
+        const totalAmount = items.reduce((sum: number, item: CartItem) => 
+          sum + (item.price * item.quantity), 0);
+        setTotal(totalAmount);
       } catch (error) {
-        console.error('Error parsing service data:', error);
-        message.error('Có lỗi xảy ra khi tải thông tin dịch vụ');
+        console.error('Error parsing cart items:', error);
+        router.push('/services');
       }
     }
   }, [router.query]);
 
-  const handleSubmit = async (values: any) => {
-    try {
-      // Here you would typically send the payment details to your backend
-      // For now, we'll just show a success message
-      message.success('Thanh toán thành công!');
-      
-      // Clear the service cart after successful payment
-      localStorage.removeItem('serviceCart');
-      
-      // Redirect to success page
-      router.push('/payment/success');
-    } catch (error) {
-      message.error('Có lỗi xảy ra. Vui lòng thử lại.');
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (errors[name as keyof PaymentForm]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
   };
 
-  const userMenu = (
-    <Menu>
-      <Menu.Item key="profile" onClick={() => router.push('/profile')}>
-        Thông tin cá nhân
-      </Menu.Item>
-      <Menu.Item key="logout" onClick={() => router.push('/login')}>
-        Đăng xuất
-      </Menu.Item>
-    </Menu>
-  );
+  const validateForm = () => {
+    const newErrors: Partial<PaymentForm> = {};
+    
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Vui lòng nhập họ tên';
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Vui lòng nhập email';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email không hợp lệ';
+    }
+    
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Vui lòng nhập số điện thoại';
+    } else if (!/^[0-9]{10}$/.test(formData.phone)) {
+      newErrors.phone = 'Số điện thoại không hợp lệ';
+    }
+    
+    if (!formData.address.trim()) {
+      newErrors.address = 'Vui lòng nhập địa chỉ';
+    }
+    
+    if (!formData.city.trim()) {
+      newErrors.city = 'Vui lòng nhập thành phố';
+    }
+    
+    if (formData.paymentMethod === 'credit') {
+      if (!formData.cardNumber.trim()) {
+        newErrors.cardNumber = 'Vui lòng nhập số thẻ';
+      } else if (!/^[0-9]{16}$/.test(formData.cardNumber)) {
+        newErrors.cardNumber = 'Số thẻ không hợp lệ';
+      }
+      
+      if (!formData.cardExpiry.trim()) {
+        newErrors.cardExpiry = 'Vui lòng nhập ngày hết hạn';
+      } else if (!/^(0[1-9]|1[0-2])\/([0-9]{2})$/.test(formData.cardExpiry)) {
+        newErrors.cardExpiry = 'Định dạng MM/YY';
+      }
+      
+      if (!formData.cardCVC.trim()) {
+        newErrors.cardCVC = 'Vui lòng nhập CVV';
+      } else if (!/^[0-9]{3,4}$/.test(formData.cardCVC)) {
+        newErrors.cardCVC = 'CVV không hợp lệ';
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Redirect to success page
+      router.push({
+        pathname: '/payment/success',
+        query: { 
+          orderId: Math.random().toString(36).substring(2, 15),
+          total: total
+        }
+      });
+    } catch (error) {
+      console.error('Payment error:', error);
+      setErrors(prev => ({
+        ...prev,
+        submit: 'Có lỗi xảy ra, vui lòng thử lại'
+      }));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(price);
+    return price.toLocaleString('vi-VN') + ' đ';
   };
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.logo}>
-            <Link href="/">
-              <h1 style={{ color: '#FF5722' }}>NHÓM 5</h1>
-            </Link>
-          </div>
-          <div className={styles.headerRight}>
-            <Dropdown overlay={userMenu} trigger={['click']}>
-              <div className={styles.userProfile}>
-                <div className={styles.userInitial}>N</div>
-                <span className={styles.userName}>Nguyễn Trung Tài</span>
-                <DownOutlined style={{ fontSize: '12px', color: '#666' }} />
-              </div>
-            </Dropdown>
-          </div>
-        </div>
-      </header>
-
-      <div className={styles.paymentContainer}>
-        <div className={styles.orderSummary}>
-          <h2>Thông tin đơn hàng</h2>
+      <Header />
+      
+      <main className={styles.main}>
+        <div className={styles.content}>
+          <h1 className={styles.title}>Thanh toán</h1>
           
-          {orderItems.length > 0 ? (
-            <div className={styles.section}>
-              <h3>Dịch vụ đã chọn</h3>
-              <div className={styles.orderItems}>
-                {orderItems.map((service) => (
-                  <div key={service.id} className={styles.orderItem}>
+          <div className={styles.grid}>
+            <div className={styles.orderSummary}>
+              <h2>Thông tin đơn hàng</h2>
+              
+              <div className={styles.cartItems}>
+                {cartItems.map(item => (
+                  <div key={item.id} className={styles.cartItem}>
                     <div className={styles.itemInfo}>
-                      <span className={styles.itemName}>{service.name}</span>
-                      <div className={styles.itemDetails}>
-                        <span className={styles.itemQuantity}>Số lượng: {service.quantity}</span>
-                        <span className={styles.itemPrice}>
-                          {new Intl.NumberFormat('vi-VN', {
-                            style: 'currency',
-                            currency: 'VND'
-                          }).format(service.price)} x {service.quantity}
-                        </span>
+                      <h3>{item.name}</h3>
+                      <p className={styles.category}>{item.category}</p>
+                    </div>
+                    <div className={styles.itemDetails}>
+                      <div className={styles.quantity}>
+                        <span>Số lượng: {item.quantity}</span>
+                      </div>
+                      <div className={styles.price}>
+                        {formatPrice(item.price * item.quantity)}
                       </div>
                     </div>
-                    <span className={styles.itemTotal}>
-                      {new Intl.NumberFormat('vi-VN', {
-                        style: 'currency',
-                        currency: 'VND'
-                      }).format(service.price * service.quantity)}
-                    </span>
                   </div>
                 ))}
               </div>
+              
+              <div className={styles.total}>
+                <span>Tổng tiền:</span>
+                <span className={styles.totalAmount}>{formatPrice(total)}</span>
+              </div>
             </div>
-          ) : (
-            <div className={styles.emptyState}>
-              <p>Chưa có dịch vụ nào được chọn</p>
-            </div>
-          )}
-
-          <div className={styles.totalAmount}>
-            <span>Tổng cộng</span>
-            <span className={styles.total}>
-              {new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND'
-              }).format(total)}
-            </span>
+            
+            <form className={styles.paymentForm} onSubmit={handleSubmit}>
+              <div className={styles.formSection}>
+                <h2>Thông tin cá nhân</h2>
+                
+                <div className={styles.formGroup}>
+                  <label htmlFor="fullName">Họ và tên</label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    className={errors.fullName ? styles.error : ''}
+                    placeholder="Nhập họ và tên"
+                  />
+                  {errors.fullName && <span className={styles.errorMessage}>{errors.fullName}</span>}
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label htmlFor="email">Email</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={errors.email ? styles.error : ''}
+                    placeholder="Nhập email"
+                  />
+                  {errors.email && <span className={styles.errorMessage}>{errors.email}</span>}
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label htmlFor="phone">Số điện thoại</label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className={errors.phone ? styles.error : ''}
+                    placeholder="Nhập số điện thoại"
+                  />
+                  {errors.phone && <span className={styles.errorMessage}>{errors.phone}</span>}
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label htmlFor="address">Địa chỉ</label>
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    className={errors.address ? styles.error : ''}
+                    placeholder="Nhập địa chỉ"
+                  />
+                  {errors.address && <span className={styles.errorMessage}>{errors.address}</span>}
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label htmlFor="city">Thành phố</label>
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    className={errors.city ? styles.error : ''}
+                    placeholder="Nhập thành phố"
+                  />
+                  {errors.city && <span className={styles.errorMessage}>{errors.city}</span>}
+                </div>
+              </div>
+              
+              <div className={styles.formSection}>
+                <h2>Phương thức thanh toán</h2>
+                
+                <div className={styles.formGroup}>
+                  <div className={styles.radioGroup}>
+                    <label>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="credit"
+                        checked={formData.paymentMethod === 'credit'}
+                        onChange={handleInputChange}
+                      />
+                      Thẻ tín dụng
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="transfer"
+                        checked={formData.paymentMethod === 'transfer'}
+                        onChange={handleInputChange}
+                      />
+                      Chuyển khoản
+                    </label>
+                  </div>
+                </div>
+                
+                {formData.paymentMethod === 'credit' && (
+                  <div className={styles.creditCardForm}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="cardNumber">Số thẻ</label>
+                      <input
+                        type="text"
+                        id="cardNumber"
+                        name="cardNumber"
+                        value={formData.cardNumber}
+                        onChange={handleInputChange}
+                        className={errors.cardNumber ? styles.error : ''}
+                        placeholder="1234 5678 9012 3456"
+                        maxLength={16}
+                      />
+                      {errors.cardNumber && <span className={styles.errorMessage}>{errors.cardNumber}</span>}
+                    </div>
+                    
+                    <div className={styles.formGroup}>
+                      <label htmlFor="cardExpiry">Ngày hết hạn</label>
+                      <input
+                        type="text"
+                        id="cardExpiry"
+                        name="cardExpiry"
+                        value={formData.cardExpiry}
+                        onChange={handleInputChange}
+                        className={errors.cardExpiry ? styles.error : ''}
+                        placeholder="MM/YY"
+                        maxLength={5}
+                      />
+                      {errors.cardExpiry && <span className={styles.errorMessage}>{errors.cardExpiry}</span>}
+                    </div>
+                    
+                    <div className={styles.formGroup}>
+                      <label htmlFor="cardCVC">CVV</label>
+                      <input
+                        type="text"
+                        id="cardCVC"
+                        name="cardCVC"
+                        value={formData.cardCVC}
+                        onChange={handleInputChange}
+                        className={errors.cardCVC ? styles.error : ''}
+                        placeholder="123"
+                        maxLength={4}
+                      />
+                      {errors.cardCVC && <span className={styles.errorMessage}>{errors.cardCVC}</span>}
+                    </div>
+                  </div>
+                )}
+                
+                {formData.paymentMethod === 'transfer' && (
+                  <div className={styles.bankDetails}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="bankName">Tên ngân hàng</label>
+                      <input
+                        type="text"
+                        id="bankName"
+                        name="bankName"
+                        value={formData.bankName}
+                        onChange={handleInputChange}
+                        className={errors.bankName ? styles.error : ''}
+                        placeholder="Nhập tên ngân hàng"
+                      />
+                      {errors.bankName && <span className={styles.errorMessage}>{errors.bankName}</span>}
+                    </div>
+                    
+                    <div className={styles.formGroup}>
+                      <label htmlFor="accountNumber">Số tài khoản</label>
+                      <input
+                        type="text"
+                        id="accountNumber"
+                        name="accountNumber"
+                        value={formData.accountNumber}
+                        onChange={handleInputChange}
+                        className={errors.accountNumber ? styles.error : ''}
+                        placeholder="Nhập số tài khoản"
+                      />
+                      {errors.accountNumber && <span className={styles.errorMessage}>{errors.accountNumber}</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Display submit error if any */}
+              {errors.submit && (
+                <div className={styles.bookingError}>
+                  {errors.submit}
+                </div>
+              )}
+              
+              <button 
+                type="submit" 
+                className={styles.submitButton}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
+              </button>
+            </form>
           </div>
         </div>
-
-        <div className={styles.paymentMethods}>
-          <h2>Phương thức thanh toán</h2>
-          <Form form={form} onFinish={handleSubmit} layout="vertical">
-            <div className={styles.methodSelection}>
-              <Radio.Group
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              >
-                <div className={styles.methodOption}>
-                  <Radio value="cash">
-                    <div className={styles.methodLabel}>
-                      <DollarOutlined className={styles.methodIcon} />
-                      <div>
-                        <h3>Thanh toán tiền mặt</h3>
-                        <p>Thanh toán khi nhận phòng</p>
-                      </div>
-                    </div>
-                  </Radio>
-                </div>
-
-                <div className={styles.methodOption}>
-                  <Radio value="card">
-                    <div className={styles.methodLabel}>
-                      <CreditCardOutlined className={styles.methodIcon} />
-                      <div>
-                        <h3>Thanh toán bằng thẻ</h3>
-                        <p>Hỗ trợ NAPAS/VISA</p>
-                      </div>
-                    </div>
-                  </Radio>
-                </div>
-              </Radio.Group>
-            </div>
-
-            {paymentMethod === 'card' && (
-              <div className={styles.cardDetails}>
-                <Form.Item
-                  label="Số thẻ"
-                  name="cardNumber"
-                  rules={[
-                    { required: true, message: 'Vui lòng nhập số thẻ' },
-                    { pattern: /^[0-9]{16}$/, message: 'Số thẻ không hợp lệ' }
-                  ]}
-                >
-                  <Input placeholder="1234 5678 9012 3456" maxLength={16} />
-                </Form.Item>
-
-                <div className={styles.cardRow}>
-                  <Form.Item
-                    label="Ngày hết hạn"
-                    name="expiryDate"
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập ngày hết hạn' },
-                      { pattern: /^(0[1-9]|1[0-2])\/([0-9]{2})$/, message: 'Định dạng MM/YY' }
-                    ]}
-                  >
-                    <Input placeholder="MM/YY" maxLength={5} />
-                  </Form.Item>
-
-                  <Form.Item
-                    label="CVV"
-                    name="cvv"
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập CVV' },
-                      { pattern: /^[0-9]{3,4}$/, message: 'CVV không hợp lệ' }
-                    ]}
-                  >
-                    <Input placeholder="123" maxLength={4} />
-                  </Form.Item>
-                </div>
-
-                <Form.Item
-                  label="Tên chủ thẻ"
-                  name="cardholderName"
-                  rules={[{ required: true, message: 'Vui lòng nhập tên chủ thẻ' }]}
-                >
-                  <Input placeholder="NGUYEN VAN A" />
-                </Form.Item>
-              </div>
-            )}
-
-            <button type="submit" className={styles.paymentButton}>
-              Xác nhận thanh toán
-            </button>
-          </Form>
-        </div>
-      </div>
+      </main>
     </div>
   );
-};
-
-export default Payment;
+}
