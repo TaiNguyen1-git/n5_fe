@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { isAuthenticated, getCurrentUser, logout } from '../../services/authService';
 import styles from './styles.module.css';
 import { Badge, Dropdown } from 'antd';
-import { ShoppingCartOutlined } from '@ant-design/icons';
+import { ShoppingCartOutlined, HomeOutlined, InfoCircleOutlined, PhoneOutlined, ClockCircleOutlined } from '@ant-design/icons';
 
 // Define props interface
 interface NavbarProps {
@@ -136,10 +136,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', cart = [], onCartClick,
           <ul className={styles.navList}>
             <li className={`${styles.navItem} ${router.pathname === '/' ? styles.active : ''}`}>
               <Link href="/" className={styles.navLink}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.navIcon}>
-                  <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <HomeOutlined className={styles.navIcon} />
                 Trang chủ
               </Link>
             </li>
@@ -189,19 +186,13 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', cart = [], onCartClick,
             </li>
             <li className={`${styles.navItem} ${router.pathname === '/about' ? styles.active : ''}`}>
               <Link href="/about" className={styles.navLink}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.navIcon}>
-                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <InfoCircleOutlined className={styles.navIcon} />
                 Giới thiệu
               </Link>
             </li>
             <li className={`${styles.navItem} ${router.pathname === '/contact' ? styles.active : ''}`}>
               <Link href="/contact" className={styles.navLink}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.navIcon}>
-                  <path d="M22 16.92V19.92C22.0011 20.1985 21.9441 20.4742 21.832 20.7294C21.7199 20.9845 21.5554 21.2136 21.3496 21.4019C21.1437 21.5901 20.9014 21.7335 20.6389 21.8227C20.3764 21.9119 20.0989 21.9451 19.82 21.92C16.7428 21.5856 13.787 20.5341 11.19 18.85C8.77382 17.3146 6.72533 15.2661 5.18999 12.85C3.49997 10.2412 2.44824 7.27099 2.11999 4.17999C2.09494 3.90194 2.12781 3.62476 2.21656 3.36238C2.3053 3.09999 2.44763 2.85762 2.63476 2.65172C2.82189 2.44582 3.04974 2.28095 3.30372 2.16846C3.55771 2.05596 3.83227 1.99828 4.10999 1.99999H7.10999C7.5953 1.99522 8.06579 2.16708 8.43376 2.48353C8.80173 2.79998 9.04207 3.23945 9.10999 3.71999C9.23662 4.68004 9.47144 5.62272 9.80999 6.52999C9.94454 6.88016 9.97366 7.26597 9.89391 7.63578C9.81415 8.0056 9.6288 8.34344 9.35999 8.59999L8.08999 9.86999C9.51355 12.3427 11.5173 14.3464 13.99 15.77L15.26 14.5C15.5166 14.2312 15.8544 14.0458 16.2242 13.9661C16.594 13.8863 16.9798 13.9154 17.33 14.05C18.2373 14.3885 19.1799 14.6233 20.14 14.75C20.6224 14.8185 21.0634 15.061 21.3798 15.4318C21.6962 15.8026 21.8662 16.2759 21.86 16.76L22 16.92Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <PhoneOutlined className={styles.navIcon} />
                 Liên hệ
               </Link>
             </li>
@@ -212,8 +203,8 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', cart = [], onCartClick,
           <div className={styles.contact}>
             <span className={styles.contactText}>Thời gian hỗ trợ</span>
             <div className={styles.phoneNumber}>
-              <img src="/phone-support-icon.png" alt="Phone" className={styles.icon} />
-              <span>Điện thoại</span>
+              <ClockCircleOutlined className={styles.icon} />
+              <span>+84 123 456 789</span>
             </div>
           </div>
 
@@ -292,6 +283,15 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', cart = [], onCartClick,
                       <span>Quản lý</span>
                     </button>
                   )}
+                  {user?.role === 'admin' && (
+                    <button onClick={() => router.push('/admin')} className={styles.dropdownItem}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.itemIcon}>
+                        <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-2 0a2 2 0 01-2-2V5m0 16H7m0 0a2 2 0 01-2-2V5m0 0h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M9 9h6m-6 4h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      <span>Quản lý Admin</span>
+                    </button>
+                  )}
                   <div className={styles.dropdownDivider}></div>
                   <button onClick={handleLogout} className={styles.dropdownItem}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.itemIcon}>
@@ -317,4 +317,4 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', cart = [], onCartClick,
   );
 };
 
-export default Navbar; 
+export default Navbar;

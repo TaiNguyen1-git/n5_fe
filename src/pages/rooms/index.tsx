@@ -4,160 +4,494 @@ import styles from '../../styles/Rooms.module.css';
 import Link from 'next/link';
 import { getRooms, Room } from '../../services/roomService';
 import Layout from '../../components/Layout';
+import { Slider, Rate, Checkbox, Select, Tag, Tooltip, Pagination, Input, DatePicker, Button, Spin, Empty, Badge } from 'antd';
+import { SearchOutlined, FilterOutlined, WifiOutlined, CoffeeOutlined, CarOutlined, HeartOutlined, HeartFilled, 
+  EnvironmentOutlined, InfoCircleOutlined, StarFilled, ThunderboltOutlined } from '@ant-design/icons';
+
+const { Option } = Select;
+const { RangePicker } = DatePicker;
+
+// Extended Room type with additional properties
+interface ExtendedRoom extends Room {
+  rating?: number;
+  reviewCount?: number;
+  discount?: number;
+  amenities?: string[];
+  distanceFromCenter?: number;
+  isFavorite?: boolean;
+  tags?: string[];
+}
 
 export default function Rooms() {
   const router = useRouter();
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<ExtendedRoom[]>([]);
+  const [filteredRooms, setFilteredRooms] = useState<ExtendedRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [priceRange, setPriceRange] = useState({
-    min: '1000000',
-    max: '10000000'
-  });
-  const [selectedOption, setSelectedOption] = useState('');
+  const [priceRange, setPriceRange] = useState<[number, number]>([100000, 10000000]);
+  const [sortOption, setSortOption] = useState<string>('recommended');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [amenitiesFilter, setAmenitiesFilter] = useState<string[]>([]);
+  const [ratingFilter, setRatingFilter] = useState<number>(0);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  
+  const pageSize = 5;
+
+  // List of amenities for filtering
+  const amenitiesList = [
+    { label: 'Wi-Fi miễn phí', value: 'wifi' },
+    { label: 'Điều hòa', value: 'ac' },
+    { label: 'TV', value: 'tv' },
+    { label: 'Minibar', value: 'minibar' },
+    { label: 'Bữa sáng', value: 'breakfast' },
+    { label: 'Bãi đỗ xe', value: 'parking' },
+  ];
 
   useEffect(() => {
     fetchRooms();
   }, []);
 
+  useEffect(() => {
+    filterRooms();
+  }, [priceRange, sortOption, searchTerm, amenitiesFilter, ratingFilter, rooms]);
+
   const fetchRooms = async () => {
     try {
-      // Simulating room data for the UI demonstration
-      setRooms([
+      // Simulating room data for the UI demonstration with extended properties
+      const mockRooms: ExtendedRoom[] = [
         {
           id: '101',
-          name: 'Phòng 101',
-          price: 100000,
+          name: 'Phòng Deluxe Hướng Biển',
+          price: 1200000,
           imageUrl: 'https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
           capacity: 2,
-          description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản',
-          features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng'],
+          description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản và view biển tuyệt đẹp',
+          features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar'],
           images: ['https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
           maxGuests: 2,
-          beds: [{ type: 'Giường đôi', count: 1 }]
+          beds: [{ type: 'Giường đôi', count: 1 }],
+          rating: 4.7,
+          reviewCount: 124,
+          discount: 15,
+          amenities: ['wifi', 'ac', 'tv', 'minibar'],
+          distanceFromCenter: 0.5,
+          isFavorite: false,
+          tags: ['Hot deal', 'Phòng đẹp']
         },
         {
           id: '102',
-          name: 'Phòng 102',
-          price: 150000,
+          name: 'Phòng Suite Gia Đình',
+          price: 2500000,
           imageUrl: 'https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-          capacity: 2,
-          description: 'Phòng cao cấp với view đẹp',
-          features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar'],
+          capacity: 4,
+          description: 'Phòng suite rộng rãi dành cho gia đình với không gian riêng biệt',
+          features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Bồn tắm'],
           images: ['https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-          maxGuests: 2,
-          beds: [{ type: 'Giường đôi', count: 1 }]
+          maxGuests: 4,
+          beds: [{ type: 'Giường đôi', count: 1 }, { type: 'Giường đơn', count: 2 }],
+          rating: 4.9,
+          reviewCount: 87,
+          amenities: ['wifi', 'ac', 'tv', 'minibar', 'breakfast'],
+          distanceFromCenter: 0.5,
+          isFavorite: true,
+          tags: ['Phòng gia đình']
         },
-      ]);
+        {
+          id: '103',
+          name: 'Phòng Standard Twin',
+          price: 800000,
+          imageUrl: 'https://images.pexels.com/photos/279746/pexels-photo-279746.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+          capacity: 2,
+          description: 'Phòng tiêu chuẩn với hai giường đơn, phù hợp cho bạn bè hoặc đồng nghiệp',
+          features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng'],
+          images: ['https://images.pexels.com/photos/279746/pexels-photo-279746.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+          maxGuests: 2,
+          beds: [{ type: 'Giường đơn', count: 2 }],
+          rating: 4.5,
+          reviewCount: 56,
+          discount: 10,
+          amenities: ['wifi', 'ac', 'tv', 'parking'],
+          distanceFromCenter: 0.7,
+          isFavorite: false,
+          tags: ['Tiết kiệm']
+        },
+        {
+          id: '104',
+          name: 'Phòng Executive Suite',
+          price: 3500000,
+          imageUrl: 'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+          capacity: 2,
+          description: 'Phòng hạng sang với không gian làm việc riêng và dịch vụ đặc biệt',
+          features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng làm việc'],
+          images: ['https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+          maxGuests: 2,
+          beds: [{ type: 'Giường King', count: 1 }],
+          rating: 4.8,
+          reviewCount: 42,
+          amenities: ['wifi', 'ac', 'tv', 'minibar', 'breakfast', 'parking'],
+          distanceFromCenter: 0.3,
+          isFavorite: false,
+          tags: ['Sang trọng', 'Doanh nhân']
+        },
+        {
+          id: '105',
+          name: 'Phòng Superior Đôi',
+          price: 1500000,
+          imageUrl: 'https://images.pexels.com/photos/210265/pexels-photo-210265.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+          capacity: 2,
+          description: 'Phòng superior với không gian rộng rãi và view thành phố',
+          features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar'],
+          images: ['https://images.pexels.com/photos/210265/pexels-photo-210265.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+          maxGuests: 2,
+          beds: [{ type: 'Giường đôi', count: 1 }],
+          rating: 4.6,
+          reviewCount: 78,
+          amenities: ['wifi', 'ac', 'tv', 'minibar', 'breakfast'],
+          distanceFromCenter: 0.6,
+          isFavorite: false,
+          tags: ['View đẹp']
+        },
+      ];
+      
+      setRooms(mockRooms);
+      setFilteredRooms(mockRooms);
       setLoading(false);
     } catch (err) {
-      setError('An error occurred while fetching rooms');
+      setError('Đã xảy ra lỗi khi tải dữ liệu phòng');
       console.error(err);
       setLoading(false);
     }
   };
 
-  const handlePriceRangeChange = (type: 'min' | 'max', value: string) => {
-    setPriceRange(prev => ({
-      ...prev,
-      [type]: value
-    }));
+  const filterRooms = () => {
+    let result = [...rooms];
+    
+    // Filter by price range
+    result = result.filter(room => 
+      room.price >= priceRange[0] && room.price <= priceRange[1]
+    );
+    
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(room => 
+        room.name.toLowerCase().includes(term) || 
+        room.description.toLowerCase().includes(term)
+      );
+    }
+    
+    // Filter by amenities
+    if (amenitiesFilter.length > 0) {
+      result = result.filter(room => 
+        amenitiesFilter.every(amenity => 
+          room.amenities?.includes(amenity.toString())
+        )
+      );
+    }
+    
+    // Filter by rating
+    if (ratingFilter > 0) {
+      result = result.filter(room => 
+        (room.rating || 0) >= ratingFilter
+      );
+    }
+    
+    // Sort rooms
+    switch (sortOption) {
+      case 'price-asc':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case 'rating':
+        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'discount':
+        result.sort((a, b) => (b.discount || 0) - (a.discount || 0));
+        break;
+      case 'recommended':
+      default:
+        // Sort by a combination of rating and price
+        result.sort((a, b) => (b.rating || 0) * 0.7 - (a.rating || 0) * 0.7 + 
+                              (a.price - b.price) * 0.0001);
+        break;
+    }
+    
+    setFilteredRooms(result);
+    setCurrentPage(1);
   };
 
-  const handleApplyFilter = () => {
-    // Implement filter logic here
-    console.log('Applying filters:', { priceRange, selectedOption });
+  const handlePriceRangeChange = (value: number | number[]) => {
+    setPriceRange(value as [number, number]);
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortOption(value);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleAmenitiesChange = (checkedValues: string[]) => {
+    setAmenitiesFilter(checkedValues);
+  };
+
+  const handleRatingChange = (value: number) => {
+    setRatingFilter(value);
+  };
+
+  const toggleFavorite = (roomId: string) => {
+    setRooms(prevRooms => 
+      prevRooms.map(room => 
+        room.id === roomId 
+          ? { ...room, isFavorite: !room.isFavorite } 
+          : room
+      )
+    );
   };
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('vi-VN') + ' đ';
   };
 
+  const getDiscountedPrice = (room: ExtendedRoom) => {
+    if (!room.discount) return room.price;
+    return room.price * (1 - room.discount / 100);
+  };
+
+  // Calculate pagination
+  const paginatedRooms = filteredRooms.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <Layout>
       <div className={styles.container}>
-        <div className={styles.roomsContainer}>
-          <div className={styles.filterSection}>
-            <h2>Sắp xếp kết quả</h2>
-            <div className={styles.sortOptions}>
-              <label className={styles.radioLabel}>
-                <input
-                  type="radio"
-                  name="sort"
-                  value="highest"
-                  checked={selectedOption === 'highest'}
-                  onChange={() => setSelectedOption('highest')}
-                />
-                <span>Giá cao nhất</span>
-              </label>
-              <label className={styles.radioLabel}>
-                <input
-                  type="radio"
-                  name="sort"
-                  value="lowest"
-                  checked={selectedOption === 'lowest'}
-                  onChange={() => setSelectedOption('lowest')}
-                />
-                <span>Giá thấp nhất</span>
-              </label>
-              <label className={styles.radioLabel}>
-                <input
-                  type="radio"
-                  name="sort"
-                  value="mostBooked"
-                  checked={selectedOption === 'mostBooked'}
-                  onChange={() => setSelectedOption('mostBooked')}
-                />
-                <span>Phổ biến nhất</span>
-              </label>
-            </div>
-
-            <div className={styles.priceFilter}>
-              <h3>Khoảng giá</h3>
-              <div className={styles.priceInputs}>
-                <div className={styles.priceInput}>
-                  <label>Tối thiểu</label>
-                  <input
-                    type="text"
-                    value={priceRange.min}
-                    onChange={(e) => handlePriceRangeChange('min', e.target.value)}
-                    min="0"
-                    placeholder="1000000"
-                  />
-                </div>
-                <span className={styles.priceSeparator}>—</span>
-                <div className={styles.priceInput}>
-                  <label>Tối đa</label>
-                  <input
-                    type="text"
-                    value={priceRange.max}
-                    onChange={(e) => handlePriceRangeChange('max', e.target.value)}
-                    min="0"
-                    placeholder="10000000"
-                  />
-                </div>
-              </div>
-              <button className={styles.applyButton} onClick={handleApplyFilter}>
-                Áp dụng
-              </button>
+        {/* Search bar section */}
+        <div className={styles.searchBarSection}>
+          <div className={styles.searchBarContainer}>
+            <div className={styles.searchInputGroup}>
+              <Input 
+                placeholder="Tìm kiếm phòng..." 
+                prefix={<SearchOutlined />} 
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className={styles.searchInput}
+              />
+              <RangePicker 
+                placeholder={['Ngày nhận phòng', 'Ngày trả phòng']}
+                className={styles.datePicker}
+              />
+              <Select 
+                defaultValue="2" 
+                className={styles.guestSelect}
+              >
+                <Option value="1">1 khách</Option>
+                <Option value="2">2 khách</Option>
+                <Option value="3">3 khách</Option>
+                <Option value="4">4 khách</Option>
+                <Option value="5">5+ khách</Option>
+              </Select>
+              <Button type="primary" icon={<SearchOutlined />} className={styles.searchButton}>
+                Tìm kiếm
+              </Button>
             </div>
           </div>
+        </div>
 
+        <div className={styles.roomsContainer}>
+          {/* Filter section */}
+          <div className={styles.filterSection}>
+            <div className={styles.filterHeader}>
+              <h2><FilterOutlined /> Bộ lọc tìm kiếm</h2>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <h3>Sắp xếp kết quả</h3>
+              <Select
+                value={sortOption}
+                onChange={handleSortChange}
+                className={styles.sortSelect}
+                style={{ width: '100%' }}
+              >
+                <Option value="recommended">Đề xuất</Option>
+                <Option value="price-asc">Giá thấp đến cao</Option>
+                <Option value="price-desc">Giá cao đến thấp</Option>
+                <Option value="rating">Đánh giá cao nhất</Option>
+                <Option value="discount">Khuyến mãi tốt nhất</Option>
+              </Select>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <h3>Khoảng giá (VNĐ)</h3>
+              <Slider
+                range
+                min={100000}
+                max={5000000}
+                step={100000}
+                value={priceRange}
+                onChange={handlePriceRangeChange}
+                tipFormatter={value => value?.toLocaleString('vi-VN')}
+              />
+              <div className={styles.priceRangeLabels}>
+                <span>{priceRange[0].toLocaleString('vi-VN')}đ</span>
+                <span>{priceRange[1].toLocaleString('vi-VN')}đ</span>
+              </div>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <h3>Tiện nghi</h3>
+              <Checkbox.Group 
+                options={amenitiesList} 
+                value={amenitiesFilter}
+                onChange={handleAmenitiesChange}
+                className={styles.amenitiesCheckboxes}
+              />
+            </div>
+
+            <div className={styles.filterGroup}>
+              <h3>Đánh giá tối thiểu</h3>
+              <div className={styles.ratingFilter}>
+                <Rate 
+                  allowHalf 
+                  value={ratingFilter} 
+                  onChange={handleRatingChange} 
+                />
+                <span className={styles.ratingText}>
+                  {ratingFilter > 0 ? `${ratingFilter} sao trở lên` : 'Tất cả đánh giá'}
+                </span>
+              </div>
+            </div>
+
+            <Button 
+              type="primary" 
+              className={styles.applyButton}
+              onClick={filterRooms}
+            >
+              Áp dụng
+            </Button>
+            
+            <Button 
+              type="default" 
+              className={styles.resetButton}
+              onClick={() => {
+                setPriceRange([100000, 10000000]);
+                setSortOption('recommended');
+                setSearchTerm('');
+                setAmenitiesFilter([]);
+                setRatingFilter(0);
+              }}
+            >
+              Đặt lại
+            </Button>
+          </div>
+
+          {/* Room list section */}
           <div className={styles.roomsList}>
-            <h1>Kết quả tìm kiếm</h1>
+            <div className={styles.resultsHeader}>
+              <h1>Kết quả tìm kiếm</h1>
+              <div className={styles.resultsActions}>
+                <span className={styles.resultCount}>
+                  {filteredRooms.length} phòng được tìm thấy
+                </span>
+                <div className={styles.viewToggle}>
+                  <Button.Group>
+                    <Button 
+                      type={viewMode === 'list' ? 'primary' : 'default'}
+                      onClick={() => setViewMode('list')}
+                    >
+                      Danh sách
+                    </Button>
+                    <Button 
+                      type={viewMode === 'grid' ? 'primary' : 'default'}
+                      onClick={() => setViewMode('grid')}
+                    >
+                      Lưới
+                    </Button>
+                  </Button.Group>
+                </div>
+              </div>
+            </div>
+
             {loading ? (
-              <div className={styles.loading}>Đang tải...</div>
+              <div className={styles.loadingContainer}>
+                <Spin size="large" />
+                <p>Đang tải danh sách phòng...</p>
+              </div>
             ) : error ? (
               <div className={styles.error}>{error}</div>
+            ) : filteredRooms.length === 0 ? (
+              <Empty 
+                description="Không tìm thấy phòng nào phù hợp với tiêu chí tìm kiếm" 
+                className={styles.emptyResults}
+              />
             ) : (
-              <div className={styles.roomsGrid}>
-                {rooms.map((room) => (
-                  <div key={room.id} className={styles.roomCard}>
+              <div className={viewMode === 'grid' ? styles.roomsGrid : styles.roomsList}>
+                {paginatedRooms.map((room) => (
+                  <div key={room.id} className={viewMode === 'grid' ? styles.roomCardGrid : styles.roomCard}>
                     <div className={styles.roomImage}>
+                      {room.discount && (
+                        <div className={styles.discountBadge}>
+                          <ThunderboltOutlined /> {room.discount}% GIẢM
+                        </div>
+                      )}
                       <img src={room.imageUrl} alt={room.name} />
+                      <button 
+                        className={styles.favoriteButton}
+                        onClick={() => toggleFavorite(room.id)}
+                        aria-label={room.isFavorite ? "Xóa khỏi yêu thích" : "Thêm vào yêu thích"}
+                      >
+                        {room.isFavorite ? <HeartFilled /> : <HeartOutlined />}
+                      </button>
                     </div>
                     <div className={styles.roomInfo}>
-                      <h3>{room.name}</h3>
+                      <div className={styles.roomHeader}>
+                        <h3>{room.name}</h3>
+                        <div className={styles.roomRating}>
+                          <Rate disabled defaultValue={room.rating} allowHalf />
+                          <span className={styles.reviewCount}>({room.reviewCount} đánh giá)</span>
+                        </div>
+                      </div>
+                      
+                      <div className={styles.roomLocation}>
+                        <EnvironmentOutlined /> <span>Cách trung tâm {room.distanceFromCenter} km</span>
+                      </div>
+                      
+                      <div className={styles.roomTags}>
+                        {room.tags?.map((tag, index) => (
+                          <Tag key={index} color="blue">{tag}</Tag>
+                        ))}
+                      </div>
+                      
+                      <p className={styles.roomDescription}>
+                        {room.description}
+                      </p>
+                      
+                      <div className={styles.roomAmenities}>
+                        {room.amenities?.includes('wifi') && (
+                          <Tooltip title="Wi-Fi miễn phí">
+                            <span className={styles.amenity}><WifiOutlined /></span>
+                          </Tooltip>
+                        )}
+                        {room.amenities?.includes('breakfast') && (
+                          <Tooltip title="Bữa sáng miễn phí">
+                            <span className={styles.amenity}><CoffeeOutlined /></span>
+                          </Tooltip>
+                        )}
+                        {room.amenities?.includes('parking') && (
+                          <Tooltip title="Bãi đỗ xe">
+                            <span className={styles.amenity}><CarOutlined /></span>
+                          </Tooltip>
+                        )}
+                        <Tooltip title="Xem tất cả tiện nghi">
+                          <span className={styles.amenity}><InfoCircleOutlined /></span>
+                        </Tooltip>
+                      </div>
+                      
                       <div className={styles.roomDetails}>
                         <div className={styles.occupancy}>
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -166,19 +500,56 @@ export default function Rooms() {
                           </svg>
                           <span>{room.capacity} người</span>
                         </div>
-                        <div className={styles.price}>
-                          {formatPrice(room.price)}
+                        <div className={styles.priceContainer}>
+                          {room.discount ? (
+                            <>
+                              <div className={styles.originalPrice}>
+                                {formatPrice(room.price)}
+                              </div>
+                              <div className={styles.price}>
+                                {formatPrice(getDiscountedPrice(room))}
+                              </div>
+                            </>
+                          ) : (
+                            <div className={styles.price}>
+                              {formatPrice(room.price)}
+                            </div>
+                          )}
+                          <span className={styles.pricePerNight}>/ đêm</span>
                         </div>
                       </div>
-                      <button 
-                        className={styles.bookButton}
-                        onClick={() => router.push(`/room/${room.id}`)}
-                      >
-                        Đặt phòng
-                      </button>
+                      
+                      <div className={styles.roomActions}>
+                        <Button 
+                          type="default"
+                          onClick={() => router.push(`/room/${room.id}`)}
+                          className={styles.detailsButton}
+                        >
+                          Chi tiết
+                        </Button>
+                        <Button 
+                          type="primary"
+                          onClick={() => router.push(`/bookings/create?roomId=${room.id}`)}
+                          className={styles.bookButton}
+                        >
+                          Đặt ngay
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+            
+            {filteredRooms.length > pageSize && (
+              <div className={styles.pagination}>
+                <Pagination
+                  current={currentPage}
+                  total={filteredRooms.length}
+                  pageSize={pageSize}
+                  onChange={setCurrentPage}
+                  showSizeChanger={false}
+                />
               </div>
             )}
           </div>

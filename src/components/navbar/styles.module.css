@@ -1,7 +1,7 @@
 .header {
   background-color: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  padding: 12px 0;
+  padding: 8px 0;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -16,7 +16,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 60px;
+  height: 48px;
 }
 
 .logo {
@@ -27,13 +27,15 @@
 .logoText {
   color: #0078c2;
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: bold;
 }
 
 .navbar {
   display: flex;
   transition: all 0.3s ease;
+  margin-left: 20px;
+  flex: 1;
 }
 
 .navbarMobileOpen {
@@ -61,14 +63,15 @@
   align-items: center;
   color: #333;
   text-decoration: none;
-  font-size: 16px;
+  font-size: 14px;
   transition: color 0.2s;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 .navIcon {
-  margin-right: 8px;
+  margin-right: 6px;
   color: #666;
+  font-size: 14px;
 }
 
 .dropdownIcon {
@@ -121,7 +124,7 @@
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
 .contact {
@@ -131,22 +134,23 @@
 }
 
 .contactText {
-  font-size: 13px;
+  font-size: 12px;
   color: #666;
 }
 
 .phoneNumber {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
+  gap: 6px;
+  font-size: 14px;
   font-weight: 500;
   color: #333;
 }
 
 .icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
+  color: #666;
 }
 
 /* Cart styling */
@@ -160,9 +164,9 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 24px;
-  width: 40px;
-  height: 40px;
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -175,7 +179,7 @@
 }
 
 .cartIcon {
-  font-size: 22px;
+  font-size: 20px;
   color: #333;
 }
 
@@ -199,15 +203,15 @@
 }
 
 .userAvatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background-color: #0078c2;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -219,13 +223,13 @@
 .loginButton {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 6px;
+  padding: 6px 12px;
   background-color: #0078c2;
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
@@ -237,8 +241,8 @@
 }
 
 .loginIcon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .mobileMenuButton {
@@ -293,4 +297,4 @@
   .contact {
     display: none;
   }
-} 
+}

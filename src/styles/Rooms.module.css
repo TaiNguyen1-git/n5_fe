@@ -67,6 +67,45 @@
   color: #333;
 }
 
+/* Search bar section */
+.searchBarSection {
+  background-color: #fff;
+  padding: 20px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.searchBarContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.searchInputGroup {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+}
+
+.datePicker {
+  min-width: 280px;
+}
+
+.guestSelect {
+  min-width: 120px;
+}
+
+.searchButton {
+  height: 40px;
+  padding: 0 25px;
+}
+
 .roomsContainer {
   display: flex;
   max-width: 1200px;
@@ -82,6 +121,28 @@
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  align-self: flex-start;
+  position: sticky;
+  top: 20px;
+}
+
+.filterHeader {
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+}
+
+.filterHeader h2 {
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filterGroup {
+  margin-bottom: 25px;
 }
 
 .filterSection h2 {
@@ -94,7 +155,7 @@
 .filterSection h3 {
   font-size: 16px;
   color: #666;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
   font-weight: 500;
 }
 
@@ -146,6 +207,14 @@
   margin-top: 20px;
 }
 
+.priceRangeLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  color: #666;
+  font-size: 14px;
+}
+
 .priceInputs {
   display: flex;
   align-items: center;
@@ -180,6 +249,23 @@
   font-weight: 500;
 }
 
+.amenitiesCheckboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ratingFilter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ratingText {
+  color: #666;
+  font-size: 14px;
+}
+
 .applyButton {
   width: 100%;
   padding: 10px;
@@ -191,6 +277,16 @@
   cursor: pointer;
   transition: background-color 0.2s;
   font-size: 15px;
+  margin-bottom: 10px;
+}
+
+.resetButton {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 15px;
 }
 
 .applyButton:hover {
@@ -201,14 +297,38 @@
   flex: 1;
 }
 
+.resultsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.resultsActions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.resultCount {
+  color: #666;
+  font-size: 15px;
+}
+
 .roomsList h1 {
   font-size: 24px;
-  margin-bottom: 25px;
+  margin-bottom: 0;
   font-weight: 600;
   color: #333;
 }
 
 .roomsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+}
+
+.roomsList > div:not(.roomsGrid):not(.pagination):not(.resultsHeader):not(.loadingContainer):not(.emptyResults) {
   display: flex;
   flex-direction: column;
   gap: 25px;
@@ -222,18 +342,34 @@
   transition: transform 0.2s, box-shadow 0.2s;
   width: 100%;
   display: flex;
+}
+
+.roomCardGrid {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+  display: flex;
   flex-direction: column;
 }
 
-.roomCard:hover {
+.roomCard:hover, .roomCardGrid:hover {
   transform: translateY(-3px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-.roomImage {
+.roomCard .roomImage {
+  width: 300px;
+  height: 220px;
+  position: relative;
+}
+
+.roomCardGrid .roomImage {
   width: 100%;
-  height: 240px;
-  overflow: hidden;
+  height: 200px;
+  position: relative;
 }
 
 .roomImage img {
@@ -243,19 +379,117 @@
   transition: transform 0.3s;
 }
 
-.roomCard:hover .roomImage img {
+.roomCard:hover .roomImage img, .roomCardGrid:hover .roomImage img {
   transform: scale(1.05);
 }
 
+.discountBadge {
+  position: absolute;
+  top: 15px;
+  left: 0;
+  background-color: #ff4d4f;
+  color: white;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 0 4px 4px 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.favoriteButton {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  z-index: 1;
+  font-size: 18px;
+  color: #ff4d4f;
+}
+
+.favoriteButton:hover {
+  background-color: white;
+}
+
 .roomInfo {
-  padding: 15px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
+  flex: 1;
+}
+
+.roomHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.roomRating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reviewCount {
+  color: #666;
+  font-size: 14px;
+}
+
+.roomLocation {
+  color: #666;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.roomTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.roomDescription {
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.roomAmenities {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.amenity {
+  font-size: 18px;
+  color: #555;
+  cursor: pointer;
 }
 
 .roomInfo h3 {
   font-size: 18px;
-  margin-bottom: 15px;
+  margin-bottom: 0;
   font-weight: 600;
   color: #333;
 }
@@ -265,6 +499,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
+  margin-top: auto;
 }
 
 .occupancy {
@@ -279,14 +514,41 @@
   color: #555;
 }
 
+.priceContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.originalPrice {
+  text-decoration: line-through;
+  color: #999;
+  font-size: 14px;
+}
+
 .price {
   font-weight: 600;
   color: #0078c2;
-  font-size: 18px;
+  font-size: 20px;
+}
+
+.pricePerNight {
+  font-size: 14px;
+  color: #666;
+}
+
+.roomActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.detailsButton {
+  padding: 8px 15px;
 }
 
 .bookButton {
-  padding: 12px;
+  padding: 8px 15px;
   background-color: #0078c2;
   color: white;
   border: none;
@@ -295,24 +557,36 @@
   cursor: pointer;
   transition: background-color 0.2s;
   font-size: 15px;
-  width: 120px;
-  align-self: flex-end;
 }
 
 .bookButton:hover {
   background-color: #006cab;
 }
 
-.loading {
-  text-align: center;
-  padding: 40px;
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 0;
+  gap: 20px;
   color: #666;
+}
+
+.emptyResults {
+  padding: 50px 0;
 }
 
 .error {
   text-align: center;
   padding: 40px;
   color: #e74c3c;
+}
+
+.pagination {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 992px) {
@@ -323,19 +597,48 @@
   .filterSection {
     width: 100%;
     margin-bottom: 20px;
+    position: static;
+  }
+  
+  .roomCard {
+    flex-direction: column;
+  }
+  
+  .roomCard .roomImage {
+    width: 100%;
   }
   
   .bookButton {
+    width: 100%;
+  }
+  
+  .searchInputGroup {
+    flex-direction: column;
+  }
+  
+  .searchInput, .datePicker, .guestSelect, .searchButton {
     width: 100%;
   }
 }
 
 @media (max-width: 768px) {
   .roomsGrid {
+    grid-template-columns: 1fr;
     gap: 20px;
   }
   
-  .roomImage {
-    height: 200px;
+  .resultsHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .roomActions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .detailsButton, .bookButton {
+    width: 100%;
   }
 }
