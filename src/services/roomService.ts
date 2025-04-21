@@ -14,6 +14,7 @@ export interface Room {
     type: string;
     count: number;
   }[];
+  capacity?: number;
 }
 
 // Booking interface

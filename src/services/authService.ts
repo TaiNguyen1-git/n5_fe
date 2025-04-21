@@ -41,6 +41,10 @@ type AuthResponse = {
   };
 };
 
+import axios from 'axios';
+
+const BASE_URL = 'https://ptud-web-1.onrender.com/api';
+
 // Mock user storage
 const USERS_STORAGE_KEY = 'registered_users';
 
@@ -72,49 +76,80 @@ interface User {
  */
 export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   try {
-    // Get registered users
-    const users = getRegisteredUsers();
-    const user = users[credentials.username];
-
-    // Check if user exists and password matches
-    if (user && user.password === credentials.password) {
-      // Create session token
-      const token = Math.random().toString(36).substring(2);
-      
-      // Store user data and token
-      const userData = {
-        id: user.id || Math.random().toString(36).substring(2),
-        username: user.username,
-        fullName: user.fullName,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        gender: user.gender || 'Nam',
-        birthDate: user.birthDate,
-        address: user.address
+    // Kiểm tra tài khoản admin và staff đặc biệt
+    if (credentials.username === 'admin' && credentials.password === 'admin123') {
+      const adminUser = {
+        id: 'admin',
+        username: 'admin',
+        fullName: 'Admin',
+        email: 'admin@hotel.com',
+        role: 'admin',
       };
-
+      
+      const token = 'mock-admin-token-' + Math.random().toString(36).substring(2);
       localStorage.setItem('auth_token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-
+      localStorage.setItem('user', JSON.stringify(adminUser));
+      
       return {
         success: true,
-        message: 'Đăng nhập thành công',
-        data: {
-          user: userData,
+        message: 'Đăng nhập thành công (admin)',
+        data: { 
+          user: adminUser,
           token
         }
       };
     }
-
-    return {
-      success: false,
-      message: 'Tên đăng nhập hoặc mật khẩu không chính xác'
-    };
-  } catch (error) {
+    
+    if (credentials.username === 'staff' && credentials.password === 'staff123') {
+      const staffUser = {
+        id: 'staff',
+        username: 'staff',
+        fullName: 'Nhân Viên Test',
+        email: 'staff@hotel.com',
+        role: 'staff',
+      };
+      
+      const token = 'mock-staff-token-' + Math.random().toString(36).substring(2);
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('user', JSON.stringify(staffUser));
+      
+      return {
+        success: true,
+        message: 'Đăng nhập thành công (staff)',
+        data: { 
+          user: staffUser,
+          token
+        }
+      };
+    }
+    
+    // Thử gọi API thật
+    try {
+      const response = await axios.post(`${BASE_URL}/Login`, credentials);
+      return response.data;
+    } catch (apiError) {
+      // Nếu API thất bại, kiểm tra local mock
+      const users = getRegisteredUsers();
+      const user = users[credentials.username];
+      if (user && user.password === credentials.password) {
+        return {
+          success: true,
+          message: 'Đăng nhập thành công (mock)',
+          data: { user: { ...user, id: user.id || user.username } }
+        };
+      }
+      
+      // Nếu không tìm thấy user, trả về lỗi
+      return {
+        success: false,
+        message: 'Tên đăng nhập hoặc mật khẩu không chính xác',
+      };
+    }
+  } catch (error: any) {
     console.error('Login error:', error);
     return {
       success: false,
-      message: 'Có lỗi xảy ra. Vui lòng thử lại sau.',
+      message: error?.response?.data?.message || 'Đăng nhập thất bại',
     };
   }
 };
@@ -376,3 +411,48 @@ export const loginAsStaff = () => {
   
   return mockStaffUser;
 }; 
+
+// MOCK ADMIN LOGIN SUPPORT
+// Nếu không có user admin trong localStorage, tự động tạo tài khoản admin mặc định
+const ensureAdminAccount = () => {
+  if (typeof window === 'undefined') return;
+  const users = getRegisteredUsers();
+  if (!users['admin']) {
+    users['admin'] = {
+      id: 'admin',
+      username: 'admin',
+      password: 'admin123',
+      fullName: 'Admin',
+      role: 'admin',
+      email: 'admin@hotel.com',
+    };
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  }
+};
+
+// Thêm hàm loginAsAdmin tương tự như loginAsStaff
+export const loginAsAdmin = () => {
+  // Tạo mock user admin
+  const mockAdminUser = {
+    id: 'admin',
+    username: 'admin',
+    fullName: 'Admin',
+    email: 'admin@hotel.com',
+    role: 'admin',
+    token: 'mock-admin-token-' + Math.random().toString(36).substring(2)
+  };
+  
+  // Lưu token và thông tin người dùng
+  localStorage.setItem('auth_token', mockAdminUser.token);
+  localStorage.setItem('user', JSON.stringify(mockAdminUser));
+  
+  // Đảm bảo tài khoản admin có trong danh sách người dùng
+  ensureAdminAccount();
+  
+  return mockAdminUser;
+};
+
+// Gọi ensureAdminAccount khi load file này (chỉ chạy phía client)
+if (typeof window !== 'undefined') {
+  ensureAdminAccount();
+}

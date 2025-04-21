@@ -4,7 +4,7 @@ import Link from 'next/link';
 import styles from '../../styles/RoomDetail.module.css';
 import { getRoomById, bookRoom, Room as RoomType, Booking } from '../../services/roomService';
 import { isAuthenticated, redirectToLoginIfNotAuthenticated } from '../../services/authService';
-import Navbar from '../../components/navbar';
+import Layout from '../../components/Layout';
 
 // Room type interface
 interface Room {
@@ -263,181 +263,174 @@ export default function RoomDetail() {
   }
   
   return (
-    <div className={styles.container}>
-      <Navbar />
-      
-      <div className={styles.content}>
-        <div className={styles.roomDetailContainer}>
-          {/* Room gallery */}
-          <div className={styles.roomGallery}>
-            <div className={styles.mainImage}>
-              <img src={room.images[activeImage]} alt={room.name} />
-            </div>
-            <div className={styles.thumbnails}>
-              {room.images.map((image, index) => (
-                <div 
-                  key={index} 
-                  className={`${styles.thumbnail} ${index === activeImage ? styles.active : ''}`}
-                  onClick={() => setActiveImage(index)}
-                >
-                  <img src={image} alt={`${room.name} - hình ${index + 1}`} />
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Room information */}
-          <div className={styles.roomInfo}>
-            <h1 className={styles.roomName}>{room.name}</h1>
-            <p className={styles.roomPrice}>{room.price.toLocaleString()} đ / đêm</p>
-            
-            <div className={styles.roomDescription}>
-              <h2>Mô tả</h2>
-              <p>{room.description}</p>
-            </div>
-            
-            <div className={styles.roomFeatures}>
-              <h2>Tiện nghi</h2>
-              <ul>
-                {room.features.map((feature, index) => (
-                  <li key={index}>{feature}</li>
-                ))}
-              </ul>
-            </div>
-            
-            <div className={styles.roomDetails}>
-              <div className={styles.detailItem}>
-                <h3>Số khách tối đa</h3>
-                <p>{room.maxGuests} người</p>
+    <Layout>
+      <div className={styles.container}>
+        <div className={styles.content}>
+          <div className={styles.roomDetailContainer}>
+            {/* Room gallery */}
+            <div className={styles.roomGallery}>
+              <div className={styles.mainImage}>
+                <img src={room.images[activeImage]} alt={room.name} />
               </div>
-              <div className={styles.detailItem}>
-                <h3>Giường</h3>
-                {room.beds.map((bed, index) => (
-                  <p key={index}>{bed.count} {bed.type}</p>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          {/* Booking form */}
-          <div className={styles.bookingForm}>
-            <h2>Đặt phòng</h2>
-            
-            {bookingSuccess ? (
-              <div className={styles.bookingSuccess}>
-                <h3>Đặt phòng thành công!</h3>
-                <p>Cảm ơn bạn đã đặt phòng tại Khách sạn Nhóm 5. Chúng tôi đã gửi thông tin xác nhận đến email của bạn.</p>
-                <button 
-                  onClick={() => setBookingSuccess(false)}
-                  className={styles.newBookingButton}
-                >
-                  Đặt phòng khác
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleBookNow}>
-                {bookingError && (
-                  <div className={styles.bookingError}>
-                    {bookingError}
-                  </div>
-                )}
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="checkIn">Ngày nhận phòng</label>
-                  <input 
-                    type="date" 
-                    id="checkIn" 
-                    value={checkInDate}
-                    onChange={(e) => setCheckInDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    required
-                  />
-                </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="checkOut">Ngày trả phòng</label>
-                  <input 
-                    type="date" 
-                    id="checkOut" 
-                    value={checkOutDate}
-                    onChange={(e) => setCheckOutDate(e.target.value)}
-                    min={checkInDate || new Date().toISOString().split('T')[0]}
-                    required
-                  />
-                </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="guests">Số khách</label>
-                  <select 
-                    id="guests" 
-                    value={guests}
-                    onChange={(e) => setGuests(Number(e.target.value))}
+              <div className={styles.thumbnails}>
+                {room.images.map((image, index) => (
+                  <div 
+                    key={index} 
+                    className={`${styles.thumbnail} ${index === activeImage ? styles.active : ''}`}
+                    onClick={() => setActiveImage(index)}
                   >
-                    {[...Array(room.maxGuests)].map((_, i) => (
-                      <option key={i} value={i + 1}>{i + 1} người</option>
-                    ))}
-                  </select>
+                    <img src={image} alt={`${room.name} - hình ${index + 1}`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Room information */}
+            <div className={styles.roomInfo}>
+              <h1 className={styles.roomName}>{room.name}</h1>
+              <p className={styles.roomPrice}>{room.price.toLocaleString()} đ / đêm</p>
+              
+              <div className={styles.roomDescription}>
+                <h2>Mô tả</h2>
+                <p>{room.description}</p>
+              </div>
+              
+              <div className={styles.roomFeatures}>
+                <h2>Tiện nghi</h2>
+                <ul>
+                  {room.features.map((feature, index) => (
+                    <li key={index}>{feature}</li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className={styles.roomDetails}>
+                <div className={styles.detailItem}>
+                  <h3>Số khách tối đa</h3>
+                  <p>{room.maxGuests} người</p>
                 </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="guestName">Họ tên</label>
-                  <input 
-                    type="text" 
-                    id="guestName"
-                    name="guestName" 
-                    value={bookingForm.guestName}
-                    onChange={handleInputChange}
-                    required
-                  />
+                <div className={styles.detailItem}>
+                  <h3>Giường</h3>
+                  {room.beds.map((bed, index) => (
+                    <p key={index}>{bed.count} {bed.type}</p>
+                  ))}
                 </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="guestEmail">Email</label>
-                  <input 
-                    type="email" 
-                    id="guestEmail"
-                    name="guestEmail" 
-                    value={bookingForm.guestEmail}
-                    onChange={handleInputChange}
-                    required
-                  />
+              </div>
+            </div>
+            
+            {/* Booking form */}
+            <div className={styles.bookingForm}>
+              <h2>Đặt phòng</h2>
+              
+              {bookingSuccess ? (
+                <div className={styles.bookingSuccess}>
+                  <h3>Đặt phòng thành công!</h3>
+                  <p>Cảm ơn bạn đã đặt phòng tại Khách sạn Nhóm 5. Chúng tôi đã gửi thông tin xác nhận đến email của bạn.</p>
+                  <button 
+                    onClick={() => setBookingSuccess(false)}
+                    className={styles.newBookingButton}
+                  >
+                    Đặt phòng khác
+                  </button>
                 </div>
-                
-                <div className={styles.formGroup}>
-                  <label htmlFor="guestPhone">Số điện thoại</label>
-                  <input 
-                    type="tel" 
-                    id="guestPhone"
-                    name="guestPhone" 
-                    value={bookingForm.guestPhone}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                
-                <div className={styles.totalPrice}>
-                  <span>Tổng tiền</span>
-                  <span className={styles.price}>{calculateTotalPrice().toLocaleString()} đ</span>
-                </div>
-                
-                <button 
-                  type="submit" 
-                  className={styles.bookButton}
-                  disabled={bookingLoading}
-                >
-                  {bookingLoading ? 'Đang xử lý...' : 'Đặt ngay'}
-                </button>
-              </form>
-            )}
+              ) : (
+                <form onSubmit={handleBookNow}>
+                  {bookingError && (
+                    <div className={styles.bookingError}>
+                      {bookingError}
+                    </div>
+                  )}
+                  
+                  <div className={styles.formGroup}>
+                    <label htmlFor="checkIn">Ngày nhận phòng</label>
+                    <input 
+                      type="date" 
+                      id="checkIn" 
+                      value={checkInDate}
+                      onChange={(e) => setCheckInDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      required
+                    />
+                  </div>
+                  
+                  <div className={styles.formGroup}>
+                    <label htmlFor="checkOut">Ngày trả phòng</label>
+                    <input 
+                      type="date" 
+                      id="checkOut" 
+                      value={checkOutDate}
+                      onChange={(e) => setCheckOutDate(e.target.value)}
+                      min={checkInDate || new Date().toISOString().split('T')[0]}
+                      required
+                    />
+                  </div>
+                  
+                  <div className={styles.formGroup}>
+                    <label htmlFor="guests">Số khách</label>
+                    <select 
+                      id="guests" 
+                      value={guests}
+                      onChange={(e) => setGuests(Number(e.target.value))}
+                    >
+                      {[...Array(room.maxGuests)].map((_, i) => (
+                        <option key={i} value={i + 1}>{i + 1} người</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className={styles.formGroup}>
+                    <label htmlFor="guestName">Họ tên</label>
+                    <input 
+                      type="text" 
+                      id="guestName"
+                      name="guestName" 
+                      value={bookingForm.guestName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div className={styles.formGroup}>
+                    <label htmlFor="guestEmail">Email</label>
+                    <input 
+                      type="email" 
+                      id="guestEmail"
+                      name="guestEmail" 
+                      value={bookingForm.guestEmail}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div className={styles.formGroup}>
+                    <label htmlFor="guestPhone">Số điện thoại</label>
+                    <input 
+                      type="tel" 
+                      id="guestPhone"
+                      name="guestPhone" 
+                      value={bookingForm.guestPhone}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  
+                  <div className={styles.totalPrice}>
+                    <span>Tổng tiền</span>
+                    <span className={styles.price}>{calculateTotalPrice().toLocaleString()} đ</span>
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    className={styles.bookButton}
+                    disabled={bookingLoading}
+                  >
+                    {bookingLoading ? 'Đang xử lý...' : 'Đặt ngay'}
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       </div>
-      
-      {/* Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerContent}>
-          <p>&copy; {new Date().getFullYear()} Khách sạn Nhóm 5. All rights reserved.</p>
-        </div>
-      </footer>
-    </div>
+    </Layout>
   );
 } 

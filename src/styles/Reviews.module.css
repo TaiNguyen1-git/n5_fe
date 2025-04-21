@@ -1,0 +1,165 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.title {
+  font-size: 28px;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.reviewStatus {
+  margin-bottom: 16px;
+}
+
+.reviewDate {
+  color: #999;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.reviewContent {
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.reviewResponse {
+  background-color: #f9f9f9;
+  padding: 16px;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+
+.responseAuthor {
+  font-weight: 500;
+  color: #1890ff;
+}
+
+.editReviewForm {
+  padding: 16px 0;
+}
+
+.roomInfo {
+  margin-bottom: 16px;
+}
+
+.roomInfo h3 {
+  margin: 0;
+  color: #333;
+}
+
+.ratingEdit {
+  margin-bottom: 16px;
+}
+
+.ratingLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.commentEdit {
+  margin-top: 16px;
+}
+
+.commentLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.reviewStats {
+  margin-bottom: 24px;
+}
+
+.statsCard {
+  display: flex;
+  padding: 24px;
+}
+
+.overallRating {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #f0f0f0;
+  padding-right: 24px;
+}
+
+.ratingNumber {
+  font-size: 48px;
+  font-weight: bold;
+  color: #333;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.totalReviews {
+  margin-top: 8px;
+  color: #666;
+}
+
+.ratingBreakdown {
+  flex: 2;
+  padding-left: 24px;
+}
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ratingRow span {
+  width: 50px;
+}
+
+.ratingRow span:last-child {
+  width: 40px;
+  text-align: right;
+}
+
+.ratingBar {
+  flex: 1;
+  height: 8px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  margin: 0 8px;
+  overflow: hidden;
+}
+
+.ratingFill {
+  height: 100%;
+  background-color: #fadb14;
+  border-radius: 4px;
+}
+
+/* Custom Comment Component */
+.commentContainer {
+  margin-top: 8px;
+  padding: 8px 0;
+}
+
+.commentAuthor {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.commentContent {
+  margin-bottom: 4px;
+}
+
+.commentDatetime {
+  color: #999;
+  font-size: 12px;
+}

@@ -16,9 +16,9 @@ import {
   CloseOutlined
 } from '@ant-design/icons';
 import { isAuthenticated, getCurrentUser, logout } from '../services/authService';
-import styles from '../styles/Header.module.css';
+import styles from '../styles/Navbar.module.css';
 
-const Header: React.FC = () => {
+const Navbar: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -138,13 +138,13 @@ const Header: React.FC = () => {
                 )}
               </div>
             </li>
-            <li className={`${styles.navItem} ${router.pathname === '/bookings' || router.pathname.startsWith('/bookings/') ? styles.active : ''}`}>
+            <li className={`${styles.navItem} ${router.pathname === '/bookings' ? styles.active : ''}`}>
               <Link href="/bookings" className={styles.navLink}>
                 <CalendarOutlined className={styles.navIcon} />
                 <span>Đặt phòng</span>
               </Link>
             </li>
-            <li className={`${styles.navItem} ${router.pathname === '/reviews' || router.pathname.startsWith('/reviews/') ? styles.active : ''}`}>
+            <li className={`${styles.navItem} ${router.pathname === '/reviews' ? styles.active : ''}`}>
               <Link href="/reviews" className={styles.navLink}>
                 <StarOutlined className={styles.navIcon} />
                 <span>Đánh giá</span>
@@ -225,4 +225,4 @@ const Header: React.FC = () => {
   );
 };
 
-export default Header;
+export default Navbar;

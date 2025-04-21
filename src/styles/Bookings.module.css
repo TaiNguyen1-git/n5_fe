@@ -1,0 +1,114 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.title {
+  font-size: 28px;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.tabs {
+  flex: 1;
+}
+
+.dateFilter {
+  margin-left: 20px;
+}
+
+.table {
+  margin-top: 16px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.bookingDetail {
+  padding: 16px;
+}
+
+.bookingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.bookingHeader h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.statusTags {
+  display: flex;
+  gap: 8px;
+}
+
+.bookingInfo {
+  margin-bottom: 24px;
+}
+
+.infoItem {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.label {
+  width: 150px;
+  font-weight: 500;
+  color: #666;
+}
+
+.value {
+  flex: 1;
+  color: #333;
+}
+
+.bookingActions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.reviewForm {
+  padding: 16px 0;
+}
+
+.ratingContainer {
+  margin-bottom: 16px;
+}
+
+.ratingLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.commentContainer {
+  margin-top: 16px;
+}
+
+.commentLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}

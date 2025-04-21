@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5000/api'; // Thay đổi URL theo cấu hình backend của bạn
+const BASE_URL = 'https://ptud-web-1.onrender.com/api'; // Đã cập nhật lại URL backend mới
 
 // Định nghĩa interface cho dữ liệu dịch vụ
 export interface DichVu {

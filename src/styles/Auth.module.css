@@ -445,4 +445,130 @@
 .deleteAccountButton:hover {
   background-color: #ff4d4f;
   color: white;
-} 
+}
+
+/* Tab Navigation */
+.tabNavigation {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.tabButton {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.tabButton:hover {
+  color: #1890ff;
+}
+
+.activeTab {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.activeTab:after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #1890ff;
+}
+
+/* Booking History */
+.bookingHistory {
+  width: 100%;
+}
+
+.bookingTable {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.bookingTable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bookingTable th, .bookingTable td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.bookingTable th {
+  background-color: #fafafa;
+  font-weight: 500;
+}
+
+.bookingStatus {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.completed {
+  background-color: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.upcoming {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  border: 1px solid #91d5ff;
+}
+
+.cancelled {
+  background-color: #fff1f0;
+  color: #f5222d;
+  border: 1px solid #ffa39e;
+}
+
+.viewButton {
+  padding: 4px 12px;
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.viewButton:hover {
+  background-color: #40a9ff;
+}
+
+/* Security Settings */
+.securitySettings {
+  width: 100%;
+}
+
+.securityOption {
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: #fafafa;
+  border-radius: 4px;
+}
+
+.securityButton {
+  padding: 8px 16px;
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.securityButton:hover {
+  background-color: #40a9ff;
+}
