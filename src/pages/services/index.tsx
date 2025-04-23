@@ -159,7 +159,23 @@ const Services = () => {
       return;
     }
     
-    router.push('/payment');
+    // Chuyển đổi dữ liệu giỏ hàng sang format phù hợp với trang thanh toán
+    const paymentItems = cart.map(item => ({
+      id: item.service.id,
+      name: item.service.title,
+      description: item.service.description,
+      price: item.service.price,
+      category: item.service.category,
+      quantity: item.quantity
+    }));
+    
+    // Chuyển đến trang thanh toán với dữ liệu giỏ hàng
+    router.push({
+      pathname: '/payment',
+      query: { 
+        items: JSON.stringify(paymentItems)
+      }
+    });
   };
 
   useEffect(() => {
