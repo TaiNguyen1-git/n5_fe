@@ -36,18 +36,26 @@ export default function Login() {
     setError('');
     
     try {
+      // Hiển thị thông báo cho người dùng biết
+      console.log("Đang thử đăng nhập với:", username, password);
+      
       const response = await login({ username, password });
       
       if (response.success) {
+        // Hiển thị thông báo thành công
+        console.log("Đăng nhập thành công:", response);
+        
         // Redirect to where the user came from or home page
         const redirectPath = redirect && typeof redirect === 'string' 
           ? decodeURIComponent(redirect) 
           : '/';
         router.push(redirectPath);
       } else {
+        console.log("Đăng nhập thất bại:", response);
         setError('Tên đăng nhập hoặc mật khẩu không chính xác');
       }
     } catch (err) {
+      console.error("Lỗi đăng nhập:", err);
       setError('Có lỗi xảy ra. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);

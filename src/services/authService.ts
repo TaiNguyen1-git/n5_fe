@@ -43,12 +43,24 @@ type AuthResponse = {
 
 import axios from 'axios';
 
-const BASE_URL = 'https://ptud-web-1.onrender.com/api';
+// Thay đổi BASE_URL để sử dụng proxy local
+const BASE_URL = '/api';
+
+// Tạo instance Axios với cấu hình mạng
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  timeout: 15000, // 15 giây timeout để xử lý mạng chậm
+});
 
 // Mock user storage
 const USERS_STORAGE_KEY = 'registered_users';
 
-const getRegisteredUsers = (): Record<string, any> => {
+// Export hàm getRegisteredUsers để các component khác có thể sử dụng
+export const getRegisteredUsers = (): Record<string, any> => {
   if (typeof window === 'undefined') return {};
   const usersStr = localStorage.getItem(USERS_STORAGE_KEY);
   return usersStr ? JSON.parse(usersStr) : {};
@@ -123,28 +135,85 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
       };
     }
     
-    // Thử gọi API thật
-    try {
-      const response = await axios.post(`${BASE_URL}/Login`, credentials);
-      return response.data;
-    } catch (apiError) {
-      // Nếu API thất bại, kiểm tra local mock
-      const users = getRegisteredUsers();
-      const user = users[credentials.username];
-      if (user && user.password === credentials.password) {
-        return {
-          success: true,
-          message: 'Đăng nhập thành công (mock)',
-          data: { user: { ...user, id: user.id || user.username } }
-        };
-      }
+    // Kiểm tra đăng nhập local với dữ liệu trong localStorage
+    const users = getRegisteredUsers();
+    const user = users[credentials.username];
+    
+    if (user && user.password === credentials.password) {
+      // Tạo token giả
+      const token = 'local-token-' + Math.random().toString(36).substring(2);
       
-      // Nếu không tìm thấy user, trả về lỗi
+      // Lưu token và thông tin người dùng
+      localStorage.setItem('auth_token', token);
+      const userData = {
+        id: user.id || user.username,
+        username: user.username,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role || 'customer'
+      };
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      console.log('Login success with local account:', userData);
+      
       return {
-        success: false,
-        message: 'Tên đăng nhập hoặc mật khẩu không chính xác',
+        success: true,
+        message: 'Đăng nhập thành công',
+        data: { 
+          user: userData,
+          token 
+        }
       };
     }
+    
+    // Không tìm thấy tài khoản phù hợp
+    console.log('Login failed: Invalid credentials');
+    return {
+      success: false,
+      message: 'Tên đăng nhập hoặc mật khẩu không chính xác',
+    };
+    
+    /* API login code is commented out due to connectivity issues
+    try {
+      console.log('Gửi request đăng nhập tới:', `${BASE_URL}/auth/login`);
+      
+      // Điều chỉnh format dữ liệu theo yêu cầu API
+      const requestData = {
+        userName: credentials.username, 
+        password: credentials.password
+      };
+      
+      // Hoặc thử format khác
+      const alternativeRequestData = {
+        Username: credentials.username,  
+        Password: credentials.password  
+      };
+      
+      console.log('Dữ liệu gửi đi:', requestData);
+      
+      // Kết nối API đăng nhập thực tế từ Swagger - thử với các đường dẫn khác nhau
+      let response;
+      try {
+        // Thử với đường dẫn và format thứ nhất
+        response = await axiosInstance.post(`/auth/login`, requestData);
+      } catch (err1) {
+        ... // More API call attempts
+      }
+      
+      console.log('Login API response:', response);
+      
+      if (response.data && response.data.token) {
+        // ... existing API success handling
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || 'Đăng nhập thất bại',
+        };
+      }
+    } catch (apiError: any) {
+      // ... existing API error handling
+    }
+    */
   } catch (error: any) {
     console.error('Login error:', error);
     return {
@@ -159,10 +228,8 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
  */
 export const register = async (userData: RegisterData): Promise<AuthResponse> => {
   try {
-    // Get existing users
+    // Kiểm tra xem username đã tồn tại chưa
     const users = getRegisteredUsers();
-
-    // Check if username already exists
     if (users[userData.username]) {
       return {
         success: false,
@@ -170,30 +237,109 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
       };
     }
 
-    // Create new user with default values
+    // Tạo user mới với thông tin từ form đăng ký
     const newUser = {
       ...userData,
       id: Math.random().toString(36).substring(2),
       gender: 'Nam',
       birthDate: '',
-      address: ''
+      address: '',
+      role: 'customer'
     };
 
-    // Save user data
+    // Lưu user vào localStorage
     saveRegisteredUser(newUser);
+    console.log('User registered successfully:', newUser);
 
     return {
       success: true,
       message: 'Đăng ký thành công',
       data: {
-        user: newUser
+        user: {
+          id: newUser.id,
+          username: newUser.username,
+          fullName: newUser.fullName,
+          email: newUser.email,
+          phoneNumber: newUser.phoneNumber
+        }
       }
     };
-  } catch (error) {
+    
+    /* API registration code is commented out due to connectivity issues
+    try {
+      // Định dạng dữ liệu theo cấu trúc mà API yêu cầu
+      const registrationData = {
+        userName: userData.username,
+        password: userData.password,
+        email: userData.email,
+        fullName: userData.fullName,
+        phoneNumber: userData.phoneNumber || ''
+      };
+      
+      // Định dạng dữ liệu khác
+      const alternativeRegistrationData = {
+        Username: userData.username,
+        Password: userData.password,
+        Email: userData.email,
+        FullName: userData.fullName,
+        PhoneNumber: userData.phoneNumber || ''
+      };
+      
+      console.log('Sending registration data:', registrationData);
+      console.log('Gửi request đăng ký tới:', `${BASE_URL}/auth/register`);
+      
+      // Gọi API đăng ký từ Swagger - thử với các đường dẫn khác nhau và định dạng khác nhau
+      let response;
+      try {
+        // Thử với đường dẫn và format thứ nhất
+        response = await axiosInstance.post(`/auth/register`, registrationData);
+      } catch (err1) {
+        ... // API call attempts
+      }
+      
+      console.log('Register API response:', response);
+      
+      if (response.data && response.data.success !== false) {
+        // Nếu đăng ký thành công, trả về kết quả từ API
+        return {
+          success: true,
+          message: 'Đăng ký tài khoản thành công',
+          data: {
+            user: {
+              id: response.data.userId || response.data.id || Math.random().toString(36).substring(2),
+              username: userData.username,
+              fullName: userData.fullName,
+              email: userData.email,
+              phoneNumber: userData.phoneNumber
+            }
+          }
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || 'Đăng ký thất bại'
+        };
+      }
+    } catch (apiError: any) {
+      console.error('API registration error details:', apiError.message);
+      if (apiError.response) {
+        console.error('Response data:', apiError.response.data);
+        console.error('Response status:', apiError.response.status);
+      } else if (apiError.request) {
+        console.error('Request made but no response received');
+      } else {
+        console.error('Error setting up request:', apiError.message);
+      }
+      
+      // Fallback to local registration if API fails
+      // ... existing fallback code ...
+    }
+    */
+  } catch (error: any) {
     console.error('Registration error:', error);
     return {
       success: false,
-      message: 'Có lỗi xảy ra. Vui lòng thử lại sau.',
+      message: error?.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.',
     };
   }
 };

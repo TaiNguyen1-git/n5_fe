@@ -98,6 +98,15 @@
   font-size: 0.9rem;
 }
 
+.successMessage {
+  background-color: #e6f7e6;
+  color: #2e7d32;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border-left: 4px solid #2e7d32;
+}
+
 .formGroup {
   margin-bottom: 20px;
 }

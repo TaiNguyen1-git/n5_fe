@@ -1,22 +1,43 @@
-import React, { useState } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Select, Card, Tag, message, Typography, Avatar } from 'antd';
-import { EditOutlined, DeleteOutlined, UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Space, Modal, Form, Input, Select, Tag, message, Typography, Avatar } from 'antd';
+import { EditOutlined, DeleteOutlined, UserOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { getRegisteredUsers } from '../../../services/authService';
 
 const { Title } = Typography;
 const { Option } = Select;
 
-const mockUsers = [
-  { id: 1, name: 'User A', email: 'a@gmail.com', phone: '0123456789', status: 'active' },
-  { id: 2, name: 'User B', email: 'b@gmail.com', phone: '0987654321', status: 'inactive' },
-  { id: 3, name: 'User C', email: 'c@gmail.com', phone: '0909090909', status: 'active' },
-];
-
+// Sử dụng hàm getRegisteredUsers thay vì mock data
 const UserManagement = () => {
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState<any[]>([]);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
+
+  // Fetch danh sách người dùng khi component được mount
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  // Hàm load danh sách người dùng từ localStorage
+  const loadUsers = () => {
+    const registeredUsers = getRegisteredUsers();
+    const usersList = Object.keys(registeredUsers).map(username => {
+      const user = registeredUsers[username];
+      return {
+        id: user.id || Math.random().toString(36).substring(2),
+        username: user.username,
+        name: user.fullName,
+        email: user.email,
+        phone: user.phoneNumber || 'Chưa cập nhật',
+        status: 'active',
+        gender: user.gender,
+        birthDate: user.birthDate,
+        address: user.address
+      };
+    });
+    setUsers(usersList);
+  };
 
   // Định nghĩa columns cho bảng
   const columns: ColumnsType<any> = [
@@ -29,6 +50,11 @@ const UserManagement = () => {
           <span>{record.name}</span>
         </Space>
       ),
+    },
+    {
+      title: 'Tên đăng nhập',
+      dataIndex: 'username',
+      key: 'username',
     },
     {
       title: 'Email',
@@ -89,7 +115,7 @@ const UserManagement = () => {
   };
 
   // Xử lý xóa người dùng
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     Modal.confirm({
       title: 'Xác nhận xóa người dùng',
       content: 'Bạn có chắc chắn muốn xóa người dùng này?',
@@ -97,7 +123,17 @@ const UserManagement = () => {
       okType: 'danger',
       cancelText: 'Hủy',
       onOk: () => {
+        // Xóa người dùng khỏi state
         setUsers(users.filter(user => user.id !== id));
+        
+        // Cập nhật localStorage
+        const registeredUsers = getRegisteredUsers();
+        const userToDelete = users.find(user => user.id === id);
+        if (userToDelete && userToDelete.username) {
+          delete registeredUsers[userToDelete.username];
+          localStorage.setItem('registered_users', JSON.stringify(registeredUsers));
+        }
+        
         message.success('Đã xóa người dùng thành công');
       }
     });
@@ -106,11 +142,25 @@ const UserManagement = () => {
   // Xử lý lưu thông tin người dùng
   const handleSave = () => {
     form.validateFields().then(values => {
+      // Cập nhật trên UI
       setUsers(users.map(user => 
         user.id === editingUser.id 
           ? { ...user, ...values } 
           : user
       ));
+      
+      // Lưu vào localStorage
+      const registeredUsers = getRegisteredUsers();
+      if (editingUser && editingUser.username && registeredUsers[editingUser.username]) {
+        registeredUsers[editingUser.username] = {
+          ...registeredUsers[editingUser.username],
+          fullName: values.name,
+          email: values.email,
+          phoneNumber: values.phone
+        };
+        localStorage.setItem('registered_users', JSON.stringify(registeredUsers));
+      }
+      
       setIsModalVisible(false);
       message.success('Cập nhật người dùng thành công');
     });
@@ -118,8 +168,9 @@ const UserManagement = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Title level={4}>Quản lý người dùng</Title>
+        <Button onClick={loadUsers} type="primary">Làm mới</Button>
       </div>
 
       <Table 
