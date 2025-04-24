@@ -5,6 +5,8 @@ import styles from '../../styles/RoomDetail.module.css';
 import { getRoomById, bookRoom, Room, Booking } from '../../services/roomService';
 import { isAuthenticated, getCurrentUser, redirectToLoginIfNotAuthenticated } from '../../services/authService';
 import Layout from '../../components/Layout';
+import { format } from 'date-fns';
+import { useUserStore } from '../../stores/userStore';
 
 // Room interface is imported from roomService now
 
@@ -15,86 +17,6 @@ interface BookingFormState {
   guestPhone: string;
 }
 
-// Mock data interface that matches our mock data structure
-interface RoomMock {
-  id: string;
-  tenPhong: string;
-  moTa: string;
-  hinhAnh: string;
-  giaTien: number;
-  soLuongKhach: number;
-  trangThai: number;
-  features: string[];
-  images: string[];
-  beds: {
-    type: string;
-    count: number;
-  }[];
-}
-
-// Mock data for rooms
-const roomsData: { [key: string]: RoomMock } = {
-  '101': {
-    id: '101',
-    tenPhong: 'Phòng 101',
-    giaTien: 100000,
-    moTa: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    hinhAnh: '/room1.jpg',
-    images: ['/room1.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    soLuongKhach: 2,
-    trangThai: 1,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  '102': {
-    id: '102',
-    tenPhong: 'Phòng 102',
-    giaTien: 100000,
-    moTa: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    hinhAnh: '/room2.jpg',
-    images: ['/room2.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    soLuongKhach: 2,
-    trangThai: 1,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  '103': {
-    id: '103',
-    tenPhong: 'Phòng 103',
-    giaTien: 100000,
-    moTa: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    hinhAnh: '/room3.jpg',
-    images: ['/room3.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    soLuongKhach: 2,
-    trangThai: 1,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  '104': {
-    id: '104',
-    tenPhong: 'Phòng 104',
-    giaTien: 100000,
-    moTa: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    hinhAnh: '/room4.jpg',
-    images: ['/room4.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    soLuongKhach: 2,
-    trangThai: 1,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  '105': {
-    id: '105',
-    tenPhong: 'Phòng 105',
-    giaTien: 100000,
-    moTa: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    hinhAnh: '/room5.jpg',
-    images: ['/room5.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    soLuongKhach: 2,
-    trangThai: 1,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-};
 
 export default function RoomDetail() {
   const router = useRouter();
@@ -119,6 +41,12 @@ export default function RoomDetail() {
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
   
+  const userStore = useUserStore();
+  const [requireLogin, setRequireLogin] = useState(false);
+  const [pendingBooking, setPendingBooking] = useState<any>(null);
+  const [bookingMessage, setBookingMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   useEffect(() => {
     // Fetch room data when ID is available
     if (id) {
@@ -131,30 +59,45 @@ export default function RoomDetail() {
     setError('');
     
     try {
-      const response = await getRoomById(id as string);
+      if (!id) {
+        setError('Không tìm thấy mã phòng');
+        setLoading(false);
+        return;
+      }
+      
+      const roomId = Array.isArray(id) ? id[0] : id;
+      const response = await getRoomById(roomId);
       
       if (response.success && response.data) {
         setRoom(response.data);
-      } else {
-        // If API call doesn't return good data, try using mock data
-        const mockRoom = roomsData[id as string];
-        if (mockRoom) {
-          // Since mockRoom already matches the Room interface, just use it directly
-          setRoom(mockRoom as Room);
-      } else {
-        setError(response.message || 'Failed to load room data');
+        // Set document title
+        document.title = `${response.data.tenPhong} - Khách sạn Nhóm 5`;
+        
+        // If there's a warning message (like data from cache), show it
+        if (response.message && response.message.includes('bộ nhớ đệm')) {
+          setError(response.message);
         }
+      } else {
+        setError(response.message || 'Không tìm thấy thông tin phòng');
       }
     } catch (err) {
       console.error('Error fetching room data:', err);
-      
-      // If API call fails, use mock data as fallback
-      const mockRoom = roomsData[id as string];
-      if (mockRoom) {
-        // Since mockRoom already matches the Room interface, just use it directly
-        setRoom(mockRoom as Room);
+      if (err instanceof Error) {
+        // Hiển thị thông báo lỗi thân thiện với người dùng
+        if ('isAxiosError' in err) {
+          if ((err as any).code === 'ECONNABORTED' || 
+              (err as any).code === 'ERR_NETWORK' || 
+              err.message.includes('timeout') || 
+              err.message.includes('Network Error')) {
+            setError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet và thử lại sau.');
+          } else {
+            setError('Có lỗi xảy ra khi tải thông tin phòng. Vui lòng thử lại sau.');
+          }
+        } else {
+          setError('Có lỗi xảy ra khi tải thông tin phòng. Vui lòng thử lại sau.');
+        }
       } else {
-        setError('Không tìm thấy thông tin phòng, hoặc mạng không khả dụng');
+        setError('Có lỗi xảy ra khi tải thông tin phòng. Vui lòng thử lại sau.');
       }
     } finally {
       setLoading(false);
@@ -273,6 +216,98 @@ export default function RoomDetail() {
     }
   }, [room]);
   
+  const handleBooking = async (bookingData: any) => {
+    setIsSubmitting(true);
+    setBookingMessage('');
+    setBookingError('');
+
+    try {
+      if (!room) {
+        setBookingError('Không tìm thấy thông tin phòng');
+        return;
+      }
+
+      if (!isDateRangeValid(bookingData.checkInDate, bookingData.checkOutDate)) {
+        setBookingError('Ngày check-out phải sau ngày check-in ít nhất 1 ngày');
+        return;
+      }
+
+      // Kiểm tra người dùng đã đăng nhập chưa
+      const user = userStore.user;
+      if (!user || !user.token) {
+        // Lưu thông tin đặt phòng vào localStorage để xử lý sau khi đăng nhập
+        setPendingBooking({
+          roomId: room.id,
+          ...bookingData
+        });
+        setRequireLogin(true);
+        return;
+      }
+
+      // Thực hiện đặt phòng
+      const response = await bookRoom({
+        maPhong: parseInt(room.id || '0'),
+        maKH: user.id ? user.id.toString() : '',
+        tenKH: bookingData.guestName,
+        email: bookingData.email,
+        soDienThoai: bookingData.phoneNumber,
+        ngayBatDau: format(new Date(bookingData.checkInDate), 'yyyy-MM-dd'),
+        ngayKetThuc: format(new Date(bookingData.checkOutDate), 'yyyy-MM-dd'),
+        soLuongKhach: bookingData.guestCount,
+        tongTien: room.giaTien * Math.max(1, Math.ceil((new Date(bookingData.checkOutDate).getTime() - new Date(bookingData.checkInDate).getTime()) / (1000 * 3600 * 24)))
+      });
+
+      if (response.success) {
+        setBookingMessage('Đặt phòng thành công! Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.');
+        // Làm sạch form
+        setBookingForm({
+          guestName: '',
+          guestEmail: '',
+          guestPhone: '',
+        });
+        setCheckInDate('');
+        setCheckOutDate('');
+        setGuests(1);
+      } else {
+        setBookingError(response.message || 'Đặt phòng thất bại. Vui lòng thử lại sau.');
+      }
+    } catch (err) {
+      console.error('Error booking room:', err);
+      if (err instanceof Error) {
+        // Phân loại lỗi để hiển thị thông báo phù hợp
+        if ((err as any).code === 'ECONNABORTED' || err.message.includes('timeout') || err.message.includes('Network Error')) {
+          setBookingError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet và thử lại sau.');
+        } else if (err.message.includes('409') || err.message.includes('conflict')) {
+          setBookingError('Phòng này đã được đặt trong khoảng thời gian bạn chọn. Vui lòng chọn ngày khác.');
+        } else if (err.message.includes('401') || err.message.includes('403')) {
+          setBookingError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để đặt phòng.');
+          userStore.logout();
+          setTimeout(() => {
+            setRequireLogin(true);
+          }, 1500);
+        } else {
+          setBookingError('Có lỗi xảy ra khi đặt phòng. Vui lòng thử lại sau.');
+        }
+      } else {
+        setBookingError('Có lỗi xảy ra khi đặt phòng. Vui lòng thử lại sau.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Thêm hàm kiểm tra ngày
+  const isDateRangeValid = (checkInDate: string, checkOutDate: string): boolean => {
+    if (!checkInDate || !checkOutDate) return false;
+    
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    
+    // Kiểm tra nếu ngày checkout sau ngày checkin ít nhất 1 ngày
+    return checkOut.getTime() > checkIn.getTime() && 
+           Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)) >= 1;
+  };
+  
   if (loading) {
     return (
       <div className={styles.container}>
@@ -369,7 +404,7 @@ export default function RoomDetail() {
               {bookingSuccess ? (
                 <div className={styles.bookingSuccess}>
                   <h3>Đặt phòng thành công!</h3>
-                  <p>Cảm ơn bạn đã đặt phòng tại Khách sạn Nhóm 5. Chúng tôi đã gửi thông tin xác nhận đến email của bạn.</p>
+                  <p>{bookingMessage}</p>
                   <button 
                     onClick={() => setBookingSuccess(false)}
                     className={styles.newBookingButton}

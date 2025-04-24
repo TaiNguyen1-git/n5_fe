@@ -1,119 +1,73 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import axios from 'axios';
 
-// Room type interface
-interface Room {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  features: string[];
-  imageUrl: string;
-  images: string[];
-  maxGuests: number;
-  beds: {
-    type: string;
-    count: number;
-  }[];
-}
-
-// Sample data for rooms
-const roomsData: { [key: string]: Room } = {
-  '101': {
-    id: '101',
-    name: 'Phòng 101',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    imageUrl: '/room1.jpg',
-    images: ['/room1.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  '102': {
-    id: '102',
-    name: 'Phòng 102',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    imageUrl: '/room2.jpg',
-    images: ['/room2.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  '103': {
-    id: '103',
-    name: 'Phòng 103',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    imageUrl: '/room3.jpg',
-    images: ['/room3.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  '104': {
-    id: '104',
-    name: 'Phòng 104',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    imageUrl: '/room4.jpg',
-    images: ['/room4.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  '105': {
-    id: '105',
-    name: 'Phòng 105',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    imageUrl: '/room5.jpg',
-    images: ['/room5.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-};
-
+// Define response type
 type ResponseData = {
   success: boolean;
   message?: string;
   data?: any;
-}
+};
 
-export default function handler(
+// Backend API URL
+const BACKEND_API_URL = 'https://ptud-web-1.onrender.com/api';
+
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
   const { id } = req.query;
   
-  if (!id || typeof id !== 'string') {
+  if (!id || Array.isArray(id)) {
     return res.status(400).json({ 
       success: false,
-      message: 'Invalid room ID' 
+      message: 'ID phòng không hợp lệ' 
     });
   }
   
   if (req.method === 'GET') {
-    // Get room by ID
-    const room = roomsData[id];
-    
-    if (!room) {
-      return res.status(404).json({ 
+    try {
+      // Lấy thông tin phòng từ backend API
+      const response = await axios.get(`${BACKEND_API_URL}/Phong/GetById?id=${id}`);
+      
+      if (!response.data) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Không tìm thấy phòng' 
+        });
+      }
+      
+      // Chuyển đổi dữ liệu theo cấu trúc frontend
+      const room = {
+        id: response.data.maPhong.toString(),
+        maPhong: response.data.maPhong,
+        name: response.data.ten || response.data.tenPhong,
+        price: response.data.giaTien || response.data.gia,
+        description: response.data.moTa,
+        features: response.data.moTa ? response.data.moTa.split(',').map((item: string) => item.trim()) : [],
+        imageUrl: response.data.hinhAnh,
+        images: [response.data.hinhAnh],
+        maxGuests: response.data.soLuongKhach,
+        beds: [{ type: 'Giường đôi', count: 1 }], // Giả định mặc định nếu không có thông tin về giường
+        loaiPhong: response.data.loaiPhong,
+        trangThai: response.data.trangThai
+      };
+      
+      return res.status(200).json({
+        success: true,
+        data: room
+      });
+    } catch (error) {
+      console.error(`Error fetching room with ID ${id}:`, error);
+      return res.status(500).json({ 
         success: false,
-        message: 'Room not found' 
+        message: 'Không thể lấy thông tin phòng. Vui lòng thử lại sau.' 
       });
     }
-    
-    return res.status(200).json({
-      success: true,
-      data: room
-    });
   } else {
     res.setHeader('Allow', ['GET']);
     res.status(405).json({ 
       success: false,
-      message: `Method ${req.method} Not Allowed` 
+      message: `Phương thức ${req.method} không được hỗ trợ` 
     });
   }
 } 

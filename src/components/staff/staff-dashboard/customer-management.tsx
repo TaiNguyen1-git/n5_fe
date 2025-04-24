@@ -1,156 +1,112 @@
-import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Modal, Input, Card, Statistic, Row, Col, Avatar, Tabs, message } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Tag, Space, Modal, Input, Card, Statistic, Row, Col, Avatar, Tabs, message, Select } from 'antd';
 import { EyeOutlined, UserOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
+import axios from 'axios';
 
 const { TabPane } = Tabs;
+const { Option } = Select;
+const BASE_URL = 'https://ptud-web-1.onrender.com/api';
 
-// Mock data cho khách hàng
-const mockCustomers = [
-  {
-    id: 1,
-    name: 'Nguyễn Văn A',
-    phone: '0901234567',
-    email: 'nguyenvana@gmail.com',
-    address: 'Hồ Chí Minh',
-    visits: 5,
-    totalSpent: 15000000,
-    lastVisit: '2025-04-10',
-    status: 'active'
-  },
-  {
-    id: 2,
-    name: 'Trần Thị B',
-    phone: '0909876543',
-    email: 'tranthib@gmail.com',
-    address: 'Hà Nội',
-    visits: 2,
-    totalSpent: 6000000,
-    lastVisit: '2025-03-15',
-    status: 'active'
-  },
-  {
-    id: 3,
-    name: 'Lê Văn C',
-    phone: '0977889900',
-    email: 'levanc@gmail.com',
-    address: 'Đà Nẵng',
-    visits: 8,
-    totalSpent: 24000000,
-    lastVisit: '2025-04-18',
-    status: 'vip'
-  },
-  {
-    id: 4,
-    name: 'Phạm Thị D',
-    phone: '0966778899',
-    email: 'phamthid@gmail.com',
-    address: 'Cần Thơ',
-    visits: 1,
-    totalSpent: 3000000,
-    lastVisit: '2025-02-20',
-    status: 'inactive'
-  }
-];
+// Interface định nghĩa cấu trúc dữ liệu khách hàng
+interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  visits: number;
+  totalSpent: number;
+  lastVisit: string;
+  status: string;
+}
 
-// Mock data cho lịch sử đặt phòng
-const mockBookingHistory = [
-  {
-    id: 1,
-    customerId: 1,
-    roomNumber: '101',
-    checkIn: '2025-04-05',
-    checkOut: '2025-04-08',
-    totalAmount: 3000000,
-    status: 'completed'
-  },
-  {
-    id: 2,
-    customerId: 1,
-    roomNumber: '202',
-    checkIn: '2025-03-15',
-    checkOut: '2025-03-18',
-    totalAmount: 4500000,
-    status: 'completed'
-  },
-  {
-    id: 3,
-    customerId: 1,
-    roomNumber: '305',
-    checkIn: '2025-02-10',
-    checkOut: '2025-02-15',
-    totalAmount: 7500000,
-    status: 'completed'
-  },
-  {
-    id: 4,
-    customerId: 2,
-    roomNumber: '103',
-    checkIn: '2025-03-12',
-    checkOut: '2025-03-15',
-    totalAmount: 3000000,
-    status: 'completed'
-  },
-  {
-    id: 5,
-    customerId: 2,
-    roomNumber: '201',
-    checkIn: '2025-01-20',
-    checkOut: '2025-01-22',
-    totalAmount: 3000000,
-    status: 'completed'
-  },
-  {
-    id: 6,
-    customerId: 3,
-    roomNumber: 'VIP01',
-    checkIn: '2025-04-15',
-    checkOut: '2025-04-18',
-    totalAmount: 9000000,
-    status: 'completed'
-  },
-  {
-    id: 7,
-    customerId: 3,
-    roomNumber: 'VIP02',
-    checkIn: '2025-03-25',
-    checkOut: '2025-03-28',
-    totalAmount: 9000000,
-    status: 'completed'
-  },
-  {
-    id: 8,
-    customerId: 3,
-    roomNumber: '401',
-    checkIn: '2025-02-05',
-    checkOut: '2025-02-08',
-    totalAmount: 6000000,
-    status: 'completed'
-  },
-  {
-    id: 9,
-    customerId: 4,
-    roomNumber: '102',
-    checkIn: '2025-02-18',
-    checkOut: '2025-02-20',
-    totalAmount: 3000000,
-    status: 'completed'
-  }
-];
+// Interface định nghĩa cấu trúc dữ liệu lịch sử đặt phòng
+interface BookingHistory {
+  id: number;
+  customerId: number;
+  roomNumber: string;
+  checkIn: string;
+  checkOut: string;
+  totalAmount: number;
+  status: string;
+}
 
 const CustomerManagement = () => {
-  const [customers, setCustomers] = useState(mockCustomers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [viewCustomer, setViewCustomer] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('1');
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [bookingHistory, setBookingHistory] = useState<BookingHistory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  // Fetch khách hàng từ API
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/KhachHang/GetAll`);
+      
+      // Chuyển đổi dữ liệu từ API thành định dạng phù hợp
+      const formattedCustomers = response.data.map((customer: any) => ({
+        id: customer.maKH,
+        name: customer.hoTen,
+        phone: customer.soDienThoai || '',
+        email: customer.email || '',
+        address: customer.diaChi || '',
+        visits: customer.soLanGheTham || 1,
+        totalSpent: customer.tongChiTieu || 0,
+        lastVisit: customer.lanCuoiGheTham || dayjs().format('YYYY-MM-DD'),
+        status: customer.trangThai === 1 ? 'active' : customer.trangThai === 2 ? 'vip' : 'inactive'
+      }));
+      
+      setCustomers(formattedCustomers);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      message.error('Không thể lấy danh sách khách hàng từ máy chủ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch lịch sử đặt phòng của khách hàng
+  const fetchCustomerBookingHistory = async (customerId: number) => {
+    setLoadingHistory(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/DatPhong/GetByUser?id=${customerId}`);
+      
+      // Chuyển đổi dữ liệu từ API thành định dạng phù hợp
+      const formattedHistory = response.data.map((booking: any) => ({
+        id: booking.maHD,
+        customerId: booking.maKH,
+        roomNumber: booking.maPhong.toString(),
+        checkIn: booking.ngayBatDau,
+        checkOut: booking.ngayKetThuc,
+        totalAmount: booking.tongTien,
+        status: booking.trangThai === 1 ? 'completed' : booking.trangThai === 0 ? 'cancelled' : 'pending'
+      }));
+      
+      setBookingHistory(formattedHistory);
+    } catch (error) {
+      console.error('Error fetching booking history:', error);
+      message.error('Không thể lấy lịch sử đặt phòng từ máy chủ');
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   // Xử lý xem chi tiết khách hàng
   const handleView = (customer: any) => {
     setViewCustomer(customer);
     setIsModalVisible(true);
+    fetchCustomerBookingHistory(customer.id);
   };
 
   // Xử lý tìm kiếm
@@ -177,7 +133,7 @@ const CustomerManagement = () => {
 
   // Lấy lịch sử đặt phòng của khách hàng
   const getCustomerBookingHistory = (customerId: number) => {
-    return mockBookingHistory.filter(booking => booking.customerId === customerId);
+    return bookingHistory.filter(booking => booking.customerId === customerId);
   };
 
   // Định nghĩa các cột cho bảng khách hàng
@@ -253,27 +209,38 @@ const CustomerManagement = () => {
         
         return <Tag color={color}>{text}</Tag>;
       },
+      filters: [
+        { text: 'Hoạt động', value: 'active' },
+        { text: 'Không hoạt động', value: 'inactive' },
+        { text: 'VIP', value: 'vip' },
+      ],
+      onFilter: (value, record) => record.status === value,
     },
     {
-      title: 'Hành động',
+      title: 'Thao tác',
       key: 'action',
       render: (_, record) => (
-        <Button 
-          icon={<EyeOutlined />} 
+        <Button
+          icon={<EyeOutlined />}
           onClick={() => handleView(record)}
           type="primary"
           size="small"
         >
-          Xem
+          Xem chi tiết
         </Button>
       ),
     },
   ];
 
   // Định nghĩa các cột cho bảng lịch sử đặt phòng
-  const bookingHistoryColumns: ColumnsType<any> = [
+  const bookingColumns: ColumnsType<any> = [
     {
-      title: 'Phòng',
+      title: 'Mã đặt phòng',
+      dataIndex: 'id',
+      key: 'id',
+    },
+    {
+      title: 'Số phòng',
       dataIndex: 'roomNumber',
       key: 'roomNumber',
     },
@@ -290,11 +257,6 @@ const CustomerManagement = () => {
       render: (date) => dayjs(date).format('DD/MM/YYYY'),
     },
     {
-      title: 'Số ngày',
-      key: 'days',
-      render: (_, record) => dayjs(record.checkOut).diff(dayjs(record.checkIn), 'day'),
-    },
-    {
       title: 'Tổng tiền',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
@@ -305,8 +267,27 @@ const CustomerManagement = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => {
-        let color = status === 'completed' ? 'green' : 'blue';
-        let text = status === 'completed' ? 'Hoàn thành' : 'Đang xử lý';
+        let color = '';
+        let text = '';
+        
+        switch(status) {
+          case 'completed':
+            color = 'green';
+            text = 'Hoàn thành';
+            break;
+          case 'pending':
+            color = 'geekblue';
+            text = 'Đang xử lý';
+            break;
+          case 'cancelled':
+            color = 'volcano';
+            text = 'Đã hủy';
+            break;
+          default:
+            text = status;
+            color = 'default';
+        }
+        
         return <Tag color={color}>{text}</Tag>;
       },
     },
@@ -314,78 +295,78 @@ const CustomerManagement = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <div style={{ marginBottom: '20px' }}>
-        <Row gutter={16}>
-          <Col span={6}>
-            <Card>
-              <Statistic 
-                title="Tổng khách hàng" 
-                value={customers.length} 
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic 
-                title="Khách hàng VIP" 
-                value={customers.filter(c => c.status === 'vip').length} 
-                valueStyle={{ color: '#faad14' }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic 
-                title="Khách hàng hoạt động" 
-                value={customers.filter(c => c.status === 'active').length} 
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic 
-                title="Khách hàng không hoạt động" 
-                value={customers.filter(c => c.status === 'inactive').length} 
-                valueStyle={{ color: '#999' }}
-              />
-            </Card>
-          </Col>
-        </Row>
-      </div>
+      <h2 style={{ marginBottom: '20px' }}>Quản lý khách hàng</h2>
       
-      <div style={{ marginBottom: '20px', display: 'flex', gap: '16px' }}>
+      {/* Thống kê */}
+      <Row gutter={16} style={{ marginBottom: '24px' }}>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="Tổng số khách hàng"
+              value={customers.length}
+              prefix={<UserOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="Khách hàng hoạt động"
+              value={customers.filter(c => c.status === 'active').length}
+              valueStyle={{ color: '#3f8600' }}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="Khách hàng VIP"
+              value={customers.filter(c => c.status === 'vip').length}
+              valueStyle={{ color: '#faad14' }}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="Tổng doanh thu từ khách hàng"
+              value={customers.reduce((sum, customer) => sum + customer.totalSpent, 0)}
+              suffix="VNĐ"
+              precision={0}
+              formatter={(value) => `${value.toLocaleString('vi-VN')}`}
+            />
+          </Card>
+        </Col>
+      </Row>
+      
+      {/* Tìm kiếm và lọc */}
+      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
         <Input.Search
-          placeholder="Tìm kiếm theo tên, SĐT, email"
+          placeholder="Tìm kiếm khách hàng theo tên, email, số điện thoại"
+          style={{ width: 400 }}
           onSearch={handleSearch}
-          style={{ width: 300 }}
-          allowClear
+          onChange={(e) => setSearchText(e.target.value)}
         />
         
-        <select
-          style={{ 
-            padding: '6px 12px', 
-            borderRadius: '4px', 
-            border: '1px solid #d9d9d9',
-            width: '200px',
-            backgroundColor: '#fff',
-            color: '#333'
-          }}
-          value={statusFilter || ''}
-          onChange={(e) => handleStatusFilterChange(e.target.value)}
+        <Select
+          placeholder="Lọc theo trạng thái"
+          style={{ width: 200 }}
+          onChange={handleStatusFilterChange}
+          allowClear
         >
-          <option value="">Tất cả trạng thái</option>
-          <option value="active">Hoạt động</option>
-          <option value="inactive">Không hoạt động</option>
-          <option value="vip">VIP</option>
-        </select>
+          <Option value="active">Hoạt động</Option>
+          <Option value="inactive">Không hoạt động</Option>
+          <Option value="vip">VIP</Option>
+        </Select>
       </div>
       
-      <Table
-        columns={columns}
-        dataSource={filteredCustomers}
+      {/* Bảng khách hàng */}
+      <Table 
+        columns={columns} 
+        dataSource={filteredCustomers} 
         rowKey="id"
         pagination={{ pageSize: 10 }}
+        loading={loading}
       />
       
       {/* Modal xem chi tiết khách hàng */}
@@ -393,99 +374,77 @@ const CustomerManagement = () => {
         title="Chi tiết khách hàng"
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
-        footer={[
-          <Button key="back" onClick={() => setIsModalVisible(false)}>
-            Đóng
-          </Button>
-        ]}
+        footer={null}
         width={800}
       >
         {viewCustomer && (
-          <div>
+          <>
+            <div style={{ display: 'flex', marginBottom: '24px' }}>
+              <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: viewCustomer.status === 'vip' ? '#f56a00' : '#1890ff' }} />
+              <div style={{ marginLeft: '16px' }}>
+                <h2 style={{ margin: 0 }}>{viewCustomer.name}</h2>
+                <p>{viewCustomer.email}</p>
+                <Tag color={viewCustomer.status === 'active' ? 'green' : viewCustomer.status === 'vip' ? 'gold' : 'default'}>
+                  {viewCustomer.status === 'active' ? 'Hoạt động' : viewCustomer.status === 'vip' ? 'VIP' : 'Không hoạt động'}
+                </Tag>
+              </div>
+            </div>
+            
+            <Row gutter={16} style={{ marginBottom: '24px' }}>
+              <Col span={8}>
+                <Card>
+                  <Statistic
+                    title="Số lần ghé thăm"
+                    value={viewCustomer.visits}
+                    prefix={<UserOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col span={8}>
+                <Card>
+                  <Statistic
+                    title="Tổng chi tiêu"
+                    value={viewCustomer.totalSpent}
+                    precision={0}
+                    suffix="VNĐ"
+                    formatter={(value) => `${value.toLocaleString('vi-VN')}`}
+                  />
+                </Card>
+              </Col>
+              <Col span={8}>
+                <Card>
+                  <Statistic
+                    title="Lần cuối ghé thăm"
+                    value={dayjs(viewCustomer.lastVisit).format('DD/MM/YYYY')}
+                  />
+                </Card>
+              </Col>
+            </Row>
+            
             <Tabs activeKey={activeTab} onChange={setActiveTab}>
-              <TabPane tab="Thông tin cá nhân" key="1">
-                <div style={{ display: 'flex', marginBottom: '20px' }}>
-                  <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: viewCustomer.status === 'vip' ? '#f56a00' : '#1890ff' }} />
-                  <div style={{ marginLeft: '20px' }}>
-                    <h2 style={{ margin: '0 0 5px 0' }}>{viewCustomer.name}</h2>
-                    <Tag color={
-                      viewCustomer.status === 'active' ? 'green' : 
-                      viewCustomer.status === 'vip' ? 'gold' : 'gray'
-                    }>
-                      {viewCustomer.status === 'active' ? 'Hoạt động' : 
-                       viewCustomer.status === 'vip' ? 'VIP' : 'Không hoạt động'}
-                    </Tag>
-                  </div>
-                </div>
-                
-                <Row gutter={[16, 16]}>
-                  <Col span={12}>
-                    <div style={{ marginBottom: '10px' }}>
-                      <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Số điện thoại</div>
-                      <div>{viewCustomer.phone}</div>
-                    </div>
-                  </Col>
-                  <Col span={12}>
-                    <div style={{ marginBottom: '10px' }}>
-                      <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Email</div>
-                      <div>{viewCustomer.email}</div>
-                    </div>
-                  </Col>
-                  <Col span={12}>
-                    <div style={{ marginBottom: '10px' }}>
-                      <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Địa chỉ</div>
-                      <div>{viewCustomer.address}</div>
-                    </div>
-                  </Col>
-                  <Col span={12}>
-                    <div style={{ marginBottom: '10px' }}>
-                      <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Lần cuối ghé thăm</div>
-                      <div>{dayjs(viewCustomer.lastVisit).format('DD/MM/YYYY')}</div>
-                    </div>
-                  </Col>
-                </Row>
-                
-                <Row gutter={[16, 16]} style={{ marginTop: '20px' }}>
-                  <Col span={8}>
-                    <Card>
-                      <Statistic 
-                        title="Số lần ghé thăm" 
-                        value={viewCustomer.visits} 
-                        prefix={<HistoryOutlined />}
-                      />
-                    </Card>
-                  </Col>
-                  <Col span={8}>
-                    <Card>
-                      <Statistic 
-                        title="Tổng chi tiêu" 
-                        value={viewCustomer.totalSpent.toLocaleString('vi-VN')} 
-                        suffix="VNĐ"
-                      />
-                    </Card>
-                  </Col>
-                  <Col span={8}>
-                    <Card>
-                      <Statistic 
-                        title="Chi tiêu trung bình/lần" 
-                        value={Math.round(viewCustomer.totalSpent / viewCustomer.visits).toLocaleString('vi-VN')} 
-                        suffix="VNĐ"
-                      />
-                    </Card>
-                  </Col>
-                </Row>
+              <TabPane
+                tab={<span><UserOutlined />Thông tin cá nhân</span>}
+                key="1"
+              >
+                <p><strong>Họ tên:</strong> {viewCustomer.name}</p>
+                <p><strong>Email:</strong> {viewCustomer.email}</p>
+                <p><strong>Số điện thoại:</strong> {viewCustomer.phone}</p>
+                <p><strong>Địa chỉ:</strong> {viewCustomer.address}</p>
               </TabPane>
-              
-              <TabPane tab="Lịch sử đặt phòng" key="2">
-                <Table
-                  columns={bookingHistoryColumns}
+              <TabPane
+                tab={<span><HistoryOutlined />Lịch sử đặt phòng</span>}
+                key="2"
+              >
+                <Table 
+                  columns={bookingColumns}
                   dataSource={getCustomerBookingHistory(viewCustomer.id)}
                   rowKey="id"
                   pagination={{ pageSize: 5 }}
+                  loading={loadingHistory}
                 />
               </TabPane>
             </Tabs>
-          </div>
+          </>
         )}
       </Modal>
     </div>

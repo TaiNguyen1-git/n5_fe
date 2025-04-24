@@ -1,98 +1,16 @@
-import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Modal, Input, Select, Form, Card, Statistic, Row, Col, Tooltip, DatePicker, Divider, Steps } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Tag, Space, Modal, Input, Select, Form, Card, Statistic, Row, Col, Tooltip, DatePicker, Divider, Steps, message } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, PrinterOutlined, CheckCircleOutlined, DollarOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
+import axios from 'axios';
 
 const { Option } = Select;
 const { Step } = Steps;
-
-// Mock data cho hóa đơn
-const mockBills = [
-  {
-    id: 1,
-    billNumber: 'HD001',
-    customerName: 'Nguyễn Văn A',
-    roomNumber: '101',
-    checkIn: '2025-04-01',
-    checkOut: '2025-04-03',
-    createdAt: '2025-04-03',
-    totalAmount: 3000000,
-    paymentMethod: 'cash',
-    status: 'paid',
-    items: [
-      { id: 1, description: 'Tiền phòng', quantity: 2, price: 1000000, amount: 2000000 },
-      { id: 2, description: 'Dịch vụ ăn uống', quantity: 1, price: 500000, amount: 500000 },
-      { id: 3, description: 'Dịch vụ giặt ủi', quantity: 1, price: 300000, amount: 300000 },
-      { id: 4, description: 'Minibar', quantity: 1, price: 200000, amount: 200000 },
-    ]
-  },
-  {
-    id: 2,
-    billNumber: 'HD002',
-    customerName: 'Trần Thị B',
-    roomNumber: '102',
-    checkIn: '2025-03-10',
-    checkOut: '2025-03-15',
-    createdAt: '2025-03-15',
-    totalAmount: 10000000,
-    paymentMethod: 'card',
-    status: 'paid',
-    items: [
-      { id: 1, description: 'Tiền phòng', quantity: 5, price: 1800000, amount: 9000000 },
-      { id: 2, description: 'Dịch vụ spa', quantity: 1, price: 1000000, amount: 1000000 },
-    ]
-  },
-  {
-    id: 3,
-    billNumber: 'HD003',
-    customerName: 'Lê Văn C',
-    roomNumber: '201',
-    checkIn: '2025-04-15',
-    checkOut: '2025-04-18',
-    createdAt: '2025-04-18',
-    totalAmount: 4500000,
-    paymentMethod: 'transfer',
-    status: 'pending',
-    items: [
-      { id: 1, description: 'Tiền phòng', quantity: 3, price: 1500000, amount: 4500000 },
-    ]
-  },
-  {
-    id: 4,
-    billNumber: 'HD004',
-    customerName: 'Phạm Thị D',
-    roomNumber: '202',
-    checkIn: '2025-03-01',
-    checkOut: '2025-03-05',
-    createdAt: '2025-03-05',
-    totalAmount: 7500000,
-    paymentMethod: 'ewallet',
-    status: 'cancelled',
-    items: [
-      { id: 1, description: 'Tiền phòng', quantity: 4, price: 1500000, amount: 6000000 },
-      { id: 2, description: 'Dịch vụ đưa đón', quantity: 1, price: 1500000, amount: 1500000 },
-    ]
-  }
-];
-
-// Mock data cho phòng đang sử dụng (để tạo hóa đơn mới)
-const mockActiveRooms = [
-  { id: 1, number: '103', customerName: 'Hoàng Văn E', checkIn: '2025-04-19', price: 1000000 },
-  { id: 2, number: '104', customerName: 'Vũ Thị F', checkIn: '2025-04-20', price: 1500000 },
-];
-
-// Mock data cho dịch vụ
-const mockServices = [
-  { id: 1, name: 'Dịch vụ ăn uống', price: 500000 },
-  { id: 2, name: 'Dịch vụ giặt ủi', price: 300000 },
-  { id: 3, name: 'Dịch vụ spa', price: 1000000 },
-  { id: 4, name: 'Dịch vụ đưa đón', price: 1500000 },
-  { id: 5, name: 'Minibar', price: 200000 },
-];
+const BASE_URL = 'https://ptud-web-1.onrender.com/api';
 
 const BillManagement = () => {
-  const [bills, setBills] = useState(mockBills);
+  const [bills, setBills] = useState<any[]>([]);
   const [viewBill, setViewBill] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isNewBillModalVisible, setIsNewBillModalVisible] = useState(false);
@@ -103,6 +21,96 @@ const BillManagement = () => {
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const [editingBill, setEditingBill] = useState<any>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [activeRooms, setActiveRooms] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [loadingActiveRooms, setLoadingActiveRooms] = useState(true);
+  
+  useEffect(() => {
+    fetchBills();
+    fetchActiveRooms();
+    fetchServices();
+  }, []);
+  
+  // Fetch bills from backend
+  const fetchBills = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/HoaDon/GetAll`);
+      const formattedBills = response.data.map((bill: any) => ({
+        id: bill.maHD,
+        billNumber: `HD${String(bill.maHD).padStart(3, '0')}`,
+        customerName: bill.tenKH,
+        roomNumber: bill.maPhong,
+        checkIn: bill.ngayBatDau,
+        checkOut: bill.ngayKetThuc,
+        createdAt: bill.ngayTao,
+        totalAmount: bill.tongTien,
+        paymentMethod: bill.phuongThucThanhToan || 'cash',
+        status: bill.trangThai === 1 ? 'paid' : bill.trangThai === 0 ? 'cancelled' : 'pending',
+        items: bill.chiTietHoaDon ? bill.chiTietHoaDon.map((item: any) => ({
+          id: item.maChiTiet,
+          description: item.moTa || 'Tiền phòng',
+          quantity: item.soLuong || 1,
+          price: item.donGia,
+          amount: item.thanhTien
+        })) : [{ 
+          id: 1, 
+          description: 'Tiền phòng', 
+          quantity: 1, 
+          price: bill.tongTien, 
+          amount: bill.tongTien 
+        }]
+      }));
+      setBills(formattedBills);
+    } catch (error) {
+      console.error('Error fetching bills:', error);
+      message.error('Không thể lấy danh sách hóa đơn');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Fetch active rooms from backend
+  const fetchActiveRooms = async () => {
+    setLoadingActiveRooms(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/DatPhong/GetActive`);
+      const formattedActiveRooms = response.data.map((booking: any) => ({
+        id: booking.maHD,
+        number: booking.maPhong,
+        customerName: booking.tenKH,
+        checkIn: booking.ngayBatDau,
+        price: booking.tongTien / Math.max(1, dayjs(booking.ngayKetThuc).diff(dayjs(booking.ngayBatDau), 'day'))
+      }));
+      setActiveRooms(formattedActiveRooms);
+    } catch (error) {
+      console.error('Error fetching active rooms:', error);
+      message.error('Không thể lấy danh sách phòng đang hoạt động');
+    } finally {
+      setLoadingActiveRooms(false);
+    }
+  };
+  
+  // Fetch services from backend
+  const fetchServices = async () => {
+    setLoadingServices(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/DichVu/GetAll`);
+      const formattedServices = response.data.map((service: any) => ({
+        id: service.maDichVu,
+        name: service.ten,
+        price: service.gia
+      }));
+      setServices(formattedServices);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      message.error('Không thể lấy danh sách dịch vụ');
+    } finally {
+      setLoadingServices(false);
+    }
+  };
 
   // Xử lý xóa hóa đơn
   const handleDelete = (id: number) => {
@@ -112,10 +120,17 @@ const BillManagement = () => {
       okText: 'Hủy hóa đơn',
       okType: 'danger',
       cancelText: 'Đóng',
-      onOk: () => {
-        setBills(bills.map(bill => 
-          bill.id === id ? {...bill, status: 'cancelled'} : bill
-        ));
+      onOk: async () => {
+        try {
+          await axios.put(`${BASE_URL}/HoaDon/Cancel?id=${id}`);
+          setBills(bills.map(bill => 
+            bill.id === id ? {...bill, status: 'cancelled'} : bill
+          ));
+          message.success('Hủy hóa đơn thành công');
+        } catch (error) {
+          console.error('Error canceling bill:', error);
+          message.error('Không thể hủy hóa đơn');
+        }
       },
     });
   };
@@ -133,66 +148,91 @@ const BillManagement = () => {
 
   // Xử lý thêm hóa đơn mới
   const handleAddBill = () => {
-    form.validateFields().then(values => {
-      const { roomId, paymentMethod, additionalServices } = values;
-      const room = mockActiveRooms.find(r => r.id === roomId);
-      
-      // Tính số ngày và tiền phòng
-      const checkIn = dayjs(room?.checkIn);
-      const checkOut = dayjs();
-      const days = checkOut.diff(checkIn, 'day') || 1;
-      const roomAmount = (room?.price || 0) * days;
-      
-      // Tạo danh sách các mục trong hóa đơn
-      const items = [
-        { id: Date.now(), description: 'Tiền phòng', quantity: days, price: room?.price || 0, amount: roomAmount }
-      ];
-      
-      // Thêm các dịch vụ bổ sung
-      if (additionalServices && additionalServices.length > 0) {
-        additionalServices.forEach((serviceId: number) => {
-          const service = mockServices.find(s => s.id === serviceId);
-          if (service) {
-            items.push({
-              id: Date.now() + serviceId,
-              description: service.name,
-              quantity: 1,
-              price: service.price,
-              amount: service.price
-            });
-          }
-        });
+    form.validateFields().then(async values => {
+      try {
+        const { roomId, paymentMethod, additionalServices } = values;
+        const room = activeRooms.find(r => r.id === roomId);
+        
+        // Tính số ngày và tiền phòng
+        const checkIn = dayjs(room?.checkIn);
+        const checkOut = dayjs();
+        const days = checkOut.diff(checkIn, 'day') || 1;
+        const roomAmount = (room?.price || 0) * days;
+        
+        // Tạo danh sách các mục trong hóa đơn
+        const items = [
+          { id: Date.now(), description: 'Tiền phòng', quantity: days, price: room?.price || 0, amount: roomAmount }
+        ];
+        
+        // Thêm các dịch vụ bổ sung
+        if (additionalServices && additionalServices.length > 0) {
+          additionalServices.forEach((serviceId: number) => {
+            const service = services.find(s => s.id === serviceId);
+            if (service) {
+              items.push({
+                id: Date.now() + serviceId,
+                description: service.name,
+                quantity: 1,
+                price: service.price,
+                amount: service.price
+              });
+            }
+          });
+        }
+        
+        // Tính tổng tiền
+        const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+        
+        // Gửi yêu cầu tạo hóa đơn đến backend
+        const billData = {
+          maPhong: room?.number,
+          tenKH: room?.customerName,
+          ngayBatDau: room?.checkIn,
+          ngayKetThuc: checkOut.format('YYYY-MM-DD'),
+          tongTien: totalAmount,
+          phuongThucThanhToan: paymentMethod,
+          trangThai: 1,
+          chiTietHoaDon: items.map(item => ({
+            moTa: item.description,
+            soLuong: item.quantity,
+            donGia: item.price,
+            thanhTien: item.amount
+          }))
+        };
+        
+        const response = await axios.post(`${BASE_URL}/HoaDon/Create`, billData);
+        
+        // Tạo hóa đơn mới thành công, thêm vào danh sách
+        const newBill = {
+          id: response.data.maHD,
+          billNumber: `HD${String(response.data.maHD).padStart(3, '0')}`,
+          customerName: room?.customerName || 'Khách hàng',
+          roomNumber: room?.number || '',
+          checkIn: room?.checkIn || '',
+          checkOut: checkOut.format('YYYY-MM-DD'),
+          createdAt: checkOut.format('YYYY-MM-DD'),
+          totalAmount,
+          paymentMethod,
+          status: 'paid',
+          items
+        };
+        
+        setBills([...bills, newBill]);
+        setIsNewBillModalVisible(false);
+        form.resetFields();
+        setBillItems([]);
+        setSelectedRoom(null);
+        message.success('Tạo hóa đơn thành công');
+      } catch (error) {
+        console.error('Error creating bill:', error);
+        message.error('Không thể tạo hóa đơn mới');
       }
-      
-      // Tính tổng tiền
-      const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
-      
-      // Tạo hóa đơn mới
-      const newBill = {
-        id: Date.now(),
-        billNumber: `HD${String(bills.length + 1).padStart(3, '0')}`,
-        customerName: room?.customerName || 'Khách hàng',
-        roomNumber: room?.number || '',
-        checkIn: room?.checkIn || '',
-        checkOut: checkOut.format('YYYY-MM-DD'),
-        createdAt: checkOut.format('YYYY-MM-DD'),
-        totalAmount,
-        paymentMethod,
-        status: 'pending',
-        items
-      };
-      
-      setBills([...bills, newBill]);
-      setIsNewBillModalVisible(false);
-      form.resetFields();
-      setBillItems([]);
-      setSelectedRoom(null);
     });
   };
 
   // Xử lý chọn phòng khi tạo hóa đơn mới
   const handleRoomSelect = (roomId: number) => {
-    const room = mockActiveRooms.find(r => r.id === roomId);
+    const room = activeRooms.find(r => r.id === roomId);
     setSelectedRoom(room);
     
     if (room) {
@@ -217,7 +257,7 @@ const BillManagement = () => {
     
     // Thêm các dịch vụ mới
     serviceIds.forEach(serviceId => {
-      const service = mockServices.find(s => s.id === serviceId);
+      const service = services.find(s => s.id === serviceId);
       if (service) {
         newItems.push({
           id: Date.now() + serviceId,
@@ -240,16 +280,56 @@ const BillManagement = () => {
 
   // Xử lý lưu chỉnh sửa hóa đơn
   const handleSaveEdit = () => {
-    form.validateFields().then(values => {
-      const { paymentMethod } = values;
-      
-      // Cập nhật hóa đơn
-      setBills(bills.map(item => 
-        item.id === editingBill.id ? {...editingBill, paymentMethod} : item
-      ));
-      
-      setIsEditModalVisible(false);
-      message.success('Cập nhật hóa đơn thành công!');
+    form.validateFields().then(async values => {
+      try {
+        const { paymentMethod } = values;
+        
+        // Gửi yêu cầu cập nhật hóa đơn đến backend
+        await axios.put(`${BASE_URL}/HoaDon/Update`, {
+          maHD: editingBill.id,
+          phuongThucThanhToan: paymentMethod,
+          trangThai: editingBill.status === 'paid' ? 1 : editingBill.status === 'cancelled' ? 0 : 2
+        });
+        
+        // Cập nhật hóa đơn trong state
+        setBills(bills.map(item => 
+          item.id === editingBill.id ? {...editingBill, paymentMethod} : item
+        ));
+        
+        setIsEditModalVisible(false);
+        message.success('Cập nhật hóa đơn thành công');
+      } catch (error) {
+        console.error('Error updating bill:', error);
+        message.error('Không thể cập nhật hóa đơn');
+      }
+    });
+  };
+
+  // Xử lý thanh toán hóa đơn
+  const handlePayment = (bill: any) => {
+    Modal.confirm({
+      title: 'Xác nhận thanh toán',
+      content: 'Xác nhận hóa đơn đã được thanh toán?',
+      okText: 'Xác nhận',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await axios.put(`${BASE_URL}/HoaDon/Update`, {
+            maHD: bill.id,
+            phuongThucThanhToan: bill.paymentMethod,
+            trangThai: 1 // Paid status
+          });
+          
+          setBills(bills.map(item => 
+            item.id === bill.id ? {...item, status: 'paid'} : item
+          ));
+          
+          message.success('Cập nhật trạng thái thanh toán thành công');
+        } catch (error) {
+          console.error('Error updating payment status:', error);
+          message.error('Không thể cập nhật trạng thái thanh toán');
+        }
+      }
     });
   };
 
@@ -361,11 +441,7 @@ const BillManagement = () => {
                   icon={<CheckCircleOutlined />} 
                   type="primary"
                   size="small"
-                  onClick={() => {
-                    setBills(bills.map(bill => 
-                      bill.id === record.id ? {...bill, status: 'paid'} : bill
-                    ));
-                  }}
+                  onClick={() => handlePayment(record)}
                 />
               </Tooltip>
               <Tooltip title="Hủy hóa đơn">
@@ -601,7 +677,7 @@ const BillManagement = () => {
               placeholder="Chọn phòng" 
               onChange={handleRoomSelect}
             >
-              {mockActiveRooms.map(room => (
+              {activeRooms.map(room => (
                 <Option key={room.id} value={room.id}>
                   {room.number} - {room.customerName} (Nhận phòng: {dayjs(room.checkIn).format('DD/MM/YYYY')})
                 </Option>
@@ -621,7 +697,7 @@ const BillManagement = () => {
                   onChange={handleAddService}
                   style={{ width: '100%' }}
                 >
-                  {mockServices.map(service => (
+                  {services.map(service => (
                     <Option key={service.id} value={service.id}>
                       {service.name} - {service.price.toLocaleString('vi-VN')} VNĐ
                     </Option>
@@ -710,8 +786,5 @@ const BillManagement = () => {
     </div>
   );
 };
-
-// Thêm message từ antd
-const { message } = require('antd');
 
 export default BillManagement;

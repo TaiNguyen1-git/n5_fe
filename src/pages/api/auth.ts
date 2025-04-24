@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import axios from 'axios';
 
 type LoginData = {
   username: string;
@@ -25,17 +26,10 @@ type ResponseData = {
   data?: any;
 }
 
-// In-memory user storage (in a real app, this would be a database)
-let users: {
-  id: string;
-  username: string;
-  password: string;
-  email: string;
-  fullName: string;
-  phoneNumber?: string;
-}[] = [];
+// Backend API URL
+const BACKEND_API_URL = 'https://ptud-web-1.onrender.com/api';
 
-export default function handler(
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
@@ -56,129 +50,140 @@ export default function handler(
       }
     default:
       res.setHeader('Allow', ['POST']);
-      res.status(405).json({ success: false, message: `Method ${req.method} Not Allowed` });
+      res.status(405).json({ success: false, message: `Phương thức ${req.method} không được hỗ trợ` });
   }
 }
 
-function handleLogin(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
+async function handleLogin(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
   try {
-    const { username, password } = req.body as LoginData;
+    const { username, password } = req.body;
     
-    // Find user by username
-    const user = users.find(u => u.username === username);
-    
-    // Check if user exists and password matches
-    if (user && user.password === password) {
-      // In a real app, you would use proper password hashing and JWT tokens
-      return res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        data: {
-          user: {
-            id: user.id,
-            username: user.username,
-            fullName: user.fullName,
-            email: user.email
-          },
-          token: 'mock-jwt-token'
-        }
+    // Validate input
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu'
       });
-    } else {
+    }
+
+    // Call backend API for authentication
+    const response = await axios.post(`${BACKEND_API_URL}/Auth/Login`, {
+      username,
+      password
+    });
+    
+    // Return success response with user data and token
+    return res.status(200).json({
+      success: true,
+      message: 'Đăng nhập thành công',
+      data: response.data
+    });
+  } catch (error: any) {
+    console.error('Login error:', error);
+    
+    // Handle specific error responses from backend
+    if (error.response?.status === 401) {
       return res.status(401).json({
         success: false, 
         message: 'Tên đăng nhập hoặc mật khẩu không chính xác'
       });
     }
-  } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại sau.' 
+    });
   }
 }
 
-function handleRegister(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
+async function handleRegister(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
   try {
-    const { username, password, email, fullName, phoneNumber } = req.body as RegisterData;
+    const { username, password, email, fullName, phoneNumber } = req.body;
     
     // Validate input
     if (!username || !password || !email || !fullName) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields'
+        message: 'Vui lòng điền đầy đủ thông tin bắt buộc'
       });
     }
     
-    // Check if username already exists
-    if (users.some(u => u.username === username)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username already exists'
-      });
-    }
-    
-    // Create new user
-    const newUser = {
-      id: Date.now().toString(), // Simple ID generation (use UUID in real app)
+    // Call backend API for user registration
+    const response = await axios.post(`${BACKEND_API_URL}/Auth/Register`, {
       username,
-      password, // In a real app, this would be hashed
+      password,
       email,
-      fullName,
-      phoneNumber
-    };
-    
-    // Add user to storage
-    users.push(newUser);
+      hoTen: fullName,
+      soDienThoai: phoneNumber || ''
+    });
     
     return res.status(201).json({
       success: true,
-      message: 'Registration successful',
-      data: {
-        user: {
-          id: newUser.id,
-          username: newUser.username,
-          email: newUser.email,
-          fullName: newUser.fullName,
-          phoneNumber: newUser.phoneNumber || '',
-        }
-      }
+      message: 'Đăng ký tài khoản thành công',
+      data: response.data
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-}
-
-function handleChangePassword(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
-  try {
-    const { username, currentPassword, newPassword } = req.body as ChangePasswordData;
     
-    // Find user by username
-    const userIndex = users.findIndex(u => u.username === username);
-    
-    if (userIndex === -1) {
-      return res.status(404).json({
+    // Handle specific error from backend
+    if (error.response?.status === 400) {
+      return res.status(400).json({
         success: false,
-        message: 'Người dùng không tồn tại'
+        message: error.response.data.message || 'Thông tin đăng ký không hợp lệ'
       });
     }
     
-    // Verify current password
-    if (users[userIndex].password !== currentPassword) {
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại sau.' 
+    });
+  }
+}
+
+async function handleChangePassword(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
+  try {
+    const { username, currentPassword, newPassword } = req.body;
+    
+    // Validate input
+    if (!username || !currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng điền đầy đủ thông tin bắt buộc'
+      });
+    }
+    
+    // Call backend API to change password
+    const response = await axios.post(`${BACKEND_API_URL}/Auth/ChangePassword`, {
+      username,
+      oldPassword: currentPassword,
+      newPassword
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Đổi mật khẩu thành công'
+    });
+  } catch (error: any) {
+    console.error('Change password error:', error);
+    
+    // Handle specific error responses from backend
+    if (error.response?.status === 401) {
       return res.status(401).json({
         success: false,
         message: 'Mật khẩu hiện tại không chính xác'
       });
     }
     
-    // Update password
-    users[userIndex].password = newPassword;
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        success: false,
+        message: 'Người dùng không tồn tại'
+      });
+    }
     
-    return res.status(200).json({
-      success: true,
-      message: 'Đổi mật khẩu thành công'
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Đã xảy ra lỗi khi đổi mật khẩu. Vui lòng thử lại sau.' 
     });
-    
-  } catch (error) {
-    console.error('Change password error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 } 

@@ -6,6 +6,7 @@ import styles from '../../styles/Reviews.module.css';
 import { isAuthenticated, redirectToLoginIfNotAuthenticated, getCurrentUser } from '../../services/authService';
 import Layout from '../../components/Layout';
 import dayjs from 'dayjs';
+import axios from 'axios';
 
 const { TabPane } = Tabs;
 const { TextArea } = Input;
@@ -31,13 +32,19 @@ const CommentComponent = ({ author, content, datetime }: { author: React.ReactNo
   </div>
 );
 
+// API endpoints
+const BASE_URL = 'https://ptud-web-1.onrender.com/api';
+const REVIEWS_API = `${BASE_URL}/DanhGia`;
+
 export default function Reviews() {
   const router = useRouter();
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [publicReviewsList, setPublicReviewsList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('my-reviews');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     // Check if user is logged in
@@ -48,47 +55,84 @@ export default function Reviews() {
 
     // Fetch reviews
     fetchReviews();
+    fetchPublicReviews();
   }, []);
 
-  const fetchReviews = () => {
+  const fetchReviews = async () => {
     setLoading(true);
-    // Mock data for reviews
-    const mockReviews: Review[] = [
-      {
-        id: 1,
-        bookingId: 2,
-        roomNumber: '202',
-        roomType: 'VIP',
-        rating: 5,
-        comment: 'Phòng rất tuyệt vời, sạch sẽ và thoải mái. Nhân viên phục vụ rất chu đáo và thân thiện. Tôi sẽ quay lại lần sau!',
-        createdAt: '2025-04-16',
-        status: 'published',
-        response: 'Cảm ơn quý khách đã đánh giá tích cực. Chúng tôi rất vui khi quý khách hài lòng với dịch vụ của chúng tôi và mong được đón tiếp quý khách trong tương lai!'
-      },
-      {
-        id: 2,
-        bookingId: 3,
-        roomNumber: '103',
-        roomType: 'Duo',
-        rating: 4,
-        comment: 'Phòng đẹp, view tốt. Tuy nhiên, bữa sáng hơi ít lựa chọn.',
-        createdAt: '2025-03-09',
-        status: 'published'
-      },
-      {
-        id: 3,
-        bookingId: 5,
-        roomNumber: '301',
-        roomType: 'Triple',
-        rating: 3,
-        comment: 'Phòng ổn, nhưng hơi ồn vào buổi tối.',
-        createdAt: '2025-02-15',
-        status: 'pending'
+    setError('');
+    
+    try {
+      const user = getCurrentUser();
+      if (!user) {
+        setReviews([]);
+        setLoading(false);
+        return;
       }
-    ];
-
-    setReviews(mockReviews);
-    setLoading(false);
+      
+      // Call API to get user reviews
+      const response = await axios.get(`${REVIEWS_API}/GetByUser?userId=${user.id}`, {
+        timeout: 8000
+      });
+      
+      if (response.data && Array.isArray(response.data)) {
+        const formattedReviews = response.data.map((item: any) => ({
+          id: item.maDG || item.id,
+          bookingId: item.maHD || item.bookingId,
+          roomNumber: item.soPhong || item.roomNumber,
+          roomType: item.loaiPhong || item.roomType,
+          rating: item.soSao || item.rating,
+          comment: item.noiDung || item.comment,
+          createdAt: item.ngayTao || item.createdAt,
+          status: item.trangThai === 1 ? 'published' as const : 
+                 item.trangThai === 0 ? 'pending' as const : 'rejected' as const,
+          response: item.phanHoi || item.response
+        }));
+        
+        setReviews(formattedReviews);
+      } else {
+        // If API fails or returns unexpected format, initialize with empty array
+        setReviews([]);
+      }
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+      setError('Không thể tải dữ liệu đánh giá. Vui lòng thử lại sau.');
+      setReviews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const fetchPublicReviews = async () => {
+    try {
+      // Call API to get public reviews
+      const response = await axios.get(`${REVIEWS_API}/GetAll`, {
+        timeout: 8000
+      });
+      
+      if (response.data && Array.isArray(response.data)) {
+        const formattedReviews = response.data
+          .filter((item: any) => item.trangThai === 1) // Only published reviews
+          .map((item: any) => ({
+            id: item.maDG || item.id,
+            author: item.tenKH || item.hoTen || 'Khách hàng',
+            avatar: null,
+            roomType: item.loaiPhong || item.roomType,
+            rating: item.soSao || item.rating,
+            comment: item.noiDung || item.comment,
+            createdAt: item.ngayTao || item.createdAt,
+            response: item.phanHoi || item.response
+          }));
+        
+        setPublicReviewsList(formattedReviews);
+      } else {
+        // If API fails or returns unexpected format, initialize with empty array
+        setPublicReviewsList([]);
+      }
+    } catch (err) {
+      console.error('Error fetching public reviews:', err);
+      setPublicReviewsList([]);
+    }
   };
 
   const handleEditReview = (review: Review) => {
@@ -103,64 +147,49 @@ export default function Reviews() {
       okText: 'Xóa',
       okType: 'danger',
       cancelText: 'Hủy',
-      onOk: () => {
-        // Delete review logic
-        setReviews(reviews.filter(review => review.id !== id));
+      onOk: async () => {
+        try {
+          // Call API to delete review
+          await axios.delete(`${REVIEWS_API}/Delete?id=${id}`);
+          
+          // Update UI
+          setReviews(reviews.filter(review => review.id !== id));
+        } catch (err) {
+          console.error('Error deleting review:', err);
+          Modal.error({
+            title: 'Lỗi',
+            content: 'Không thể xóa đánh giá. Vui lòng thử lại sau.'
+          });
+        }
       }
     });
   };
 
-  const handleSaveReview = () => {
+  const handleSaveReview = async () => {
     if (editingReview) {
-      // Update review logic
-      setReviews(reviews.map(review => 
-        review.id === editingReview.id ? editingReview : review
-      ));
-      setIsEditModalVisible(false);
-      setEditingReview(null);
+      try {
+        // Call API to update review
+        await axios.put(`${REVIEWS_API}/Update`, {
+          maDG: editingReview.id,
+          noiDung: editingReview.comment,
+          soSao: editingReview.rating
+        });
+        
+        // Update UI
+        setReviews(reviews.map(review => 
+          review.id === editingReview.id ? editingReview : review
+        ));
+        setIsEditModalVisible(false);
+        setEditingReview(null);
+      } catch (err) {
+        console.error('Error updating review:', err);
+        Modal.error({
+          title: 'Lỗi',
+          content: 'Không thể cập nhật đánh giá. Vui lòng thử lại sau.'
+        });
+      }
     }
   };
-
-  // Get all hotel reviews for public tab
-  const publicReviews = [
-    {
-      id: 1,
-      author: 'Nguyễn Văn A',
-      avatar: null,
-      roomType: 'VIP',
-      rating: 5,
-      comment: 'Phòng rất tuyệt vời, sạch sẽ và thoải mái. Nhân viên phục vụ rất chu đáo và thân thiện.',
-      createdAt: '2025-04-16',
-      response: 'Cảm ơn quý khách đã đánh giá tích cực. Chúng tôi rất vui khi quý khách hài lòng với dịch vụ của chúng tôi!'
-    },
-    {
-      id: 2,
-      author: 'Trần Thị B',
-      avatar: null,
-      roomType: 'Single',
-      rating: 4,
-      comment: 'Phòng đẹp, view tốt. Tuy nhiên, bữa sáng hơi ít lựa chọn.',
-      createdAt: '2025-03-09'
-    },
-    {
-      id: 3,
-      author: 'Lê Văn C',
-      avatar: null,
-      roomType: 'Duo',
-      rating: 5,
-      comment: 'Tuyệt vời! Sẽ quay lại lần sau.',
-      createdAt: '2025-02-15'
-    },
-    {
-      id: 4,
-      author: 'Phạm Thị D',
-      avatar: null,
-      roomType: 'Triple',
-      rating: 4,
-      comment: 'Dịch vụ tốt, nhân viên thân thiện.',
-      createdAt: '2025-01-20'
-    }
-  ];
 
   return (
     <Layout>
@@ -168,9 +197,15 @@ export default function Reviews() {
         <div className={styles.content}>
           <h1 className={styles.title}>Đánh giá & Nhận xét</h1>
           
+          {error && (
+            <div className={styles.errorMessage}>{error}</div>
+          )}
+          
           <Tabs activeKey={activeTab} onChange={setActiveTab}>
             <TabPane tab="Đánh giá của tôi" key="my-reviews">
-              {reviews.length === 0 ? (
+              {loading ? (
+                <div className={styles.loading}>Đang tải dữ liệu...</div>
+              ) : reviews.length === 0 ? (
                 <Empty 
                   description="Bạn chưa có đánh giá nào" 
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -246,124 +281,98 @@ export default function Reviews() {
               <div className={styles.reviewStats}>
                 <Card className={styles.statsCard}>
                   <div className={styles.overallRating}>
-                    <div className={styles.ratingNumber}>4.5</div>
-                    <Rate disabled defaultValue={4.5} allowHalf />
-                    <div className={styles.totalReviews}>Dựa trên {publicReviews.length} đánh giá</div>
-                  </div>
-                  
-                  <div className={styles.ratingBreakdown}>
-                    <div className={styles.ratingRow}>
-                      <span>5 sao</span>
-                      <div className={styles.ratingBar}>
-                        <div className={styles.ratingFill} style={{ width: '60%' }}></div>
-                      </div>
-                      <span>60%</span>
+                    <div className={styles.ratingNumber}>
+                      {publicReviewsList.length > 0 
+                        ? (publicReviewsList.reduce((sum, review) => sum + review.rating, 0) / publicReviewsList.length).toFixed(1) 
+                        : '0.0'}
                     </div>
-                    <div className={styles.ratingRow}>
-                      <span>4 sao</span>
-                      <div className={styles.ratingBar}>
-                        <div className={styles.ratingFill} style={{ width: '30%' }}></div>
-                      </div>
-                      <span>30%</span>
-                    </div>
-                    <div className={styles.ratingRow}>
-                      <span>3 sao</span>
-                      <div className={styles.ratingBar}>
-                        <div className={styles.ratingFill} style={{ width: '10%' }}></div>
-                      </div>
-                      <span>10%</span>
-                    </div>
-                    <div className={styles.ratingRow}>
-                      <span>2 sao</span>
-                      <div className={styles.ratingBar}>
-                        <div className={styles.ratingFill} style={{ width: '0%' }}></div>
-                      </div>
-                      <span>0%</span>
-                    </div>
-                    <div className={styles.ratingRow}>
-                      <span>1 sao</span>
-                      <div className={styles.ratingBar}>
-                        <div className={styles.ratingFill} style={{ width: '0%' }}></div>
-                      </div>
-                      <span>0%</span>
+                    <Rate 
+                      disabled 
+                      defaultValue={publicReviewsList.length > 0 
+                        ? publicReviewsList.reduce((sum, review) => sum + review.rating, 0) / publicReviewsList.length 
+                        : 0} 
+                      allowHalf 
+                    />
+                    <div className={styles.totalReviews}>
+                      Dựa trên {publicReviewsList.length} đánh giá
                     </div>
                   </div>
                 </Card>
               </div>
               
-              <List
-                itemLayout="vertical"
-                dataSource={publicReviews}
-                renderItem={review => (
-                  <List.Item
-                    key={review.id}
-                  >
-                    <List.Item.Meta
-                      avatar={<Avatar icon={<UserOutlined />} />}
-                      title={<span>{review.author} - Phòng {review.roomType}</span>}
-                      description={
-                        <div>
-                          <Rate disabled defaultValue={review.rating} />
-                          <div className={styles.reviewDate}>
-                            Đăng ngày: {dayjs(review.createdAt).format('DD/MM/YYYY')}
+              {publicReviewsList.length === 0 ? (
+                <Empty 
+                  description="Chưa có đánh giá nào" 
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              ) : (
+                <List
+                  itemLayout="vertical"
+                  dataSource={publicReviewsList}
+                  renderItem={review => (
+                    <List.Item key={review.id}>
+                      <List.Item.Meta
+                        avatar={<Avatar icon={<UserOutlined />} />}
+                        title={<span>{review.author}</span>}
+                        description={
+                          <div>
+                            <Rate disabled defaultValue={review.rating} />
+                            <div className={styles.reviewDate}>
+                              Đăng ngày: {dayjs(review.createdAt).format('DD/MM/YYYY')}
+                            </div>
+                            <div className={styles.roomType}>
+                              Loại phòng: {review.roomType}
+                            </div>
                           </div>
-                        </div>
-                      }
-                    />
-                    <div className={styles.reviewContent}>
-                      <p>{review.comment}</p>
-                    </div>
-                    
-                    {review.response && (
-                      <div className={styles.reviewResponse}>
-                        <CommentComponent
-                          author={<span className={styles.responseAuthor}>Phản hồi từ khách sạn</span>}
-                          content={<p>{review.response}</p>}
-                          datetime={<span>Ngày phản hồi: {dayjs(review.createdAt).add(1, 'day').format('DD/MM/YYYY')}</span>}
-                        />
+                        }
+                      />
+                      <div className={styles.reviewContent}>
+                        <p>{review.comment}</p>
                       </div>
-                    )}
-                  </List.Item>
-                )}
-                pagination={{ pageSize: 5 }}
-              />
+                      
+                      {review.response && (
+                        <div className={styles.reviewResponse}>
+                          <CommentComponent
+                            author={<span className={styles.responseAuthor}>Phản hồi từ khách sạn</span>}
+                            content={<p>{review.response}</p>}
+                            datetime={<span>Ngày phản hồi: {dayjs(review.createdAt).add(2, 'day').format('DD/MM/YYYY')}</span>}
+                          />
+                        </div>
+                      )}
+                    </List.Item>
+                  )}
+                />
+              )}
             </TabPane>
           </Tabs>
         </div>
         
-        {/* Modal chỉnh sửa đánh giá */}
         <Modal
           title="Chỉnh sửa đánh giá"
           open={isEditModalVisible}
-          onCancel={() => setIsEditModalVisible(false)}
           onOk={handleSaveReview}
+          onCancel={() => setIsEditModalVisible(false)}
           okText="Lưu"
           cancelText="Hủy"
         >
           {editingReview && (
-            <div className={styles.editReviewForm}>
-              <div className={styles.roomInfo}>
-                <h3>Phòng {editingReview.roomNumber} - {editingReview.roomType}</h3>
-              </div>
-              
-              <div className={styles.ratingEdit}>
-                <span className={styles.ratingLabel}>Đánh giá của bạn:</span>
+            <>
+              <div className={styles.editRating}>
+                <label>Đánh giá sao:</label>
                 <Rate 
                   value={editingReview.rating} 
-                  onChange={value => setEditingReview({...editingReview, rating: value})}
+                  onChange={value => setEditingReview({...editingReview, rating: value})} 
                 />
               </div>
-              
-              <div className={styles.commentEdit}>
-                <span className={styles.commentLabel}>Nhận xét:</span>
+              <div className={styles.editComment}>
+                <label>Nhận xét:</label>
                 <TextArea 
                   rows={4} 
                   value={editingReview.comment}
                   onChange={e => setEditingReview({...editingReview, comment: e.target.value})}
-                  placeholder="Chia sẻ trải nghiệm của bạn..."
                 />
               </div>
-            </div>
+            </>
           )}
         </Modal>
       </div>
