@@ -125,7 +125,7 @@ export const getRooms = async (
     // Thử gọi API từ frontend proxy trước
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
-      return await response.json();
+    return await response.json();
     } catch (error) {
       console.warn('Frontend proxy API failed, trying direct backend call:', error);
       
@@ -201,7 +201,7 @@ export const getRoomById = async (id: string): Promise<ApiResponse<Room>> => {
     // Thử gọi API frontend proxy
     try {
       const response = await fetch(`/api/rooms/${id}`, { signal: AbortSignal.timeout(5000) });
-      return await response.json();
+    return await response.json();
     } catch (error) {
       console.warn('Frontend proxy API failed for room details, trying direct backend call:', error);
       
@@ -259,10 +259,10 @@ export const getRoomById = async (id: string): Promise<ApiResponse<Room>> => {
         data: mockRoom
       };
     } else {
-      return {
-        success: false,
+    return {
+      success: false,
         message: 'Không thể lấy thông tin phòng. Vui lòng thử lại sau.'
-      };
+    };
     }
   }
 };
@@ -273,17 +273,17 @@ export const getRoomById = async (id: string): Promise<ApiResponse<Room>> => {
 export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> => {
   try {
     // Thử gọi API frontend proxy
-    try {
-      const response = await fetch('/api/booking', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+  try {
+    const response = await fetch('/api/booking', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
         body: JSON.stringify(bookingData),
         signal: AbortSignal.timeout(5000)
-      });
-      
-      return await response.json();
+    });
+    
+    return await response.json();
     } catch (error) {
       console.warn('Frontend proxy API failed for booking, trying direct backend call:', error);
       
@@ -342,7 +342,7 @@ export const getUserBookings = async (userId: string): Promise<ApiResponse<Booki
     // Thử gọi API frontend proxy
     try {
       const response = await fetch(`/api/booking?userId=${userId}`, { signal: AbortSignal.timeout(5000) });
-      return await response.json();
+    return await response.json();
     } catch (error) {
       console.warn('Frontend proxy API failed for user bookings, trying direct backend call:', error);
       

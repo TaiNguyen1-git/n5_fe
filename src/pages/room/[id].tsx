@@ -141,8 +141,8 @@ export default function RoomDetail() {
         if (mockRoom) {
           // Since mockRoom already matches the Room interface, just use it directly
           setRoom(mockRoom as Room);
-        } else {
-          setError(response.message || 'Failed to load room data');
+      } else {
+        setError(response.message || 'Failed to load room data');
         }
       }
     } catch (err) {
@@ -343,19 +343,19 @@ export default function RoomDetail() {
               <div className={styles.roomDetails}>
                 <h2>Chi tiết</h2>
                 <div className={styles.detailsGrid}>
-                  <div className={styles.detailItem}>
+                <div className={styles.detailItem}>
                     <span className={styles.detailIcon}>👥</span>
                     <span className={styles.detailLabel}>Số khách:</span>
                     <span className={styles.detailValue}>{room.soLuongKhach} người</span>
-                  </div>
+                </div>
                   
-                  <div className={styles.detailItem}>
+                <div className={styles.detailItem}>
                     <span className={styles.detailIcon}>🛏️</span>
                     <span className={styles.detailLabel}>Giường:</span>
                     <span className={styles.detailValue}>
                       {(room.beds || []).map((bed, index) => (
                         <span key={index}>{bed.count} {bed.type}{index < (room.beds?.length || 0) - 1 ? ', ' : ''}</span>
-                      ))}
+                  ))}
                     </span>
                   </div>
                 </div>
@@ -413,7 +413,7 @@ export default function RoomDetail() {
                     <label htmlFor="guests">Số lượng khách</label>
                     <select 
                       id="guests" 
-                      value={guests} 
+                      value={guests}
                       onChange={(e) => setGuests(parseInt(e.target.value))}
                     >
                       {Array.from({length: room.soLuongKhach}, (_, i) => i + 1).map(num => (

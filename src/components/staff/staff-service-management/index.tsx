@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, message, Space, Popconfirm, Upload } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import styles from './styles.module.css';
-import { DichVu } from '../../../services/serviceApi';
-import { mockServiceApi as serviceApi } from '../../../services/mockServiceApi';
+import { DichVu, serviceApi } from '../../../services/serviceApi';
 import type { ColumnProps } from 'antd/es/table';
 
 // Cập nhật interface Service để phù hợp với API từ backend
