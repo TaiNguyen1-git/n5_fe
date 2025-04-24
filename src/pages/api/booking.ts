@@ -1,131 +1,118 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import axios from 'axios';
 
-// Booking type interface
-interface Booking {
-  id: string;
-  roomId: string;
-  userId?: string;
-  guestName: string;
-  guestEmail: string;
-  guestPhone?: string;
-  checkInDate: string;
-  checkOutDate: string;
-  guests: number;
-  totalPrice: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
-  createdAt: string;
-}
-
-// In-memory bookings storage (would be a database in a real application)
-let bookings: Booking[] = [];
-
+// Define types
 type ResponseData = {
   success: boolean;
   message?: string;
   data?: any;
-}
+};
 
-export default function handler(
+// Backend API URL
+const BACKEND_API_URL = 'https://ptud-web-1.onrender.com/api';
+
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
+  // Handle POST request for creating a booking
   if (req.method === 'POST') {
     try {
-      // Create a new booking
-      const { 
-        roomId, 
-        userId, 
-        guestName, 
-        guestEmail, 
-        guestPhone, 
-        checkInDate, 
-        checkOutDate, 
-        guests,
-        totalPrice
-      } = req.body;
-      
+      const bookingData = req.body;
+
       // Validate required fields
-      if (!roomId || !guestName || !guestEmail || !checkInDate || !checkOutDate || !guests || !totalPrice) {
+      const requiredFields = ['maPhong', 'tenKH', 'email', 'ngayBatDau', 'ngayKetThuc', 'soLuongKhach', 'tongTien'];
+      const missingFields = requiredFields.filter(field => !bookingData[field]);
+
+      if (missingFields.length > 0) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required fields'
+          message: `Các trường sau là bắt buộc: ${missingFields.join(', ')}`
         });
       }
-      
-      // Validate dates
-      const checkIn = new Date(checkInDate);
-      const checkOut = new Date(checkOutDate);
-      
-      if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid dates'
-        });
-      }
-      
-      if (checkIn >= checkOut) {
-        return res.status(400).json({
-          success: false,
-          message: 'Check-out date must be after check-in date'
-        });
-      }
-      
-      // In a real app, we would check if the room is available for the requested dates
-      
-      // Create a new booking
-      const newBooking: Booking = {
-        id: Date.now().toString(), // Simple ID generation, would use UUID in a real app
-        roomId,
-        userId,
-        guestName,
-        guestEmail,
-        guestPhone,
-        checkInDate,
-        checkOutDate,
-        guests,
-        totalPrice,
-        status: 'confirmed', // Auto-confirm for demo purposes
-        createdAt: new Date().toISOString()
+
+      // Format data for the backend API
+      const apiBookingData = {
+        maPhong: bookingData.maPhong,
+        maKH: bookingData.maKH || null,
+        tenKH: bookingData.tenKH,
+        email: bookingData.email,
+        soDienThoai: bookingData.soDienThoai || '',
+        ngayBatDau: bookingData.ngayBatDau,
+        ngayKetThuc: bookingData.ngayKetThuc,
+        soLuongKhach: bookingData.soLuongKhach,
+        tongTien: bookingData.tongTien,
+        trangThai: 1 // Mặc định trạng thái là đã đặt
       };
-      
-      // Add to bookings array (would save to database in a real app)
-      bookings.push(newBooking);
+
+      // Send booking data to the backend API
+      const response = await axios.post(`${BACKEND_API_URL}/DatPhong/Create`, apiBookingData);
       
       return res.status(201).json({
         success: true,
-        message: 'Booking created successfully',
-        data: newBooking
+        message: 'Đặt phòng thành công',
+        data: response.data
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Booking error:', error);
       return res.status(500).json({
         success: false,
-        message: 'An error occurred while processing your booking'
+        message: error.response?.data?.message || 'Đã xảy ra lỗi khi xử lý đặt phòng'
       });
     }
-  } else if (req.method === 'GET') {
-    // Get all bookings (in a real app, would filter by user or use authentication)
-    const { userId, roomId } = req.query;
+  } 
+  // Handle GET request for retrieving bookings
+  else if (req.method === 'GET') {
+    // Get query parameters
+    const { userId, maPhong } = req.query;
     
-    let filteredBookings = [...bookings];
-    
-    if (userId && typeof userId === 'string') {
-      filteredBookings = filteredBookings.filter(booking => booking.userId === userId);
+    try {
+      let url;
+      
+      // Determine which API endpoint to call based on the provided parameters
+      if (userId && typeof userId === 'string') {
+        url = `${BACKEND_API_URL}/DatPhong/GetByUser?id=${userId}`;
+      } else if (maPhong && typeof maPhong === 'string') {
+        url = `${BACKEND_API_URL}/DatPhong/GetByRoom?id=${maPhong}`;
+      } else {
+        url = `${BACKEND_API_URL}/DatPhong/GetAll`;
+      }
+      
+      // Call the backend API
+      const response = await axios.get(url);
+      
+      // Format the response data
+      const bookings = Array.isArray(response.data) ? response.data.map((booking: any) => ({
+        maHD: booking.maHD,
+        maPhong: booking.maPhong,
+        maKH: booking.maKH,
+        tenKH: booking.tenKH,
+        email: booking.email,
+        soDienThoai: booking.soDienThoai,
+        ngayBatDau: booking.ngayBatDau,
+        ngayKetThuc: booking.ngayKetThuc,
+        soLuongKhach: booking.soLuongKhach,
+        tongTien: booking.tongTien,
+        trangThai: booking.trangThai,
+        ngayTao: booking.ngayTao
+      })) : [];
+      
+      return res.status(200).json({
+        success: true,
+        data: bookings
+      });
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Không thể lấy thông tin đặt phòng. Vui lòng thử lại sau.' 
+      });
     }
-    
-    if (roomId && typeof roomId === 'string') {
-      filteredBookings = filteredBookings.filter(booking => booking.roomId === roomId);
-    }
-    
-    return res.status(200).json({
-      success: true,
-      data: filteredBookings
-    });
   } else {
     res.setHeader('Allow', ['GET', 'POST']);
     res.status(405).json({ 
       success: false,
-      message: `Method ${req.method} Not Allowed` 
+      message: `Phương thức ${req.method} không được hỗ trợ` 
     });
   }
 } 

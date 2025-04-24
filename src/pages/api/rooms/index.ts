@@ -1,119 +1,81 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import axios from 'axios';
 
-// Room type interface
-interface Room {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  features: string[];
-  imageUrl: string;
-  images: string[];
-  maxGuests: number;
-  beds: {
-    type: string;
-    count: number;
-  }[];
-}
-
-// Sample data for rooms
-const roomsData: Room[] = [
-  {
-    id: '101',
-    name: 'Phòng 101',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    imageUrl: '/room1.jpg',
-    images: ['/room1.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  {
-    id: '102',
-    name: 'Phòng 102',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    imageUrl: '/room2.jpg',
-    images: ['/room2.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  {
-    id: '103',
-    name: 'Phòng 103',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    imageUrl: '/room3.jpg',
-    images: ['/room3.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  {
-    id: '104',
-    name: 'Phòng 104',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    imageUrl: '/room4.jpg',
-    images: ['/room4.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-  {
-    id: '105',
-    name: 'Phòng 105',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
-    imageUrl: '/room5.jpg',
-    images: ['/room5.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
-    beds: [{ type: 'Giường đôi', count: 1 }]
-  },
-];
-
+// Define response type
 type ResponseData = {
   success: boolean;
   message?: string;
   data?: any;
-}
+};
 
-export default function handler(
+// Backend API URL
+const BACKEND_API_URL = 'https://ptud-web-1.onrender.com/api';
+
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
   if (req.method === 'GET') {
-    // Return all rooms or apply filtering if query parameters exist
-    const { priceMin, priceMax, guests } = req.query;
-    
-    let filteredRooms = [...roomsData];
-    
-    // Filter by price if specified
-    if (priceMin && typeof priceMin === 'string') {
-      filteredRooms = filteredRooms.filter(room => room.price >= parseInt(priceMin));
+    try {
+      // Parse query parameters
+      const { giaMin, giaMax, soLuongKhach } = req.query;
+      
+      // Build query string for filtering
+      let url = `${BACKEND_API_URL}/Phong/GetAll`;
+      const params = new URLSearchParams();
+      
+      if (giaMin && typeof giaMin === 'string') {
+        params.append('giaMin', giaMin);
+      }
+      
+      if (giaMax && typeof giaMax === 'string') {
+        params.append('giaMax', giaMax);
+      }
+      
+      if (soLuongKhach && typeof soLuongKhach === 'string') {
+        params.append('soLuongKhach', soLuongKhach);
+      }
+      
+      // Add params to URL if they exist
+      const queryString = params.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+      
+      // Make the request to the backend
+      const response = await axios.get(url);
+      
+      // Transform the data to match the frontend structure
+      const rooms = response.data.map((room: any) => ({
+        id: room.maPhong.toString(),
+        maPhong: room.maPhong,
+        tenPhong: room.ten || room.tenPhong,
+        moTa: room.moTa,
+        hinhAnh: room.hinhAnh,
+        giaTien: room.giaTien || room.gia,
+        soLuongKhach: room.soLuongKhach,
+        trangThai: room.trangThai,
+        loaiPhong: room.loaiPhong,
+        images: [room.hinhAnh],
+        features: room.moTa.split(',').map((item: string) => item.trim())
+      }));
+      
+      return res.status(200).json({
+        success: true,
+        data: rooms
+      });
+    } catch (error) {
+      console.error('Error fetching rooms:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Không thể lấy danh sách phòng. Vui lòng thử lại sau.' 
+      });
     }
-    
-    if (priceMax && typeof priceMax === 'string') {
-      filteredRooms = filteredRooms.filter(room => room.price <= parseInt(priceMax));
-    }
-    
-    // Filter by max guests if specified
-    if (guests && typeof guests === 'string') {
-      filteredRooms = filteredRooms.filter(room => room.maxGuests >= parseInt(guests));
-    }
-    
-    return res.status(200).json({
-      success: true,
-      data: filteredRooms
-    });
   } else {
     res.setHeader('Allow', ['GET']);
     res.status(405).json({ 
       success: false,
-      message: `Method ${req.method} Not Allowed` 
+      message: `Phương thức ${req.method} không được hỗ trợ` 
     });
   }
 } 

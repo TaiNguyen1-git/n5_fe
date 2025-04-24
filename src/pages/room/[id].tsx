@@ -2,19 +2,30 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../../styles/RoomDetail.module.css';
-import { getRoomById, bookRoom, Room as RoomType, Booking } from '../../services/roomService';
-import { isAuthenticated, redirectToLoginIfNotAuthenticated } from '../../services/authService';
+import { getRoomById, bookRoom, Room, Booking } from '../../services/roomService';
+import { isAuthenticated, getCurrentUser, redirectToLoginIfNotAuthenticated } from '../../services/authService';
 import Layout from '../../components/Layout';
 
-// Room type interface
-interface Room {
+// Room interface is imported from roomService now
+
+// Booking form state interface
+interface BookingFormState {
+  guestName: string;
+  guestEmail: string;
+  guestPhone: string;
+}
+
+// Mock data interface that matches our mock data structure
+interface RoomMock {
   id: string;
-  name: string;
-  price: number;
-  description: string;
+  tenPhong: string;
+  moTa: string;
+  hinhAnh: string;
+  giaTien: number;
+  soLuongKhach: number;
+  trangThai: number;
   features: string[];
   images: string[];
-  maxGuests: number;
   beds: {
     type: string;
     count: number;
@@ -22,55 +33,65 @@ interface Room {
 }
 
 // Mock data for rooms
-const roomsData: { [key: string]: Room } = {
+const roomsData: { [key: string]: RoomMock } = {
   '101': {
     id: '101',
-    name: 'Phòng 101',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
+    tenPhong: 'Phòng 101',
+    giaTien: 100000,
+    moTa: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
     features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
+    hinhAnh: '/room1.jpg',
     images: ['/room1.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
+    soLuongKhach: 2,
+    trangThai: 1,
     beds: [{ type: 'Giường đôi', count: 1 }]
   },
   '102': {
     id: '102',
-    name: 'Phòng 102',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
+    tenPhong: 'Phòng 102',
+    giaTien: 100000,
+    moTa: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
     features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
+    hinhAnh: '/room2.jpg',
     images: ['/room2.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
+    soLuongKhach: 2,
+    trangThai: 1,
     beds: [{ type: 'Giường đôi', count: 1 }]
   },
   '103': {
     id: '103',
-    name: 'Phòng 103',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
+    tenPhong: 'Phòng 103',
+    giaTien: 100000,
+    moTa: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
     features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
+    hinhAnh: '/room3.jpg',
     images: ['/room3.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
+    soLuongKhach: 2,
+    trangThai: 1,
     beds: [{ type: 'Giường đôi', count: 1 }]
   },
   '104': {
     id: '104',
-    name: 'Phòng 104',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
+    tenPhong: 'Phòng 104',
+    giaTien: 100000,
+    moTa: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
     features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
+    hinhAnh: '/room4.jpg',
     images: ['/room4.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
+    soLuongKhach: 2,
+    trangThai: 1,
     beds: [{ type: 'Giường đôi', count: 1 }]
   },
   '105': {
     id: '105',
-    name: 'Phòng 105',
-    price: 100000,
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
+    tenPhong: 'Phòng 105',
+    giaTien: 100000,
+    moTa: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
     features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng'],
+    hinhAnh: '/room5.jpg',
     images: ['/room5.jpg', '/room-detail1.jpg', '/room-detail2.jpg'],
-    maxGuests: 2,
+    soLuongKhach: 2,
+    trangThai: 1,
     beds: [{ type: 'Giường đôi', count: 1 }]
   },
 };
@@ -79,7 +100,7 @@ export default function RoomDetail() {
   const router = useRouter();
   const { id } = router.query;
   
-  const [room, setRoom] = useState<RoomType | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -88,7 +109,7 @@ export default function RoomDetail() {
   const [checkOutDate, setCheckOutDate] = useState('');
   const [guests, setGuests] = useState(1);
   
-  const [bookingForm, setBookingForm] = useState({
+  const [bookingForm, setBookingForm] = useState<BookingFormState>({
     guestName: '',
     guestEmail: '',
     guestPhone: '',
@@ -115,11 +136,26 @@ export default function RoomDetail() {
       if (response.success && response.data) {
         setRoom(response.data);
       } else {
-        setError(response.message || 'Failed to load room data');
+        // If API call doesn't return good data, try using mock data
+        const mockRoom = roomsData[id as string];
+        if (mockRoom) {
+          // Since mockRoom already matches the Room interface, just use it directly
+          setRoom(mockRoom as Room);
+        } else {
+          setError(response.message || 'Failed to load room data');
+        }
       }
     } catch (err) {
-      setError('An error occurred while loading room data');
-      console.error(err);
+      console.error('Error fetching room data:', err);
+      
+      // If API call fails, use mock data as fallback
+      const mockRoom = roomsData[id as string];
+      if (mockRoom) {
+        // Since mockRoom already matches the Room interface, just use it directly
+        setRoom(mockRoom as Room);
+      } else {
+        setError('Không tìm thấy thông tin phòng, hoặc mạng không khả dụng');
+      }
     } finally {
       setLoading(false);
     }
@@ -131,7 +167,7 @@ export default function RoomDetail() {
   };
   
   const calculateTotalPrice = () => {
-    if (!room || !checkInDate || !checkOutDate) return room?.price || 0;
+    if (!room || !checkInDate || !checkOutDate) return room?.giaTien || 0;
     
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
@@ -139,7 +175,7 @@ export default function RoomDetail() {
     // Calculate number of nights
     const nights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
     
-    return room.price * nights;
+    return room.giaTien * nights;
   };
   
   const handleBookNow = async (e: React.FormEvent) => {
@@ -181,14 +217,14 @@ export default function RoomDetail() {
       const totalPrice = calculateTotalPrice();
       
       const bookingData: Booking = {
-        roomId: room.id,
-        guestName: bookingForm.guestName,
-        guestEmail: bookingForm.guestEmail,
-        guestPhone: bookingForm.guestPhone,
-        checkInDate,
-        checkOutDate,
-        guests,
-        totalPrice
+        maPhong: parseInt(room.id || '0'),
+        tenKH: bookingForm.guestName,
+        email: bookingForm.guestEmail,
+        soDienThoai: bookingForm.guestPhone,
+        ngayBatDau: checkInDate,
+        ngayKetThuc: checkOutDate,
+        soLuongKhach: guests,
+        tongTien: totalPrice
       };
       
       const response = await bookRoom(bookingData);
@@ -270,16 +306,16 @@ export default function RoomDetail() {
             {/* Room gallery */}
             <div className={styles.roomGallery}>
               <div className={styles.mainImage}>
-                <img src={room.images[activeImage]} alt={room.name} />
+                <img src={room.images?.[activeImage] || room.hinhAnh} alt={room.tenPhong} />
               </div>
               <div className={styles.thumbnails}>
-                {room.images.map((image, index) => (
+                {(room.images || [room.hinhAnh]).map((image, index) => (
                   <div 
                     key={index} 
                     className={`${styles.thumbnail} ${index === activeImage ? styles.active : ''}`}
                     onClick={() => setActiveImage(index)}
                   >
-                    <img src={image} alt={`${room.name} - hình ${index + 1}`} />
+                    <img src={image} alt={`${room.tenPhong} - hình ${index + 1}`} />
                   </div>
                 ))}
               </div>
@@ -287,33 +323,41 @@ export default function RoomDetail() {
             
             {/* Room information */}
             <div className={styles.roomInfo}>
-              <h1 className={styles.roomName}>{room.name}</h1>
-              <p className={styles.roomPrice}>{room.price.toLocaleString()} đ / đêm</p>
+              <h1 className={styles.roomName}>{room.tenPhong}</h1>
+              <p className={styles.roomPrice}>{room.giaTien?.toLocaleString()} đ / đêm</p>
               
               <div className={styles.roomDescription}>
                 <h2>Mô tả</h2>
-                <p>{room.description}</p>
+                <p>{room.moTa}</p>
               </div>
               
               <div className={styles.roomFeatures}>
                 <h2>Tiện nghi</h2>
-                <ul>
-                  {room.features.map((feature, index) => (
+                <ul className={styles.featureList}>
+                  {(room.features || []).map((feature, index) => (
                     <li key={index}>{feature}</li>
                   ))}
                 </ul>
               </div>
               
               <div className={styles.roomDetails}>
-                <div className={styles.detailItem}>
-                  <h3>Số khách tối đa</h3>
-                  <p>{room.maxGuests} người</p>
-                </div>
-                <div className={styles.detailItem}>
-                  <h3>Giường</h3>
-                  {room.beds.map((bed, index) => (
-                    <p key={index}>{bed.count} {bed.type}</p>
-                  ))}
+                <h2>Chi tiết</h2>
+                <div className={styles.detailsGrid}>
+                  <div className={styles.detailItem}>
+                    <span className={styles.detailIcon}>👥</span>
+                    <span className={styles.detailLabel}>Số khách:</span>
+                    <span className={styles.detailValue}>{room.soLuongKhach} người</span>
+                  </div>
+                  
+                  <div className={styles.detailItem}>
+                    <span className={styles.detailIcon}>🛏️</span>
+                    <span className={styles.detailLabel}>Giường:</span>
+                    <span className={styles.detailValue}>
+                      {(room.beds || []).map((bed, index) => (
+                        <span key={index}>{bed.count} {bed.type}{index < (room.beds?.length || 0) - 1 ? ', ' : ''}</span>
+                      ))}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -366,14 +410,14 @@ export default function RoomDetail() {
                   </div>
                   
                   <div className={styles.formGroup}>
-                    <label htmlFor="guests">Số khách</label>
+                    <label htmlFor="guests">Số lượng khách</label>
                     <select 
                       id="guests" 
-                      value={guests}
-                      onChange={(e) => setGuests(Number(e.target.value))}
+                      value={guests} 
+                      onChange={(e) => setGuests(parseInt(e.target.value))}
                     >
-                      {[...Array(room.maxGuests)].map((_, i) => (
-                        <option key={i} value={i + 1}>{i + 1} người</option>
+                      {Array.from({length: room.soLuongKhach}, (_, i) => i + 1).map(num => (
+                        <option key={num} value={num}>{num} người</option>
                       ))}
                     </select>
                   </div>

@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: true,
   images: {
-    domains: ['images.unsplash.com'],
+    domains: ['images.unsplash.com', 'ptud-web-1.onrender.com'],
   },
   async rewrites() {
     return [
@@ -16,22 +16,44 @@ const nextConfig: NextConfig = {
       // API auth với "auth" viết thường
       {
         source: '/auth/:path*',
-        destination: 'https://ptud-web-1.onrender.com/api/auth/:path*',
+        destination: 'https://ptud-web-1.onrender.com/api/Auth/:path*',
       },
       // API auth với "Auth" viết hoa
       {
         source: '/Auth/:path*',
         destination: 'https://ptud-web-1.onrender.com/api/Auth/:path*',
       },
-      // API login trực tiếp
+      // API phòng
       {
-        source: '/login',
-        destination: 'https://ptud-web-1.onrender.com/api/auth/login',
+        source: '/api/rooms',
+        destination: 'https://ptud-web-1.onrender.com/api/Phong/GetAll',
       },
-      // API register trực tiếp
       {
-        source: '/register',
-        destination: 'https://ptud-web-1.onrender.com/api/auth/register',
+        source: '/api/rooms/:id',
+        destination: 'https://ptud-web-1.onrender.com/api/Phong/GetById?id=:id',
+      },
+      // API đặt phòng
+      {
+        source: '/api/booking',
+        destination: 'https://ptud-web-1.onrender.com/api/DatPhong/Create',
+      },
+      {
+        source: '/api/booking/:id',
+        destination: 'https://ptud-web-1.onrender.com/api/DatPhong/GetById?id=:id',
+      },
+      // API dịch vụ
+      {
+        source: '/api/services',
+        destination: 'https://ptud-web-1.onrender.com/api/DichVu/GetAll',
+      },
+      {
+        source: '/api/services/:id',
+        destination: 'https://ptud-web-1.onrender.com/api/DichVu/GetById?id=:id',
+      },
+      // API liên hệ
+      {
+        source: '/api/contact',
+        destination: 'https://ptud-web-1.onrender.com/api/LienHe/Create',
       },
     ];
   },
