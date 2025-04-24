@@ -5,7 +5,7 @@ import { CreditCardOutlined, DollarOutlined, CheckCircleOutlined, BankOutlined, 
 import Link from 'next/link';
 import styles from '@/styles/Payment.module.css';
 import { isAuthenticated, redirectToLoginIfNotAuthenticated, getCurrentUser } from '../../services/authService';
-import Navbar from '../../components/Navbar';
+import Layout from '../../components/Layout';
 
 interface CartItem {
   id: number;
@@ -197,335 +197,335 @@ export default function Payment() {
   };
 
   return (
-    <div className={styles.container}>
-      <Navbar />
-
-      <div className={styles.main}>
-        <div className={styles.content}>
-          <h1 className={styles.title}>Thanh Toán</h1>
-          
-          <Steps current={1} className={styles.steps}>
-            <Step title="Giỏ hàng" description="Chọn dịch vụ" />
-            <Step title="Thanh toán" description="Nhập thông tin" status="process" />
-            <Step title="Hoàn thành" description="Xác nhận đơn" />
-          </Steps>
-          
-          <Divider />
-          
-          <div className={styles.grid}>
-            <div className={styles.orderSummary}>
-              <Card 
-                title={<div className={styles.summaryTitle}>Thông tin đơn hàng</div>}
-                bordered={false}
-                className={styles.summaryCard}
-              >
-                <div className={styles.cartItems}>
-                  {cartItems.map(item => (
-                    <div key={item.id} className={styles.cartItem}>
-                      <div className={styles.itemInfo}>
-                        <h3>{item.name}</h3>
-                        <Badge 
-                          count={item.category} 
-                          style={{ backgroundColor: '#108ee9' }} 
-                          className={styles.categoryBadge} 
-                        />
-                      </div>
-                      <div className={styles.itemDetails}>
-                        <div className={styles.quantity}>
-                          <span>x{item.quantity}</span>
-                        </div>
-                        <div className={styles.price}>
-                          {formatPrice(item.price * item.quantity)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <Divider />
-                
-                <div className={styles.total}>
-                  <span>Tổng tiền:</span>
-                  <span className={styles.totalAmount}>{formatPrice(total)}</span>
-                </div>
-              </Card>
-            </div>
+    <Layout>
+      <div className={styles.container}>
+        <div className={styles.main}>
+          <div className={styles.content}>
+            <h1 className={styles.title}>Thanh Toán</h1>
             
-            <form className={styles.paymentForm} onSubmit={handleSubmit}>
-              <Card 
-                title={<div><UserOutlined /> Thông tin cá nhân</div>} 
-                bordered={false}
-                className={styles.formCard}
-              >
-                <div className={styles.formSection}>
-                  <Row gutter={16}>
-                    <Col span={24}>
-                      <div className={styles.formGroup}>
-                        <label htmlFor="fullName"><UserOutlined /> Họ và tên</label>
-                        <Input
-                          id="fullName"
-                          name="fullName"
-                          value={formData.fullName}
-                          onChange={handleInputChange}
-                          placeholder="Nhập họ và tên"
-                          className={errors.fullName ? styles.error : ''}
-                          size="large"
-                          prefix={<UserOutlined />}
-                        />
-                        {errors.fullName && <span className={styles.errorMessage}>{errors.fullName}</span>}
-                      </div>
-                    </Col>
-                  </Row>
-                  
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <div className={styles.formGroup}>
-                        <label htmlFor="email"><MailOutlined /> Email</label>
-                        <Input
-                          type="email"
-                          id="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          className={errors.email ? styles.error : ''}
-                          placeholder="example@email.com"
-                          size="large"
-                          prefix={<MailOutlined />}
-                        />
-                        {errors.email && <span className={styles.errorMessage}>{errors.email}</span>}
-                      </div>
-                    </Col>
-                    <Col span={12}>
-                      <div className={styles.formGroup}>
-                        <label htmlFor="phone"><PhoneOutlined /> Số điện thoại</label>
-                        <Input
-                          type="tel"
-                          id="phone"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          className={errors.phone ? styles.error : ''}
-                          placeholder="0987654321"
-                          size="large"
-                          prefix={<PhoneOutlined />}
-                        />
-                        {errors.phone && <span className={styles.errorMessage}>{errors.phone}</span>}
-                      </div>
-                    </Col>
-                  </Row>
-                  
-                  <Row gutter={16}>
-                    <Col span={16}>
-                      <div className={styles.formGroup}>
-                        <label htmlFor="address"><HomeOutlined /> Địa chỉ</label>
-                        <Input
-                          type="text"
-                          id="address"
-                          name="address"
-                          value={formData.address}
-                          onChange={handleInputChange}
-                          className={errors.address ? styles.error : ''}
-                          placeholder="Nhập địa chỉ của bạn"
-                          size="large"
-                          prefix={<HomeOutlined />}
-                        />
-                        {errors.address && <span className={styles.errorMessage}>{errors.address}</span>}
-                      </div>
-                    </Col>
-                    <Col span={8}>
-                      <div className={styles.formGroup}>
-                        <label htmlFor="city"><GlobalOutlined /> Thành phố</label>
-                        <Input
-                          type="text"
-                          id="city"
-                          name="city"
-                          value={formData.city}
-                          onChange={handleInputChange}
-                          className={errors.city ? styles.error : ''}
-                          placeholder="Nhập thành phố"
-                          size="large"
-                          prefix={<GlobalOutlined />}
-                        />
-                        {errors.city && <span className={styles.errorMessage}>{errors.city}</span>}
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
-              </Card>
-              
-              <Card 
-                title={<div><SafetyOutlined /> Phương thức thanh toán</div>} 
-                bordered={false}
-                className={styles.formCard}
-              >
-                <div className={styles.formSection}>
-                  <div className={styles.paymentMethods}>
-                    <Radio.Group 
-                      onChange={(e) => handleInputChange({
-                        target: { name: 'paymentMethod', value: e.target.value }
-                      } as React.ChangeEvent<HTMLInputElement>)} 
-                      value={formData.paymentMethod}
-                      className={styles.radioGroup}
-                    >
-                      <div className={styles.methodOptions}>
-                        <Radio value="credit" className={styles.methodRadio}>
-                          <div className={styles.methodLabel}>
-                            <CreditCardOutlined />
-                            <span>Thẻ tín dụng/Ghi nợ</span>
+            <Steps current={1} className={styles.steps}>
+              <Step title="Giỏ hàng" description="Chọn dịch vụ" />
+              <Step title="Thanh toán" description="Nhập thông tin" status="process" />
+              <Step title="Hoàn thành" description="Xác nhận đơn" />
+            </Steps>
+            
+            <Divider />
+            
+            <div className={styles.grid}>
+              <div className={styles.orderSummary}>
+                <Card 
+                  title={<div className={styles.summaryTitle}>Thông tin đơn hàng</div>}
+                  bordered={false}
+                  className={styles.summaryCard}
+                >
+                  <div className={styles.cartItems}>
+                    {cartItems.map(item => (
+                      <div key={item.id} className={styles.cartItem}>
+                        <div className={styles.itemInfo}>
+                          <h3>{item.name}</h3>
+                          <Badge 
+                            count={item.category} 
+                            style={{ backgroundColor: '#108ee9' }} 
+                            className={styles.categoryBadge} 
+                          />
+                        </div>
+                        <div className={styles.itemDetails}>
+                          <div className={styles.quantity}>
+                            <span>x{item.quantity}</span>
                           </div>
-                        </Radio>
-                        <Radio value="transfer" className={styles.methodRadio}>
-                          <div className={styles.methodLabel}>
-                            <BankOutlined />
-                            <span>Chuyển khoản ngân hàng</span>
+                          <div className={styles.price}>
+                            {formatPrice(item.price * item.quantity)}
                           </div>
-                        </Radio>
+                        </div>
                       </div>
-                    </Radio.Group>
+                    ))}
                   </div>
                   
-                  {formData.paymentMethod === 'credit' && (
-                    <div className={styles.creditCardForm}>
-                      <Row gutter={16}>
-                        <Col span={24}>
-                          <div className={styles.formGroup}>
-                            <label htmlFor="cardNumber"><CreditCardOutlined /> Số thẻ</label>
-                            <Input
-                              type="text"
-                              id="cardNumber"
-                              name="cardNumber"
-                              value={formData.cardNumber}
-                              onChange={handleInputChange}
-                              className={errors.cardNumber ? styles.error : ''}
-                              placeholder="1234 5678 9012 3456"
-                              maxLength={16}
-                              size="large"
-                              prefix={<CreditCardOutlined />}
-                            />
-                            {errors.cardNumber && <span className={styles.errorMessage}>{errors.cardNumber}</span>}
-                          </div>
-                        </Col>
-                      </Row>
-                      
-                      <Row gutter={16}>
-                        <Col span={12}>
-                          <div className={styles.formGroup}>
-                            <label htmlFor="cardExpiry">Ngày hết hạn</label>
-                            <Input
-                              type="text"
-                              id="cardExpiry"
-                              name="cardExpiry"
-                              value={formData.cardExpiry}
-                              onChange={handleInputChange}
-                              className={errors.cardExpiry ? styles.error : ''}
-                              placeholder="MM/YY"
-                              maxLength={5}
-                              size="large"
-                            />
-                            {errors.cardExpiry && <span className={styles.errorMessage}>{errors.cardExpiry}</span>}
-                          </div>
-                        </Col>
-                        <Col span={12}>
-                          <div className={styles.formGroup}>
-                            <label htmlFor="cardCVC">CVV</label>
-                            <Input
-                              type="text"
-                              id="cardCVC"
-                              name="cardCVC"
-                              value={formData.cardCVC}
-                              onChange={handleInputChange}
-                              className={errors.cardCVC ? styles.error : ''}
-                              placeholder="123"
-                              maxLength={4}
-                              size="large"
-                            />
-                            {errors.cardCVC && <span className={styles.errorMessage}>{errors.cardCVC}</span>}
-                          </div>
-                        </Col>
-                      </Row>
-                    </div>
-                  )}
+                  <Divider />
                   
-                  {formData.paymentMethod === 'transfer' && (
-                    <div className={styles.bankDetails}>
-                      <div className={styles.bankTransferInfo}>
-                        <p>Chuyển khoản đến tài khoản ngân hàng của chúng tôi với nội dung là email của bạn</p>
-                        <div className={styles.bankDetail}>
-                          <span>Ngân hàng:</span>
-                          <strong>BIDV - Ngân hàng Đầu tư và Phát triển Việt Nam</strong>
+                  <div className={styles.total}>
+                    <span>Tổng tiền:</span>
+                    <span className={styles.totalAmount}>{formatPrice(total)}</span>
+                  </div>
+                </Card>
+              </div>
+              
+              <form className={styles.paymentForm} onSubmit={handleSubmit}>
+                <Card 
+                  title={<div><UserOutlined /> Thông tin cá nhân</div>} 
+                  bordered={false}
+                  className={styles.formCard}
+                >
+                  <div className={styles.formSection}>
+                    <Row gutter={16}>
+                      <Col span={24}>
+                        <div className={styles.formGroup}>
+                          <label htmlFor="fullName"><UserOutlined /> Họ và tên</label>
+                          <Input
+                            id="fullName"
+                            name="fullName"
+                            value={formData.fullName}
+                            onChange={handleInputChange}
+                            placeholder="Nhập họ và tên"
+                            className={errors.fullName ? styles.error : ''}
+                            size="large"
+                            prefix={<UserOutlined />}
+                          />
+                          {errors.fullName && <span className={styles.errorMessage}>{errors.fullName}</span>}
                         </div>
-                        <div className={styles.bankDetail}>
-                          <span>Chủ tài khoản:</span>
-                          <strong>CÔNG TY KHÁCH SẠN N5</strong>
+                      </Col>
+                    </Row>
+                    
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <div className={styles.formGroup}>
+                          <label htmlFor="email"><MailOutlined /> Email</label>
+                          <Input
+                            type="email"
+                            id="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            className={errors.email ? styles.error : ''}
+                            placeholder="example@email.com"
+                            size="large"
+                            prefix={<MailOutlined />}
+                          />
+                          {errors.email && <span className={styles.errorMessage}>{errors.email}</span>}
                         </div>
-                        <div className={styles.bankDetail}>
-                          <span>Số tài khoản:</span>
-                          <strong>12345678909876</strong>
+                      </Col>
+                      <Col span={12}>
+                        <div className={styles.formGroup}>
+                          <label htmlFor="phone"><PhoneOutlined /> Số điện thoại</label>
+                          <Input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            className={errors.phone ? styles.error : ''}
+                            placeholder="0987654321"
+                            size="large"
+                            prefix={<PhoneOutlined />}
+                          />
+                          {errors.phone && <span className={styles.errorMessage}>{errors.phone}</span>}
                         </div>
-                      </div>
-                      
-                      <Row gutter={16}>
-                        <Col span={12}>
-                          <div className={styles.formGroup}>
-                            <label htmlFor="bankName">Tên ngân hàng của bạn</label>
-                            <Input
-                              type="text"
-                              id="bankName"
-                              name="bankName"
-                              value={formData.bankName}
-                              onChange={handleInputChange}
-                              className={errors.bankName ? styles.error : ''}
-                              placeholder="Nhập tên ngân hàng"
-                              size="large"
-                              prefix={<BankOutlined />}
-                            />
-                            {errors.bankName && <span className={styles.errorMessage}>{errors.bankName}</span>}
-                          </div>
-                        </Col>
-                        <Col span={12}>
-                          <div className={styles.formGroup}>
-                            <label htmlFor="accountNumber">Số tài khoản của bạn</label>
-                            <Input
-                              type="text"
-                              id="accountNumber"
-                              name="accountNumber"
-                              value={formData.accountNumber}
-                              onChange={handleInputChange}
-                              className={errors.accountNumber ? styles.error : ''}
-                              placeholder="Nhập số tài khoản"
-                              size="large"
-                            />
-                            {errors.accountNumber && <span className={styles.errorMessage}>{errors.accountNumber}</span>}
-                          </div>
-                        </Col>
-                      </Row>
+                      </Col>
+                    </Row>
+                    
+                    <Row gutter={16}>
+                      <Col span={16}>
+                        <div className={styles.formGroup}>
+                          <label htmlFor="address"><HomeOutlined /> Địa chỉ</label>
+                          <Input
+                            type="text"
+                            id="address"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleInputChange}
+                            className={errors.address ? styles.error : ''}
+                            placeholder="Nhập địa chỉ của bạn"
+                            size="large"
+                            prefix={<HomeOutlined />}
+                          />
+                          {errors.address && <span className={styles.errorMessage}>{errors.address}</span>}
+                        </div>
+                      </Col>
+                      <Col span={8}>
+                        <div className={styles.formGroup}>
+                          <label htmlFor="city"><GlobalOutlined /> Thành phố</label>
+                          <Input
+                            type="text"
+                            id="city"
+                            name="city"
+                            value={formData.city}
+                            onChange={handleInputChange}
+                            className={errors.city ? styles.error : ''}
+                            placeholder="Nhập thành phố"
+                            size="large"
+                            prefix={<GlobalOutlined />}
+                          />
+                          {errors.city && <span className={styles.errorMessage}>{errors.city}</span>}
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                </Card>
+                
+                <Card 
+                  title={<div><SafetyOutlined /> Phương thức thanh toán</div>} 
+                  bordered={false}
+                  className={styles.formCard}
+                >
+                  <div className={styles.formSection}>
+                    <div className={styles.paymentMethods}>
+                      <Radio.Group 
+                        onChange={(e) => handleInputChange({
+                          target: { name: 'paymentMethod', value: e.target.value }
+                        } as React.ChangeEvent<HTMLInputElement>)} 
+                        value={formData.paymentMethod}
+                        className={styles.radioGroup}
+                      >
+                        <div className={styles.methodOptions}>
+                          <Radio value="credit" className={styles.methodRadio}>
+                            <div className={styles.methodLabel}>
+                              <CreditCardOutlined />
+                              <span>Thẻ tín dụng/Ghi nợ</span>
+                            </div>
+                          </Radio>
+                          <Radio value="transfer" className={styles.methodRadio}>
+                            <div className={styles.methodLabel}>
+                              <BankOutlined />
+                              <span>Chuyển khoản ngân hàng</span>
+                            </div>
+                          </Radio>
+                        </div>
+                      </Radio.Group>
                     </div>
-                  )}
-                </div>
-              </Card>
-              
-              {/* Display submit error if any */}
-              {errors.submit && (
-                <div className={styles.submitError}>
-                  {errors.submit}
-                </div>
-              )}
-              
-              <Button 
-                type="primary"
-                htmlType="submit"
-                className={styles.submitButton}
-                disabled={isSubmitting}
-                size="large"
-                icon={isSubmitting ? null : <ArrowRightOutlined />}
-                loading={isSubmitting}
-              >
-                {isSubmitting ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
-              </Button>
-            </form>
+                    
+                    {formData.paymentMethod === 'credit' && (
+                      <div className={styles.creditCardForm}>
+                        <Row gutter={16}>
+                          <Col span={24}>
+                            <div className={styles.formGroup}>
+                              <label htmlFor="cardNumber"><CreditCardOutlined /> Số thẻ</label>
+                              <Input
+                                type="text"
+                                id="cardNumber"
+                                name="cardNumber"
+                                value={formData.cardNumber}
+                                onChange={handleInputChange}
+                                className={errors.cardNumber ? styles.error : ''}
+                                placeholder="1234 5678 9012 3456"
+                                maxLength={16}
+                                size="large"
+                                prefix={<CreditCardOutlined />}
+                              />
+                              {errors.cardNumber && <span className={styles.errorMessage}>{errors.cardNumber}</span>}
+                            </div>
+                          </Col>
+                        </Row>
+                        
+                        <Row gutter={16}>
+                          <Col span={12}>
+                            <div className={styles.formGroup}>
+                              <label htmlFor="cardExpiry">Ngày hết hạn</label>
+                              <Input
+                                type="text"
+                                id="cardExpiry"
+                                name="cardExpiry"
+                                value={formData.cardExpiry}
+                                onChange={handleInputChange}
+                                className={errors.cardExpiry ? styles.error : ''}
+                                placeholder="MM/YY"
+                                maxLength={5}
+                                size="large"
+                              />
+                              {errors.cardExpiry && <span className={styles.errorMessage}>{errors.cardExpiry}</span>}
+                            </div>
+                          </Col>
+                          <Col span={12}>
+                            <div className={styles.formGroup}>
+                              <label htmlFor="cardCVC">CVV</label>
+                              <Input
+                                type="text"
+                                id="cardCVC"
+                                name="cardCVC"
+                                value={formData.cardCVC}
+                                onChange={handleInputChange}
+                                className={errors.cardCVC ? styles.error : ''}
+                                placeholder="123"
+                                maxLength={4}
+                                size="large"
+                              />
+                              {errors.cardCVC && <span className={styles.errorMessage}>{errors.cardCVC}</span>}
+                            </div>
+                          </Col>
+                        </Row>
+                      </div>
+                    )}
+                    
+                    {formData.paymentMethod === 'transfer' && (
+                      <div className={styles.bankDetails}>
+                        <div className={styles.bankTransferInfo}>
+                          <p>Chuyển khoản đến tài khoản ngân hàng của chúng tôi với nội dung là email của bạn</p>
+                          <div className={styles.bankDetail}>
+                            <span>Ngân hàng:</span>
+                            <strong>BIDV - Ngân hàng Đầu tư và Phát triển Việt Nam</strong>
+                          </div>
+                          <div className={styles.bankDetail}>
+                            <span>Chủ tài khoản:</span>
+                            <strong>CÔNG TY KHÁCH SẠN N5</strong>
+                          </div>
+                          <div className={styles.bankDetail}>
+                            <span>Số tài khoản:</span>
+                            <strong>12345678909876</strong>
+                          </div>
+                        </div>
+                        
+                        <Row gutter={16}>
+                          <Col span={12}>
+                            <div className={styles.formGroup}>
+                              <label htmlFor="bankName">Tên ngân hàng của bạn</label>
+                              <Input
+                                type="text"
+                                id="bankName"
+                                name="bankName"
+                                value={formData.bankName}
+                                onChange={handleInputChange}
+                                className={errors.bankName ? styles.error : ''}
+                                placeholder="Nhập tên ngân hàng"
+                                size="large"
+                                prefix={<BankOutlined />}
+                              />
+                              {errors.bankName && <span className={styles.errorMessage}>{errors.bankName}</span>}
+                            </div>
+                          </Col>
+                          <Col span={12}>
+                            <div className={styles.formGroup}>
+                              <label htmlFor="accountNumber">Số tài khoản của bạn</label>
+                              <Input
+                                type="text"
+                                id="accountNumber"
+                                name="accountNumber"
+                                value={formData.accountNumber}
+                                onChange={handleInputChange}
+                                className={errors.accountNumber ? styles.error : ''}
+                                placeholder="Nhập số tài khoản"
+                                size="large"
+                              />
+                              {errors.accountNumber && <span className={styles.errorMessage}>{errors.accountNumber}</span>}
+                            </div>
+                          </Col>
+                        </Row>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+                
+                {/* Display submit error if any */}
+                {errors.submit && (
+                  <div className={styles.submitError}>
+                    {errors.submit}
+                  </div>
+                )}
+                
+                <Button 
+                  type="primary"
+                  htmlType="submit"
+                  className={styles.submitButton}
+                  disabled={isSubmitting}
+                  size="large"
+                  icon={isSubmitting ? null : <ArrowRightOutlined />}
+                  loading={isSubmitting}
+                >
+                  {isSubmitting ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
+                </Button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

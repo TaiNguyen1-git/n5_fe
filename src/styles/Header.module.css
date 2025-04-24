@@ -4,22 +4,29 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  padding: 10px 0;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .container {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  height: 60px;
+  flex-wrap: nowrap;
+  position: relative;
 }
 
 .logo {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: bold;
   color: #0078c2;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
 }
 
 .logo a {
@@ -30,8 +37,8 @@
 .navbar {
   display: flex;
   align-items: center;
-  margin-left: 20px;
-  flex: 1;
+  margin-left: 40px;
+  white-space: nowrap;
 }
 
 .navList {
@@ -40,6 +47,8 @@
   margin: 0;
   padding: 0;
   gap: 5px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .navItem {
@@ -49,15 +58,16 @@
 .navLink {
   display: flex;
   align-items: center;
-  padding: 10px 15px;
+  padding: 10px 16px;
   color: #333;
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s;
+  font-weight: 500;
 }
 
 .navLink:hover {
-  background-color: #f5f5f5;
+  background-color: #f0f7ff;
   color: #0078c2;
 }
 
@@ -74,12 +84,12 @@
 .active::after {
   content: '';
   position: absolute;
-  bottom: -2px;
+  bottom: -4px;
   left: 15px;
   right: 15px;
-  height: 2px;
+  height: 3px;
   background-color: #0078c2;
-  border-radius: 1px;
+  border-radius: 1.5px;
 }
 
 .dropdownTrigger {
@@ -103,13 +113,14 @@
   top: 100%;
   left: 0;
   background-color: #fff;
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  min-width: 180px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  min-width: 200px;
   z-index: 100;
-  margin-top: 5px;
+  margin-top: 8px;
   overflow: hidden;
   animation: fadeIn 0.2s;
+  border: 1px solid #f0f0f0;
 }
 
 @keyframes fadeIn {
@@ -126,7 +137,7 @@
 .dropdownItem {
   display: flex;
   align-items: center;
-  padding: 10px 15px;
+  padding: 12px 16px;
   color: #333;
   text-decoration: none;
   border: none;
@@ -134,11 +145,12 @@
   width: 100%;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  font-weight: 500;
 }
 
 .dropdownItem:hover {
-  background-color: #f5f5f5;
+  background-color: #f0f7ff;
   color: #0078c2;
 }
 
@@ -157,12 +169,18 @@
   display: flex;
   align-items: center;
   gap: 20px;
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .contact {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  padding: 0 10px;
+  border-right: 1px solid #eaeaea;
+  margin-right: 16px;
+  white-space: nowrap;
 }
 
 .contact span {
@@ -198,7 +216,7 @@
 }
 
 .userButton:hover {
-  background-color: #f5f5f5;
+  background-color: #0066a6;
 }
 
 .userAvatarContainer {
@@ -224,6 +242,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: white;
 }
 
 .loginButton {
@@ -232,14 +251,18 @@
   gap: 8px;
   background-color: #0078c2;
   color: white;
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 10px 20px;
+  border-radius: 6px;
   text-decoration: none;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 120, 194, 0.2);
 }
 
 .loginButton:hover {
   background-color: #0066a6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 120, 194, 0.3);
 }
 
 .loginIcon {
