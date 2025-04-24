@@ -1,0 +1,127 @@
+.container {
+  padding: 40px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.pageTitle {
+  margin-bottom: 30px;
+  text-align: center;
+  font-size: 2rem;
+  color: #333;
+}
+
+.bookingCard,
+.roomCard {
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bookingForm {
+  padding: 10px 0;
+}
+
+.submitButton {
+  width: 100%;
+  height: 48px;
+  font-size: 16px;
+  margin-top: 20px;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
+}
+
+.error {
+  color: #f5222d;
+}
+
+.roomImage {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  margin-bottom: 15px;
+  border-radius: 4px;
+}
+
+.roomImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.roomName {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: #222;
+}
+
+.roomDescription {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.roomDetails {
+  margin-bottom: 20px;
+}
+
+.detailItem {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.detailLabel {
+  color: #666;
+}
+
+.detailValue {
+  font-weight: 500;
+}
+
+.priceBreakdown {
+  margin-top: 20px;
+}
+
+.priceBreakdown h3 {
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.priceItem {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: #666;
+}
+
+.totalPrice {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #222;
+  margin-top: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 10px;
+  }
+  
+  .pageTitle {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+} 
