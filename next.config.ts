@@ -21,6 +21,12 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         destination: 'https://ptud-web-1.onrender.com/api/:path*',
       },
+      // API đăng ký user
+      {
+        source: '/api/register',
+        destination: 'https://ptud-web-1.onrender.com/api/User/RegisterUser',
+      },
+      // API login không cần rewrite vì đã có handler riêng ở /api/login-handler.ts
       // API auth đặc biệt cho đăng ký
       {
         source: '/api/auth',

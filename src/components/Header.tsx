@@ -30,8 +30,31 @@ const Header: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated()) {
       const currentUser = getCurrentUser();
+      console.log('Header - User data:', currentUser);
       setUser(currentUser);
     }
+
+    // Lắng nghe sự kiện đăng nhập/đăng xuất
+    const handleUserChange = () => {
+      if (isAuthenticated()) {
+        const currentUser = getCurrentUser();
+        console.log('Header - User updated:', currentUser);
+        setUser(currentUser);
+      } else {
+        setUser(null);
+      }
+    };
+
+    // Đăng ký lắng nghe sự kiện storage thay đổi
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'user' || e.key === 'auth_token') {
+        handleUserChange();
+      }
+    });
+
+    // Tạo một sự kiện tùy chỉnh để cập nhật dữ liệu user khi cần
+    window.addEventListener('user-login', handleUserChange);
+    window.addEventListener('user-logout', handleUserChange);
 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -45,6 +68,9 @@ const Header: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('storage', handleUserChange);
+      window.removeEventListener('user-login', handleUserChange);
+      window.removeEventListener('user-logout', handleUserChange);
     };
   }, []);
 
@@ -184,9 +210,9 @@ const Header: React.FC = () => {
               >
                 <div className={styles.userAvatarContainer}>
                   <div className={styles.userAvatar}>
-                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
+                    {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
                   </div>
-                  <span className={styles.userName}>{user.fullName || user.username}</span>
+                  <span className={styles.userName}>{user.username || 'User'}</span>
                   <DownOutlined className={`${styles.dropdownArrow} ${showDropdown ? styles.dropdownArrowOpen : ''}`} />
                 </div>
               </button>

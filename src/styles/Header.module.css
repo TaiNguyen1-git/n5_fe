@@ -99,9 +99,10 @@
 }
 
 .dropdownArrow {
-  font-size: 12px;
-  margin-left: 5px;
+  font-size: 10px;
+  margin-left: 3px;
   transition: transform 0.2s;
+  color: white;
 }
 
 .dropdownArrowOpen {
@@ -207,11 +208,11 @@
 .userButton {
   display: flex;
   align-items: center;
-  background: none;
+  background-color: #0078c2;
   border: none;
-  padding: 5px 10px;
+  padding: 5px 12px 5px 8px;
   cursor: pointer;
-  border-radius: 20px;
+  border-radius: 30px;
   transition: background-color 0.2s;
 }
 
@@ -222,19 +223,20 @@
 .userAvatarContainer {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .userAvatar {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background-color: #0078c2;
-  color: white;
+  background-color: white;
+  color: #0078c2;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
+  font-size: 13px;
 }
 
 .userName {
@@ -243,6 +245,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: white;
+  font-size: 14px;
 }
 
 .loginButton {

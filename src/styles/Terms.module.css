@@ -1,0 +1,74 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  color: #0078c2;
+  margin-bottom: 1rem;
+}
+
+.header p {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.section {
+  margin-bottom: 2.5rem;
+}
+
+.section h2 {
+  font-size: 1.75rem;
+  color: #0078c2;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #eaeaea;
+  padding-bottom: 0.5rem;
+}
+
+.section h3 {
+  font-size: 1.3rem;
+  color: #333;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.section p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+  color: #333;
+}
+
+.section ul, .section ol {
+  margin-bottom: 1rem;
+  padding-left: 2rem;
+}
+
+.section li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.effectiveDate {
+  font-style: italic;
+  margin-top: 2rem;
+  text-align: right;
+  color: #666;
+}
+
+.backLink {
+  display: inline-block;
+  margin-top: 2rem;
+  color: #0078c2;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+} 

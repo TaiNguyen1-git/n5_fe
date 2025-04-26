@@ -1,6 +1,7 @@
 import React from 'react';
-import { Layout, Row, Col, Typography } from 'antd';
+import { Layout, Row, Col, Typography, Space } from 'antd';
 import { PhoneOutlined, MailOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import Link from 'next/link';
 
 const { Footer: AntFooter } = Layout;
 const { Title, Text } = Typography;
@@ -39,6 +40,21 @@ const Footer: React.FC = () => {
       </Row>
       <div style={{ textAlign: 'center', marginTop: '24px' }}>
         <Text style={{ color: '#fff' }}>© 2024 Hotel Booking. All rights reserved.</Text>
+        <div style={{ marginTop: '12px' }}>
+          <Space>
+            <Link href="/terms-of-service" passHref>
+              <Text style={{ color: '#fff', textDecoration: 'underline', cursor: 'pointer' }}>
+                Điều khoản dịch vụ
+              </Text>
+            </Link>
+            <Text style={{ color: '#fff' }}>|</Text>
+            <Link href="/privacy-policy" passHref>
+              <Text style={{ color: '#fff', textDecoration: 'underline', cursor: 'pointer' }}>
+                Chính sách bảo mật
+              </Text>
+            </Link>
+          </Space>
+        </div>
       </div>
     </AntFooter>
   );

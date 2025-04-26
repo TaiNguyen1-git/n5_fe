@@ -144,7 +144,7 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
     
     // Gọi trực tiếp đến API đăng nhập
     try {
-      const response = await axios.post(`${BASE_URL}/Auth/Login`, requestData, {
+      const response = await axios.post(`${BASE_URL}/Login`, requestData, {
         timeout: 30000, // Tăng timeout lên 30 giây
         headers: {
           'Content-Type': 'application/json',
@@ -471,6 +471,10 @@ export const logout = (): void => {
   
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user');
+  
+  // Kích hoạt sự kiện để thông báo cho Header
+  const logoutEvent = new Event('user-logout');
+  window.dispatchEvent(logoutEvent);
   
   // Chuyển hướng đến trang đăng nhập nếu cần
   if (window.location.pathname !== '/login') {

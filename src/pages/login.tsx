@@ -39,13 +39,16 @@ export default function Login() {
       // Hiển thị thông báo cho người dùng biết
       console.log("Login page - Đang thử đăng nhập với:", username);
       
-      // Gọi API qua proxy của Next.js
-      const response = await fetch('/api/auth?action=login', {
+      // Gọi API qua handler của Next.js
+      const response = await fetch('/api/login-handler', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({
+          tenDangNhap: username,
+          matKhau: password
+        })
       });
       
       const result = await response.json();
@@ -59,13 +62,18 @@ export default function Login() {
           // Xử lý dữ liệu người dùng
           const userData = {
             id: result.data.maTK || result.data.id,
-            username: result.data.username || result.data.tenDangNhap,
-            fullName: result.data.fullName || result.data.hoTen,
+            username: result.data.tenTK || result.data.username || result.data.tenDangNhap,
+            fullName: result.data.tenHienThi || result.data.fullName || result.data.hoTen || result.data.tenTK,
             email: result.data.email,
             role: result.data.role || 'customer'
           };
           
+          console.log('Login page - Lưu thông tin người dùng:', userData);
           localStorage.setItem('user', JSON.stringify(userData));
+          
+          // Kích hoạt sự kiện để thông báo cho Header
+          const loginEvent = new Event('user-login');
+          window.dispatchEvent(loginEvent);
         }
         
         // Redirect to where the user came from or home page

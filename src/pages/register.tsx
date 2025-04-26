@@ -9,11 +9,13 @@ export default function Register() {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
+    confirmPassword: '',
     email: '',
     fullName: '',
     phoneNumber: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -24,13 +26,18 @@ export default function Register() {
   };
 
   const validateForm = () => {
-    if (!formData.username || !formData.password || !formData.email || !formData.fullName) {
+    if (!formData.username || !formData.password || !formData.confirmPassword || !formData.email || !formData.fullName) {
       setError('Vui lòng điền đầy đủ thông tin bắt buộc');
       return false;
     }
     
     if (formData.password.length < 6) {
       setError('Mật khẩu phải có ít nhất 6 ký tự');
+      return false;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError('Mật khẩu và xác nhận mật khẩu không khớp');
       return false;
     }
     
@@ -58,19 +65,20 @@ export default function Register() {
     setError('');
     
     try {
-      // Đảm bảo dữ liệu đăng ký chính xác trước khi gửi
+      // Đảm bảo dữ liệu đăng ký phù hợp với API
       const userData = {
-        username: formData.username,
+        userName: formData.username,
         password: formData.password,
+        confirmPassword: formData.confirmPassword,
         email: formData.email,
         fullName: formData.fullName,
-        phoneNumber: formData.phoneNumber || ''
+        phone: formData.phoneNumber || ''
       };
       
       console.log('Register page - Sending registration data:', userData);
       
-      // Sử dụng API proxy của Next.js thay vì gọi trực tiếp đến authService
-      const response = await fetch('/api/auth?action=register', {
+      // Sử dụng API handler của Next.js
+      const response = await fetch('/api/register-handler', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +89,7 @@ export default function Register() {
       const result = await response.json();
       console.log('Register page - Registration response:', result);
       
-      if (result.success) {
+      if (response.ok) {
         // Hiển thị thông báo thành công và chuyển hướng sau 1 giây
         setError('');
         // Thêm thông báo thành công với class màu xanh
@@ -106,7 +114,7 @@ export default function Register() {
         }, 2000);
       } else {
         // Xử lý thông báo lỗi
-        setError(result.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+        setError(result.message || result.title || 'Đăng ký thất bại. Vui lòng thử lại.');
       }
     } catch (err: any) {
       console.error('Register page - Registration error:', err);
@@ -146,6 +154,20 @@ export default function Register() {
             </div>
             
             <div className={styles.formGroup}>
+              <label htmlFor="fullName">Họ và tên *</label>
+              <input
+                type="text"
+                id="fullName"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Nhập họ và tên"
+                required
+              />
+            </div>
+            
+            <div className={styles.formGroup}>
               <label htmlFor="email">Email *</label>
               <input
                 type="email"
@@ -160,16 +182,15 @@ export default function Register() {
             </div>
             
             <div className={styles.formGroup}>
-              <label htmlFor="fullName">Họ và tên *</label>
+              <label htmlFor="phoneNumber">Số điện thoại</label>
               <input
-                type="text"
-                id="fullName"
-                name="fullName"
-                value={formData.fullName}
+                type="tel"
+                id="phoneNumber"
+                name="phoneNumber"
+                value={formData.phoneNumber}
                 onChange={handleChange}
                 className={styles.input}
-                placeholder="Nhập họ và tên"
-                required
+                placeholder="Nhập số điện thoại"
               />
             </div>
             
@@ -208,16 +229,37 @@ export default function Register() {
             </div>
             
             <div className={styles.formGroup}>
-              <label htmlFor="phoneNumber">Số điện thoại</label>
-              <input
-                type="tel"
-                id="phoneNumber"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                className={styles.input}
-                placeholder="Nhập số điện thoại"
-              />
+              <label htmlFor="confirmPassword">Xác nhận mật khẩu *</label>
+              <div className={styles.passwordContainer}>
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={styles.input}
+                  placeholder="Nhập lại mật khẩu"
+                  required
+                />
+                <button 
+                  type="button" 
+                  className={styles.passwordToggle}
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                >
+                  {showConfirmPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
             
             <div className={styles.checkboxGroup}>
@@ -228,7 +270,7 @@ export default function Register() {
                 onChange={() => setAgreeTerms(!agreeTerms)}
               />
               <label htmlFor="agreeTerms">
-                Tôi đồng ý với <a href="#">Điều khoản dịch vụ</a> và <a href="#">Chính sách bảo mật</a>
+                Tôi đồng ý với <Link href="/terms-of-service">Điều khoản dịch vụ</Link> và <Link href="/privacy-policy">Chính sách bảo mật</Link>
               </label>
             </div>
             
