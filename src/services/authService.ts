@@ -134,14 +134,25 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
       };
     }
     
+    // Gọi API đăng nhập thực tế
+    console.log('Login - Attempting login with:', credentials.username);
+    
+    const requestData = {
+      tenDangNhap: credentials.username, 
+      matKhau: credentials.password
+    };
+    
+    // Gọi trực tiếp đến API đăng nhập
     try {
-      // Gọi API đăng nhập thực tế
-      const requestData = {
-        username: credentials.username, 
-        password: credentials.password
-      };
+      const response = await axios.post(`${BASE_URL}/Auth/Login`, requestData, {
+        timeout: 30000, // Tăng timeout lên 30 giây
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
       
-      const response = await axiosInstance.post(`/Auth/Login`, requestData);
+      console.log('Login - API response:', response.data);
       
       if (response.data && response.data.token) {
         // Lưu token và thông tin người dùng
@@ -168,46 +179,37 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
       } else {
         throw new Error('Không nhận được token từ server');
       }
-    } catch (apiError) {
-      // Nếu API không thành công, thử đăng nhập với dữ liệu local
-      const users = getRegisteredUsers();
-      const user = users[credentials.username];
+    } catch (apiError: any) {
+      console.error('Login - API error:', apiError.response?.data || apiError.message);
       
-      if (user && user.password === credentials.password) {
-        // Tạo token giả
-        const token = 'local-token-' + Math.random().toString(36).substring(2);
-        
-        // Lưu token và thông tin người dùng
-        localStorage.setItem('auth_token', token);
-        const userData = {
-          id: user.id || user.username,
-          username: user.username,
-          fullName: user.fullName,
-          email: user.email,
-          role: user.role || 'customer'
-        };
-        localStorage.setItem('user', JSON.stringify(userData));
-        
-        console.log('Login success with local account:', userData);
+      // Xử lý lỗi mạng
+      if (apiError.message && apiError.message.includes('Network Error')) {
+        console.log('Login - Network error detected, trying local login');
+        // Thử đăng nhập local
+        return attemptLocalLogin(credentials);
+      }
+      
+      // Xử lý lỗi xác thực
+      if (apiError.response?.status === 401) {
+        // Thử đăng nhập local
+        const localLoginResult = attemptLocalLogin(credentials);
+        if (localLoginResult.success) {
+          return localLoginResult;
+        }
         
         return {
-          success: true,
-          message: 'Đăng nhập thành công',
-          data: { 
-            user: userData,
-            token 
-          }
+          success: false,
+          message: 'Tên đăng nhập hoặc mật khẩu không chính xác'
         };
       }
       
-      // Không tìm thấy tài khoản phù hợp
-      console.log('Login failed: Invalid credentials');
+      // Lỗi khác
       return {
         success: false,
-        message: 'Tên đăng nhập hoặc mật khẩu không chính xác',
+        message: apiError.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại sau.'
       };
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
     return {
       success: false,
@@ -216,72 +218,105 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
   }
 };
 
+// Hàm hỗ trợ để thử đăng nhập với dữ liệu local
+function attemptLocalLogin(credentials: LoginCredentials): AuthResponse {
+  const users = getRegisteredUsers();
+  const user = users[credentials.username];
+  
+  if (user && user.password === credentials.password) {
+    // Tạo token giả
+    const token = 'local-token-' + Math.random().toString(36).substring(2);
+    
+    // Lưu token và thông tin người dùng
+    localStorage.setItem('auth_token', token);
+    const userData = {
+      id: user.id || user.username,
+      username: user.username,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role || 'customer'
+    };
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    console.log('Login success with local account:', userData);
+    
+    return {
+      success: true,
+      message: 'Đăng nhập thành công',
+      data: { 
+        user: userData,
+        token 
+      }
+    };
+  }
+  
+  // Không tìm thấy tài khoản phù hợp
+  console.log('Login failed: Invalid credentials');
+  return {
+    success: false,
+    message: 'Tên đăng nhập hoặc mật khẩu không chính xác',
+  };
+}
+
 /**
  * Handles user registration
  */
 export const register = async (userData: RegisterData): Promise<AuthResponse> => {
   try {
-    try {
-      // Gọi API đăng ký thực tế
-      const requestData = {
-        tenDangNhap: userData.username,
-        matKhau: userData.password,
-        email: userData.email,
-        hoTen: userData.fullName,
-        soDienThoai: userData.phoneNumber || '',
-        vaiTro: 'customer'
-      };
-      
-      const response = await axiosInstance.post(`/Auth/Register`, requestData);
-      
-      if (response.data && response.data.success) {
-        // Tự động đăng nhập sau khi đăng ký
-        const loginResult = await login({
-          username: userData.username,
-          password: userData.password
-        });
-        
-        return loginResult;
-      } else {
-        throw new Error(response.data.message || 'Đăng ký thất bại');
+    // Gọi API đăng ký thực tế với format chính xác
+    const requestData = {
+      tenDangNhap: userData.username,
+      matKhau: userData.password,
+      email: userData.email,
+      hoTen: userData.fullName,
+      soDienThoai: userData.phoneNumber || '',
+      vaiTro: 'customer'
+    };
+    
+    // Gọi trực tiếp đến API backend để đăng ký
+    console.log('Sending registration data:', requestData);
+    
+    // Tăng timeout để tránh lỗi mạng
+    const response = await axios.post(`${BASE_URL}/Auth/Register`, requestData, {
+      timeout: 30000, // Tăng timeout lên 30 giây
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
-    } catch (apiError: any) {
-      // Nếu API không thành công, đăng ký local
-      const users = getRegisteredUsers();
-      
-      // Kiểm tra username đã tồn tại chưa
-      if (users[userData.username]) {
-        return {
-          success: false,
-          message: 'Tên đăng nhập đã tồn tại'
-        };
-      }
-      
-      // Tạo user mới
-      const newUser = {
-        id: 'user_' + Date.now(),
-        username: userData.username,
-        password: userData.password, // Lưu ý: trong thực tế nên mã hóa
-        email: userData.email,
-        fullName: userData.fullName,
-        phoneNumber: userData.phoneNumber,
-        role: 'customer'
+    });
+    
+    console.log('Registration response:', response.data);
+    
+    if (response.data) {
+      return {
+        success: true,
+        message: 'Đăng ký tài khoản thành công',
+        data: response.data
       };
-      
-      // Lưu user mới
-      saveRegisteredUser(newUser);
-      
-      // Tự động đăng nhập sau khi đăng ký
-      return login({
-        username: userData.username,
-        password: userData.password
-      });
+    } else {
+      throw new Error('Không nhận được phản hồi từ server');
     }
-  } catch (error) {
-    console.error('Registration error:', error);
+  } catch (error: any) {
+    console.error('Registration API error:', error.response?.data || error.message);
+    
+    // Xử lý cụ thể lỗi mạng
+    if (error.message && error.message.includes('Network Error')) {
+      return {
+        success: false,
+        message: 'Lỗi kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn hoặc thử lại sau.'
+      };
+    }
+    
+    if (error.response?.status === 400) {
+      return {
+        success: false,
+        message: error.response.data.message || 'Thông tin đăng ký không hợp lệ'
+      };
+    }
+    
     return {
       success: false,
-      message: 'Đăng ký thất bại. Vui lòng thử lại sau.'
+      message: error.message || 'Đăng ký thất bại. Vui lòng thử lại sau.'
     };
   }
 };

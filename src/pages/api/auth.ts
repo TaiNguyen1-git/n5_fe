@@ -66,28 +66,96 @@ async function handleLogin(req: NextApiRequest, res: NextApiResponse<ResponseDat
       });
     }
 
-    // Call backend API for authentication
-    const response = await axios.post(`${BACKEND_API_URL}/Auth/Login`, {
-      username,
-      password
-    });
-    
-    // Return success response with user data and token
-    return res.status(200).json({
-      success: true,
-      message: 'Đăng nhập thành công',
-      data: response.data
-    });
-  } catch (error: any) {
-    console.error('Login error:', error);
-    
-    // Handle specific error responses from backend
-    if (error.response?.status === 401) {
-      return res.status(401).json({
-        success: false, 
-        message: 'Tên đăng nhập hoặc mật khẩu không chính xác'
+    console.log('API handler - Login attempt for user:', username);
+
+    // Cấu trúc dữ liệu đăng nhập đúng format
+    const loginData = {
+      tenDangNhap: username,
+      matKhau: password
+    };
+
+    // Thử kết nối API qua fetch
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 giây timeout
+      
+      const response = await fetch(`${BACKEND_API_URL}/Auth/Login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(loginData),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          return res.status(401).json({
+            success: false, 
+            message: 'Tên đăng nhập hoặc mật khẩu không chính xác'
+          });
+        }
+        
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `API trả về lỗi ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API handler - Login successful:', data);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Đăng nhập thành công',
+        data: data
       });
     }
+    catch (fetchError: any) {
+      console.error('API handler - Fetch error on login:', fetchError);
+      
+      // Nếu fetch thất bại, thử lại với axios
+      try {
+        console.log('API handler - Retrying login with axios');
+        // Call backend API for authentication
+        const response = await axios.post(`${BACKEND_API_URL}/Auth/Login`, loginData, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          timeout: 60000 // 60 giây timeout
+        });
+        
+        console.log('API handler - Axios login response:', response.data);
+        
+        return res.status(200).json({
+          success: true,
+          message: 'Đăng nhập thành công',
+          data: response.data
+        });
+      } catch (axiosError: any) {
+        // Handle specific error responses from backend
+        if (axiosError.response?.status === 401) {
+          return res.status(401).json({
+            success: false, 
+            message: 'Tên đăng nhập hoặc mật khẩu không chính xác'
+          });
+        }
+        
+        // Lỗi mạng
+        if (axiosError.message && axiosError.message.includes('Network Error')) {
+          return res.status(503).json({
+            success: false, 
+            message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet và thử lại sau.'
+          });
+        }
+        
+        throw axiosError;
+      }
+    }
+  } catch (error: any) {
+    console.error('Login error:', error);
     
     return res.status(500).json({ 
       success: false, 
@@ -108,30 +176,84 @@ async function handleRegister(req: NextApiRequest, res: NextApiResponse<Response
       });
     }
     
-    // Call backend API for user registration
-    const response = await axios.post(`${BACKEND_API_URL}/Auth/Register`, {
-      username,
-      password,
-      email,
+    // Cấu trúc lại dữ liệu theo đúng format của backend API
+    const userData = {
+      tenDangNhap: username,
+      matKhau: password,
+      email: email,
       hoTen: fullName,
-      soDienThoai: phoneNumber || ''
-    });
+      soDienThoai: phoneNumber || '',
+      vaiTro: 'customer'
+    };
     
-    return res.status(201).json({
-      success: true,
-      message: 'Đăng ký tài khoản thành công',
-      data: response.data
-    });
-  } catch (error: any) {
-    console.error('Registration error:', error);
+    console.log('API handler - Sending registration data to backend:', userData);
     
-    // Handle specific error from backend
-    if (error.response?.status === 400) {
-      return res.status(400).json({
-        success: false,
-        message: error.response.data.message || 'Thông tin đăng ký không hợp lệ'
+    // Thử gọi API register thông qua fetch để có thêm tùy chọn
+    try {
+      // Sử dụng fetch API với timeout dài hơn
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 giây timeout
+      
+      const backendResponse = await fetch(`${BACKEND_API_URL}/Auth/Register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(userData),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
+      const responseData = await backendResponse.json();
+      console.log('API handler - Backend response:', responseData);
+      
+      if (backendResponse.ok) {
+        return res.status(201).json({
+          success: true,
+          message: 'Đăng ký tài khoản thành công',
+          data: responseData
+        });
+      } else {
+        throw new Error(responseData.message || 'Đăng ký thất bại');
+      }
+    } catch (fetchError: any) {
+      console.error('Fetch API error:', fetchError);
+      
+      // Nếu lỗi fetch, thử lại với axios
+      try {
+        console.log('Retrying with axios...');
+        const axiosResponse = await axios.post(`${BACKEND_API_URL}/Auth/Register`, userData, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          timeout: 60000 // 60 giây timeout
+        });
+        
+        console.log('Axios response:', axiosResponse.data);
+        
+        return res.status(201).json({
+          success: true,
+          message: 'Đăng ký tài khoản thành công',
+          data: axiosResponse.data
+        });
+      } catch (axiosError: any) {
+        console.error('Axios error:', axiosError.response?.data || axiosError.message);
+        
+        if (axiosError.response?.status === 400) {
+          return res.status(400).json({
+            success: false,
+            message: axiosError.response.data.message || 'Thông tin đăng ký không hợp lệ'
+          });
+        }
+        
+        throw axiosError;
+      }
     }
+  } catch (error: any) {
+    console.error('API handler - General registration error:', error);
     
     return res.status(500).json({ 
       success: false, 

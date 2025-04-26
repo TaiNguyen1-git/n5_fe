@@ -58,16 +58,60 @@ export default function Register() {
     setError('');
     
     try {
-      const response = await register(formData);
+      // Đảm bảo dữ liệu đăng ký chính xác trước khi gửi
+      const userData = {
+        username: formData.username,
+        password: formData.password,
+        email: formData.email,
+        fullName: formData.fullName,
+        phoneNumber: formData.phoneNumber || ''
+      };
       
-      if (response.success) {
-        // Redirect to login page after successful registration
-        router.push('/login?registered=true');
+      console.log('Register page - Sending registration data:', userData);
+      
+      // Sử dụng API proxy của Next.js thay vì gọi trực tiếp đến authService
+      const response = await fetch('/api/auth?action=register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
+      });
+      
+      const result = await response.json();
+      console.log('Register page - Registration response:', result);
+      
+      if (result.success) {
+        // Hiển thị thông báo thành công và chuyển hướng sau 1 giây
+        setError('');
+        // Thêm thông báo thành công với class màu xanh
+        const successMsg = document.createElement('div');
+        successMsg.className = styles.successMessage || '';
+        successMsg.style.color = 'green';
+        successMsg.style.padding = '10px';
+        successMsg.style.marginBottom = '10px';
+        successMsg.style.border = '1px solid green';
+        successMsg.style.borderRadius = '4px';
+        successMsg.innerText = 'Đăng ký tài khoản thành công! Đang chuyển đến trang đăng nhập...';
+        
+        // Chèn thông báo vào DOM
+        const form = document.querySelector('form');
+        if (form && form.parentNode) {
+          form.parentNode.insertBefore(successMsg, form);
+        }
+        
+        // Chuyển hướng sau 2 giây
+        setTimeout(() => {
+          router.push('/login?registered=true&username=' + encodeURIComponent(formData.username));
+        }, 2000);
       } else {
-        setError(response.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+        // Xử lý thông báo lỗi
+        setError(result.message || 'Đăng ký thất bại. Vui lòng thử lại.');
       }
-    } catch (err) {
-      setError('Có lỗi xảy ra. Vui lòng thử lại sau.');
+    } catch (err: any) {
+      console.error('Register page - Registration error:', err);
+      
+      setError('Có lỗi xảy ra khi kết nối với máy chủ. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);
     }

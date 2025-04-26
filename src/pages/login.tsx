@@ -37,13 +37,36 @@ export default function Login() {
     
     try {
       // Hiển thị thông báo cho người dùng biết
-      console.log("Đang thử đăng nhập với:", username, password);
+      console.log("Login page - Đang thử đăng nhập với:", username);
       
-      const response = await login({ username, password });
+      // Gọi API qua proxy của Next.js
+      const response = await fetch('/api/auth?action=login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password })
+      });
       
-      if (response.success) {
-        // Hiển thị thông báo thành công
-        console.log("Đăng nhập thành công:", response);
+      const result = await response.json();
+      console.log("Login page - Kết quả đăng nhập:", result);
+      
+      if (result.success) {
+        // Lưu token và thông tin người dùng
+        if (result.data && result.data.token) {
+          localStorage.setItem('auth_token', result.data.token);
+          
+          // Xử lý dữ liệu người dùng
+          const userData = {
+            id: result.data.maTK || result.data.id,
+            username: result.data.username || result.data.tenDangNhap,
+            fullName: result.data.fullName || result.data.hoTen,
+            email: result.data.email,
+            role: result.data.role || 'customer'
+          };
+          
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
         
         // Redirect to where the user came from or home page
         const redirectPath = redirect && typeof redirect === 'string' 
@@ -51,12 +74,12 @@ export default function Login() {
           : '/';
         router.push(redirectPath);
       } else {
-        console.log("Đăng nhập thất bại:", response);
-        setError('Tên đăng nhập hoặc mật khẩu không chính xác');
+        console.log("Login page - Đăng nhập thất bại:", result);
+        setError(result.message || 'Tên đăng nhập hoặc mật khẩu không chính xác');
       }
     } catch (err) {
-      console.error("Lỗi đăng nhập:", err);
-      setError('Có lỗi xảy ra. Vui lòng thử lại sau.');
+      console.error("Login page - Lỗi đăng nhập:", err);
+      setError('Có lỗi xảy ra khi kết nối với máy chủ. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);
     }

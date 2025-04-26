@@ -6,12 +6,25 @@ const nextConfig: NextConfig = {
   images: {
     domains: ['images.unsplash.com', 'ptud-web-1.onrender.com'],
   },
+  // Tăng timeout cho API requests
+  api: {
+    bodyParser: {
+      sizeLimit: '1mb',
+    },
+    responseLimit: '4mb',
+    externalResolver: true,
+  },
   async rewrites() {
     return [
       // API cơ bản
       {
         source: '/api/:path*',
         destination: 'https://ptud-web-1.onrender.com/api/:path*',
+      },
+      // API auth đặc biệt cho đăng ký
+      {
+        source: '/api/auth',
+        destination: 'https://ptud-web-1.onrender.com/api/Auth/Register',
       },
       // API auth với "auth" viết thường
       {
@@ -22,6 +35,15 @@ const nextConfig: NextConfig = {
       {
         source: '/Auth/:path*',
         destination: 'https://ptud-web-1.onrender.com/api/Auth/:path*',
+      },
+      // API người dùng
+      {
+        source: '/api/users',
+        destination: 'https://ptud-web-1.onrender.com/api/User/GetAll',
+      },
+      {
+        source: '/api/users/:id',
+        destination: 'https://ptud-web-1.onrender.com/api/User/GetById?id=:id',
       },
       // API phòng
       {
