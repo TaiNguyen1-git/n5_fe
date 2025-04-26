@@ -14,10 +14,19 @@ const StaffPage = () => {
       return;
     }
 
-    // Kiểm tra vai trò người dùng
+    // Kiểm tra vai trò người dùng bằng loaiTK
     const user = getCurrentUser();
-    if (user?.role !== 'staff') {
+    console.log('Staff Page - Thông tin người dùng:', user);
+    
+    // Kiểm tra cả role và loaiTK để phát hiện staff
+    const isStaff = user?.role === 'staff' || user?.loaiTK === 2;
+    
+    if (!isStaff) {
+      console.log('Staff Page - Người dùng không phải nhân viên:', 
+                 user?.role, user?.loaiTK);
       router.push('/');
+    } else {
+      console.log('Staff Page - Xác nhận người dùng là nhân viên');
     }
   }, [router]);
 

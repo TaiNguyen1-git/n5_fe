@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../styles/Auth.module.css';
-import { updateUserProfile, getCurrentUser, deleteUser } from '../services/authService';
+import { getCurrentUser, deleteUser } from '../services/authService';
+import { updateUserProfile, getUserProfile } from '../services/userService';
 import Layout from '../components/Layout';
 
 export default function Profile() {
@@ -49,40 +50,68 @@ export default function Profile() {
       return;
     }
 
+    // Lấy thông tin người dùng từ API
+    fetchUserProfile();
+  }, [router]);
+
+  // Hàm fetch dữ liệu người dùng từ API
+  const fetchUserProfile = async () => {
+    try {
+      // Thử lấy thông tin từ API
+      const profileData = await getUserProfile();
+      
+      if (profileData) {
+        console.log('Thông tin người dùng từ API (chi tiết):', JSON.stringify(profileData));
+        
+        // Đảm bảo phone luôn là string
+        const phoneNumber = profileData.phone ? String(profileData.phone) : '';
+        
+        setFormData({
+          username: profileData.tenTK || '',
+          fullName: profileData.tenHienThi || '',
+          email: profileData.email || '',
+          password: '********',
+          phoneNumber: phoneNumber,
+          gender: 'Nam',
+          birthDay: '',
+          birthMonth: '',
+          birthYear: '',
+          address: ''
+        });
+        
+        // Log để debug giá trị phone
+        console.log('Số điện thoại nhận được từ API (kiểu dữ liệu):', typeof profileData.phone, profileData.phone);
+        console.log('Số điện thoại sau khi chuyển đổi:', typeof phoneNumber, phoneNumber);
+        return;
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin từ API:', error);
+    }
+    
+    // Fallback: Nếu không lấy được từ API, dùng dữ liệu từ localStorage
     try {
       const storedUserData = localStorage.getItem('user');
       if (storedUserData) {
         const userData = JSON.parse(storedUserData);
         
-        let birthDay = '';
-        let birthMonth = '';
-        let birthYear = '';
-        
-        if (userData.birthDate) {
-          const date = new Date(userData.birthDate);
-          birthDay = date.getDate().toString();
-          birthMonth = (date.getMonth() + 1).toString();
-          birthYear = date.getFullYear().toString();
-        }
-
         setFormData({
           username: userData.username || '',
           fullName: userData.fullName || '',
           email: userData.email || '',
           password: '********',
           phoneNumber: userData.phoneNumber || '',
-          gender: userData.gender || 'Nam',
-          birthDay,
-          birthMonth,
-          birthYear,
-          address: userData.address || ''
+          gender: 'Nam',
+          birthDay: '',
+          birthMonth: '',
+          birthYear: '',
+          address: ''
         });
       }
     } catch (err) {
-      console.error('Error loading user data:', err);
+      console.error('Error loading user data from localStorage:', err);
       setError('Có lỗi khi tải thông tin người dùng');
     }
-  }, []);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -112,33 +141,33 @@ export default function Profile() {
         }
       }
 
-      let birthDate;
-      if (formData.birthDay && formData.birthMonth && formData.birthYear) {
-        birthDate = `${formData.birthYear}-${formData.birthMonth.padStart(2, '0')}-${formData.birthDay.padStart(2, '0')}`;
-        
-        const date = new Date(birthDate);
-        if (date > new Date()) {
-          setError('Ngày sinh không hợp lệ');
-          setLoading(false);
-          return;
-        }
-      }
-
       const updateData = {
-        username: formData.username,
-        fullName: formData.fullName.trim(),
-        email: formData.email.trim(),
-        phoneNumber: formData.phoneNumber,
-        gender: formData.gender,
-        birthDate,
-        address: formData.address
+        tenTK: formData.username,
+        tenHienThi: formData.fullName === "string" ? formData.username : formData.fullName.trim(),
+        phone: formData.phoneNumber === "string" ? "" : formData.phoneNumber,
+        email: formData.email.trim()
       };
 
+      console.log('Đang gửi dữ liệu cập nhật:', updateData);
       const response = await updateUserProfile(updateData);
 
       if (response.success) {
-        if (response.data?.user) {
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+        // Cập nhật thông tin vào localStorage
+        const currentUserStr = localStorage.getItem('user');
+        if (currentUserStr) {
+          try {
+            const currentUser = JSON.parse(currentUserStr);
+            const updatedUser = {
+              ...currentUser,
+              fullName: formData.fullName,
+              email: formData.email,
+              phoneNumber: formData.phoneNumber,
+            };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            console.log('Đã lưu thông tin người dùng vào localStorage:', updatedUser);
+          } catch (err) {
+            console.error('Lỗi khi cập nhật thông tin người dùng vào localStorage:', err);
+          }
         }
         
         const successMessage = document.createElement('div');
@@ -154,9 +183,11 @@ export default function Profile() {
           }, 3000);
         }
 
-        setTimeout(() => {
-          router.push('/');
-        }, 1500);
+        // Đặt lại trạng thái loading và không chuyển hướng
+        setLoading(false);
+        
+        // Tải lại dữ liệu từ API sau khi cập nhật thành công
+        fetchUserProfile();
       } else {
         setError(response.message || 'Có lỗi xảy ra khi cập nhật thông tin');
       }
@@ -274,86 +305,10 @@ export default function Profile() {
                       value={formData.phoneNumber}
                       onChange={handleChange}
                       className={styles.input}
+                      placeholder="Nhập số điện thoại"
                     />
                   </div>
 
-                  <div className={styles.formGroup}>
-                    <label>Giới tính</label>
-                    <div className={styles.radioGroup}>
-                      <label>
-                        <input
-                          type="radio"
-                          name="gender"
-                          value="Nam"
-                          checked={formData.gender === 'Nam'}
-                          onChange={handleChange}
-                        />
-                        Nam
-                      </label>
-                      <label>
-                        <input
-                          type="radio"
-                          name="gender"
-                          value="Nữ"
-                          checked={formData.gender === 'Nữ'}
-                          onChange={handleChange}
-                        />
-                        Nữ
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label>Ngày sinh</label>
-                    <div className={styles.dateGroup}>
-                      <select 
-                        name="birthDay" 
-                        value={formData.birthDay}
-                        onChange={handleChange}
-                        className={styles.dateSelect}
-                      >
-                        <option value="">Ngày</option>
-                        {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                          <option key={day} value={day}>{day}</option>
-                        ))}
-                      </select>
-                      <select 
-                        name="birthMonth" 
-                        value={formData.birthMonth}
-                        onChange={handleChange}
-                        className={styles.dateSelect}
-                      >
-                        <option value="">Tháng</option>
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                          <option key={month} value={month}>{month}</option>
-                        ))}
-                      </select>
-                      <select 
-                        name="birthYear" 
-                        value={formData.birthYear}
-                        onChange={handleChange}
-                        className={styles.dateSelect}
-                      >
-                        <option value="">Năm</option>
-                        {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                          <option key={year} value={year}>{year}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label htmlFor="address">Địa chỉ</label>
-                    <input
-                      type="text"
-                      id="address"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleChange}
-                      className={styles.input}
-                    />
-                  </div>
-                  
                   <button 
                     type="submit" 
                     className={styles.submitButton}

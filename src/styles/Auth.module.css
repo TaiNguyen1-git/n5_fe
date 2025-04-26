@@ -90,21 +90,21 @@
 }
 
 .errorMessage {
-  background-color: #ffebee;
-  color: #c62828;
-  padding: 12px;
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 10px;
   border-radius: 4px;
   margin-bottom: 20px;
-  font-size: 0.9rem;
+  text-align: center;
 }
 
 .successMessage {
-  background-color: #e6f7e6;
-  color: #2e7d32;
-  padding: 10px 15px;
+  background-color: #d4edda;
+  color: #155724;
+  padding: 10px;
   border-radius: 4px;
   margin-bottom: 20px;
-  border-left: 4px solid #2e7d32;
+  text-align: center;
 }
 
 .formGroup {
@@ -580,4 +580,32 @@
 
 .securityButton:hover {
   background-color: #40a9ff;
+}
+
+.hint {
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 5px;
+  display: block;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  color: #0078c2;
+  padding: 5px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 15px;
+}
+
+.linkButton:hover {
+  color: #005d99;
+}
+
+.formActions {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
 }

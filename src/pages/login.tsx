@@ -65,22 +65,61 @@ export default function Login() {
             username: result.data.tenTK || result.data.username || result.data.tenDangNhap,
             fullName: result.data.tenHienThi || result.data.fullName || result.data.hoTen || result.data.tenTK,
             email: result.data.email,
-            role: result.data.role || 'customer'
+            role: result.data.role || 'customer',
+            loaiTK: processLoaiTK(result.data.loaiTK),
+            vaiTro: result.data.vaiTro,
+            tenLoai: result.data.tenLoai
           };
           
-          console.log('Login page - Lưu thông tin người dùng:', userData);
+          // Hàm xử lý loaiTK để đảm bảo là số
+          function processLoaiTK(value: any): number {
+            if (typeof value === 'number') return value;
+            if (typeof value === 'string') {
+              const parsed = parseInt(value, 10);
+              if (!isNaN(parsed)) return parsed;
+            }
+            // Giá trị mặc định
+            return username === 'admin' ? 1 : 3;
+          }
+          
+          console.log('Login page - Thông tin người dùng đầy đủ:', JSON.stringify(userData));
           localStorage.setItem('user', JSON.stringify(userData));
           
           // Kích hoạt sự kiện để thông báo cho Header
           const loginEvent = new Event('user-login');
           window.dispatchEvent(loginEvent);
+          
+          // Đơn giản hóa chuyển hướng dựa vào redirectPath từ server
+          let redirectTo = result.data.redirectPath || '/';
+          
+          // Nếu không có redirectPath, kiểm tra loaiTK và vaiTro
+          if (!result.data.redirectPath) {
+            const isAdmin = userData.loaiTK === 1 || userData.vaiTro === 1 || userData.role === 'admin';
+            const isStaff = userData.loaiTK === 2 || userData.vaiTro === 2 || userData.role === 'staff';
+            
+            if (isAdmin) {
+              redirectTo = '/admin';
+              console.log('Login page - Xác định là Admin, chuyển hướng đến:', redirectTo);
+            } else if (isStaff) {
+              redirectTo = '/staff';
+              console.log('Login page - Xác định là Staff, chuyển hướng đến:', redirectTo);
+            } else {
+              // Khách hàng
+              redirectTo = (redirect && typeof redirect === 'string') 
+                ? decodeURIComponent(redirect) 
+                : '/';
+              console.log('Login page - Xác định là Customer, chuyển hướng đến:', redirectTo);
+            }
+          } else {
+            console.log('Login page - Sử dụng redirectPath từ server:', redirectTo);
+          }
+          
+          // Đảm bảo chuyển hướng xảy ra
+          console.log('Login page - Đang chuyển hướng đến:', redirectTo);
+          setTimeout(() => {
+            router.push(redirectTo);
+          }, 100);
         }
-        
-        // Redirect to where the user came from or home page
-        const redirectPath = redirect && typeof redirect === 'string' 
-          ? decodeURIComponent(redirect) 
-          : '/';
-        router.push(redirectPath);
       } else {
         console.log("Login page - Đăng nhập thất bại:", result);
         setError(result.message || 'Tên đăng nhập hoặc mật khẩu không chính xác');
@@ -152,7 +191,14 @@ export default function Login() {
             </div>
             
             <div className={styles.forgotPassword}>
-              <Link href="/forgot-password">Quên mật khẩu</Link>
+              <a 
+                href="/forgot-password" 
+                onClick={(e) => {
+                  console.log('Đang chuyển đến trang quên mật khẩu');
+                }}
+              >
+                Quên mật khẩu
+              </a>
             </div>
             
             <button 

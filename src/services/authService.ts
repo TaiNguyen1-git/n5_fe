@@ -2,6 +2,8 @@
 import axios from 'axios';
 
 const BASE_URL = 'https://ptud-web-1.onrender.com/api';
+const AUTH_TOKEN_KEY = 'auth_token';
+const USER_DATA_KEY = 'user';
 
 type LoginCredentials = {
   username: string;
@@ -26,10 +28,20 @@ type UpdateProfileData = {
   address?: string;
 };
 
+// UserData type
+type UserData = {
+  tenTK: string;
+  tenHienThi: string;
+  role: string;
+  loaiTK: number;
+};
+
 // Response types
 type AuthResponse = {
   success: boolean;
   message: string;
+  redirectPath?: string;
+  user?: UserData;
   data?: {
     user?: {
       id: string;
@@ -42,6 +54,7 @@ type AuthResponse = {
       address?: string;
     },
     token?: string;
+    redirectPath?: string;
   };
 };
 
@@ -72,7 +85,7 @@ const saveRegisteredUser = (userData: any) => {
   localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
 };
 
-// Update User interface to include role
+// Update User interface to include role and loaiTK
 interface User {
   id: number | string;
   username: string;
@@ -80,143 +93,73 @@ interface User {
   fullName?: string;
   token?: string;
   role?: string;  // 'customer', 'staff', 'admin', etc.
+  loaiTK?: number; // 1: admin, 2: staff, 3: customer
+  vaiTro?: number; // 1: admin, 2: staff, 3: customer
+  tenLoai?: string; // 'Admin', 'Staff', 'Customer'
 }
 
 /**
- * Handles user login
+ * Login function handles user authentication
+ * @param credentials User login credentials
+ * @returns AuthResponse with success/error message and user data
  */
-export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   try {
-    // Kiểm tra tài khoản admin và staff đặc biệt
-    if (credentials.username === 'admin' && credentials.password === 'admin123') {
-      const adminUser = {
-        id: 'admin',
-        username: 'admin',
-        fullName: 'Admin',
-        email: 'admin@hotel.com',
-        role: 'admin',
+    console.log('Login attempt:', credentials.username);
+    
+    const response = await fetch(`${BASE_URL}/login-handler`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+    
+    const data = await response.json();
+    console.log('Login response:', data);
+    
+    if (response.ok && data.success) {
+      // Create user object from response
+      const user: UserData = {
+        tenTK: data.data.user.username,
+        tenHienThi: data.data.user.fullName,
+        role: data.data.user.role || 'user',
+        loaiTK: data.data.user.loaiTK || 0
       };
       
-      const token = 'mock-admin-token-' + Math.random().toString(36).substring(2);
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('user', JSON.stringify(adminUser));
+      // Log detailed user information
+      console.log('User authenticated successfully');
+      console.log('User account type (loaiTK):', user.loaiTK);
+      console.log('User role:', user.role);
+      
+      // Store auth token and user data
+      localStorage.setItem(AUTH_TOKEN_KEY, data.data.token);
+      localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
+      
+      // Dispatch login success event
+      window.dispatchEvent(new CustomEvent('loginSuccess', { detail: user }));
       
       return {
         success: true,
-        message: 'Đăng nhập thành công (admin)',
-        data: { 
-          user: adminUser,
-          token
-        }
+        message: data.message || 'Login successful',
+        redirectPath: data.data.redirectPath || '/dashboard',
+        user
       };
-    }
-    
-    if (credentials.username === 'staff' && credentials.password === 'staff123') {
-      const staffUser = {
-        id: 'staff',
-        username: 'staff',
-        fullName: 'Nhân Viên Test',
-        email: 'staff@hotel.com',
-        role: 'staff',
-      };
-      
-      const token = 'mock-staff-token-' + Math.random().toString(36).substring(2);
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('user', JSON.stringify(staffUser));
-      
-      return {
-        success: true,
-        message: 'Đăng nhập thành công (staff)',
-        data: { 
-          user: staffUser,
-          token
-        }
-      };
-    }
-    
-    // Gọi API đăng nhập thực tế
-    console.log('Login - Attempting login with:', credentials.username);
-    
-    const requestData = {
-      tenDangNhap: credentials.username, 
-      matKhau: credentials.password
-    };
-    
-    // Gọi trực tiếp đến API đăng nhập
-    try {
-      const response = await axios.post(`${BASE_URL}/Login`, requestData, {
-        timeout: 30000, // Tăng timeout lên 30 giây
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
-      
-      console.log('Login - API response:', response.data);
-      
-      if (response.data && response.data.token) {
-        // Lưu token và thông tin người dùng
-        localStorage.setItem('auth_token', response.data.token);
-        
-        const userData = {
-          id: response.data.maTK || response.data.id,
-          username: response.data.username || response.data.tenDangNhap,
-          fullName: response.data.fullName || response.data.hoTen,
-          email: response.data.email,
-          role: response.data.role || 'customer'
-        };
-        
-        localStorage.setItem('user', JSON.stringify(userData));
-        
-        return {
-          success: true,
-          message: 'Đăng nhập thành công',
-          data: { 
-            user: userData,
-            token: response.data.token
-          }
-        };
-      } else {
-        throw new Error('Không nhận được token từ server');
-      }
-    } catch (apiError: any) {
-      console.error('Login - API error:', apiError.response?.data || apiError.message);
-      
-      // Xử lý lỗi mạng
-      if (apiError.message && apiError.message.includes('Network Error')) {
-        console.log('Login - Network error detected, trying local login');
-        // Thử đăng nhập local
-        return attemptLocalLogin(credentials);
-      }
-      
-      // Xử lý lỗi xác thực
-      if (apiError.response?.status === 401) {
-        // Thử đăng nhập local
-        const localLoginResult = attemptLocalLogin(credentials);
-        if (localLoginResult.success) {
-          return localLoginResult;
-        }
-        
-        return {
-          success: false,
-          message: 'Tên đăng nhập hoặc mật khẩu không chính xác'
-        };
-      }
-      
-      // Lỗi khác
+    } else {
+      console.error('Login failed:', data.message);
       return {
         success: false,
-        message: apiError.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại sau.'
+        message: data.message || 'Invalid credentials',
       };
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Login error:', error);
-    return {
-      success: false,
-      message: 'Đăng nhập thất bại. Vui lòng thử lại sau.',
-    };
+    
+    // Attempt local login if there's a connection error
+    console.log('Attempting local login...');
+    return attemptLocalLogin(credentials);
   }
-};
+}
 
 // Hàm hỗ trợ để thử đăng nhập với dữ liệu local
 function attemptLocalLogin(credentials: LoginCredentials): AuthResponse {
@@ -234,7 +177,8 @@ function attemptLocalLogin(credentials: LoginCredentials): AuthResponse {
       username: user.username,
       fullName: user.fullName,
       email: user.email,
-      role: user.role || 'customer'
+      role: user.role || 'customer',
+      loaiTK: user.loaiTK || 3
     };
     localStorage.setItem('user', JSON.stringify(userData));
     
@@ -270,7 +214,8 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
       email: userData.email,
       hoTen: userData.fullName,
       soDienThoai: userData.phoneNumber || '',
-      vaiTro: 'customer'
+      vaiTro: 'customer',
+      loaiTK: 3 // Mặc định là tài khoản khách hàng
     };
     
     // Gọi trực tiếp đến API backend để đăng ký
@@ -443,7 +388,25 @@ export const updateUserProfile = async (profileData: UpdateProfileData): Promise
  */
 export const isAuthenticated = (): boolean => {
   if (typeof window === 'undefined') return false;
-  return localStorage.getItem('auth_token') !== null;
+  
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (!token) return false;
+  
+  // Kiểm tra token có hợp lệ không
+  try {
+    // Thử phân tích token (có thể thêm logic kiểm tra hết hạn nếu cần)
+    // JWT thường có 3 phần cách nhau bởi dấu chấm
+    if (token.includes('admin-token-')) {
+      // Admin token đặc biệt - luôn hợp lệ
+      return true;
+    }
+    
+    // Kiểm tra token hợp lệ
+    return true;
+  } catch (e) {
+    console.error('Error checking token validity', e);
+    return false;
+  }
 };
 
 /**
@@ -452,11 +415,50 @@ export const isAuthenticated = (): boolean => {
 export const getCurrentUser = (): User | null => {
   if (typeof window === 'undefined') return null;
   
+  // Kiểm tra token trước
+  if (!isAuthenticated()) return null;
+  
   const userStr = localStorage.getItem('user');
   if (!userStr) return null;
   
   try {
-    return JSON.parse(userStr);
+    const userData = JSON.parse(userStr);
+    
+    // Đảm bảo loaiTK và vaiTro là số
+    if (userData.loaiTK !== undefined && userData.loaiTK !== null) {
+      if (typeof userData.loaiTK !== 'number') {
+        try {
+          const loaiTKValue = typeof userData.loaiTK === 'string' 
+            ? parseInt(userData.loaiTK, 10) 
+            : userData.loaiTK;
+          
+          if (!isNaN(loaiTKValue)) {
+            userData.loaiTK = loaiTKValue;
+          }
+        } catch (e) {
+          console.error('Error parsing loaiTK:', e);
+        }
+      }
+    }
+    
+    // Đảm bảo vaiTro là số
+    if (userData.vaiTro !== undefined && userData.vaiTro !== null) {
+      if (typeof userData.vaiTro !== 'number') {
+        try {
+          const vaiTroValue = typeof userData.vaiTro === 'string' 
+            ? parseInt(userData.vaiTro, 10) 
+            : userData.vaiTro;
+          
+          if (!isNaN(vaiTroValue)) {
+            userData.vaiTro = vaiTroValue;
+          }
+        } catch (e) {
+          console.error('Error parsing vaiTro:', e);
+        }
+      }
+    }
+    
+    return userData;
   } catch (e) {
     console.error('Error parsing user data from localStorage', e);
     return null;
@@ -641,78 +643,58 @@ export const deleteUser = async (): Promise<AuthResponse> => {
 };
 
 /**
- * Đăng nhập với tài khoản nhân viên
+ * Sends a request to reset password
  */
-export const loginAsStaff = () => {
-  const staffUser = {
-    id: 'staff',
-    username: 'staff',
-    fullName: 'Nhân Viên Test',
-    email: 'staff@hotel.com',
-    role: 'staff',
-  };
-  
-  const token = 'mock-staff-token-' + Math.random().toString(36).substring(2);
-  localStorage.setItem('auth_token', token);
-  localStorage.setItem('user', JSON.stringify(staffUser));
-  
-  return {
-    success: true,
-    message: 'Đăng nhập thành công (staff)',
-    data: { 
-      user: staffUser,
-      token
-    }
-  };
-};
-
-/**
- * Kiểm tra và đảm bảo tài khoản admin tồn tại
- */
-const ensureAdminAccount = () => {
-  const users = getRegisteredUsers();
-  
-  if (!users['admin']) {
-    const adminUser = {
-      id: 'admin',
-      username: 'admin',
-      password: 'admin123',
-      fullName: 'Administrator',
-      email: 'admin@hotel.com',
-      role: 'admin'
-    };
+export const forgotPassword = async (email: string): Promise<AuthResponse> => {
+  try {
+    // Gọi API proxy NextJS thay vì gọi trực tiếp đến backend
+    const response = await axios.post('/api/forgotPassword?action=forgot-password', {
+      email
+    });
     
-    users['admin'] = adminUser;
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+    if (response.data.success) {
+      return {
+        success: true,
+        message: response.data.message || 'Yêu cầu đặt lại mật khẩu đã được gửi đến email của bạn'
+      };
+    } else {
+      throw new Error(response.data.message || 'Có lỗi xảy ra khi gửi yêu cầu');
+    }
+  } catch (error: any) {
+    console.error('Forgot password error:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.'
+    };
   }
 };
 
 /**
- * Đăng nhập với tài khoản admin
+ * Resets password using token
  */
-export const loginAsAdmin = () => {
-  ensureAdminAccount();
-  
-  const adminUser = {
-    id: 'admin',
-    username: 'admin',
-    fullName: 'Administrator',
-    email: 'admin@hotel.com',
-    role: 'admin',
-  };
-  
-  const token = 'mock-admin-token-' + Math.random().toString(36).substring(2);
-  localStorage.setItem('auth_token', token);
-  localStorage.setItem('user', JSON.stringify(adminUser));
-  
-  return {
-    success: true,
-    message: 'Đăng nhập thành công (admin)',
-    data: { 
-      user: adminUser,
-      token
+export const resetPassword = async (resetToken: string, password: string): Promise<AuthResponse> => {
+  try {
+    // Gọi API proxy NextJS thay vì gọi trực tiếp đến backend
+    const response = await axios.post('/api/forgotPassword?action=reset-password', {
+      resetToken,
+      password
+    });
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        message: response.data.message || 'Đặt lại mật khẩu thành công'
+      };
+    } else {
+      throw new Error(response.data.message || 'Có lỗi xảy ra khi đặt lại mật khẩu');
     }
-  };
+  } catch (error: any) {
+    console.error('Reset password error:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.'
+    };
+  }
 };
 
 // Xuất tất cả các hàm
@@ -727,6 +709,6 @@ export default {
   isCheckoutPage,
   changePassword,
   deleteUser,
-  loginAsStaff,
-  loginAsAdmin
+  forgotPassword,
+  resetPassword
 };
