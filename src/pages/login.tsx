@@ -217,12 +217,14 @@ export default function Login() {
           
           {isFromRegister && (
             <div style={{ 
-              padding: '10px', 
-              backgroundColor: '#f0f7ff', 
-              borderRadius: '4px', 
-              marginBottom: '15px',
-              fontSize: '0.9rem',
-              border: '1px solid #cce5ff'
+              padding: '12px 16px', 
+              backgroundColor: '#e8f4fd', 
+              borderRadius: '8px', 
+              marginBottom: '20px',
+              fontSize: '1rem',
+              color: '#004085',
+              border: '1px solid #b8daff',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
             }}>
               <p style={{ margin: 0 }}>
                 <strong>Lưu ý:</strong> Vui lòng đăng nhập với tên người dùng và mật khẩu bạn vừa đăng ký.
