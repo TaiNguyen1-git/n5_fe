@@ -6,12 +6,13 @@ import styles from '../styles/Auth.module.css';
 
 export default function Login() {
   const router = useRouter();
-  const { redirect } = router.query;
+  const { redirect, registered } = router.query;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isFromRegister, setIsFromRegister] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -22,6 +23,21 @@ export default function Login() {
       router.push(redirectPath);
     }
   }, [redirect, router]);
+
+  // Cập nhật username nếu được truyền từ trang đăng ký
+  useEffect(() => {
+    if (router.isReady && router.query.username) {
+      const usernameFromQuery = router.query.username as string;
+      setUsername(usernameFromQuery);
+    }
+  }, [router.isReady, router.query.username]);
+
+  // Kiểm tra xem người dùng có đến từ trang đăng ký không
+  useEffect(() => {
+    if (router.isReady && router.query.registered === 'true') {
+      setIsFromRegister(true);
+    }
+  }, [router.isReady, router.query.registered]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,6 +160,22 @@ export default function Login() {
           <p className={styles.subtitle}>Đăng nhập để tiếp tục</p>
           
           {error && <div className={styles.errorMessage}>{error}</div>}
+          
+          {isFromRegister && (
+            <div style={{ 
+              padding: '10px', 
+              backgroundColor: '#f0f7ff', 
+              borderRadius: '4px', 
+              marginBottom: '15px',
+              fontSize: '0.9rem',
+              border: '1px solid #cce5ff'
+            }}>
+              <p style={{ margin: 0 }}>
+                <strong>Lưu ý:</strong> Vui lòng đăng nhập với tên người dùng và mật khẩu bạn vừa đăng ký.
+                Hệ thống phân biệt chữ hoa và chữ thường.
+              </p>
+            </div>
+          )}
           
           <form onSubmit={handleSubmit}>
             <div className={styles.formGroup}>

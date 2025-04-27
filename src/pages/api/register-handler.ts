@@ -25,7 +25,7 @@ export default async function handler(
     // Định dạng dữ liệu đúng cho API
     const registerData = {
       MaTK: 0,                 // MaTK sẽ được tạo tự động bởi server
-      TenTK: userName,         // TenTK là tên đăng nhập
+      TenTK: userName,         // TenTK là tên đăng nhập, giữ nguyên chữ hoa/thường
       MatKhau: password,       // MatKhau là mật khẩu
       ReMatKhau: confirmPassword || password, // ReMatKhau là xác nhận mật khẩu
       TenHienThi: fullName,    // TenHienThi là họ tên đầy đủ
@@ -70,16 +70,30 @@ export default async function handler(
     console.log('Register handler - Kết quả đăng ký:', data);
     console.log('Register handler - HTTP status:', response.status);
 
-    // Kiểm tra status code và dữ liệu trả về
-    if (!response.ok) {
-      const errorMessage = data.message || data.title || 'Đăng ký thất bại';
+    // XỬ LÝ PHẢN HỒI TỪ BACKEND
+    // Kiểm tra cả status và nội dung phản hồi
+    if (!response.ok || response.status >= 400 || (data && data.statusCode >= 400)) {
+      let errorMessage = 'Đăng ký thất bại';
+      
+      // Xử lý thông báo từ data.value (format thường dùng trong ASP.NET)
+      if (data) {
+        if (typeof data.value === 'string') {
+          errorMessage = data.value;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.title) {
+          errorMessage = data.title;
+        }
+      }
+      
       console.error('Register handler - Lỗi từ server:', {
         status: response.status,
         statusText: response.statusText,
-        error: data
+        data: data
       });
       
-      return res.status(response.status).json({
+      // QUAN TRỌNG: Trả về status 400 và success: false
+      return res.status(400).json({
         success: false,
         message: errorMessage,
         error: data

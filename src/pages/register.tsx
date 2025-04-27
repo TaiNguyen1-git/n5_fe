@@ -89,9 +89,11 @@ export default function Register() {
       const result = await response.json();
       console.log('Register page - Registration response:', result);
       
-      if (response.ok) {
-        // Hiển thị thông báo thành công và chuyển hướng sau 1 giây
+      // Chỉ xử lý thành công nếu cả response.ok và result.success đều là true
+      if (response.ok && result.success === true) {
+        // Hiển thị thông báo thành công và chuyển hướng
         setError('');
+        
         // Thêm thông báo thành công với class màu xanh
         const successMsg = document.createElement('div');
         successMsg.className = styles.successMessage || '';
@@ -113,12 +115,13 @@ export default function Register() {
           router.push('/login?registered=true&username=' + encodeURIComponent(formData.username));
         }, 2000);
       } else {
-        // Xử lý thông báo lỗi
-        setError(result.message || result.title || 'Đăng ký thất bại. Vui lòng thử lại.');
+        // Hiển thị thông báo lỗi từ API
+        const errorMsg = result.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+        setError(errorMsg);
+        console.error("Register page - Registration error:", errorMsg);
       }
     } catch (err: any) {
       console.error('Register page - Registration error:', err);
-      
       setError('Có lỗi xảy ra khi kết nối với máy chủ. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);

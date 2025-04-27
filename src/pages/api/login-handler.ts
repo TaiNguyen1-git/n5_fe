@@ -196,9 +196,25 @@ export default async function handler(
         });
       }
 
-      return res.status(response.status).json({
+      // Xử lý thông báo lỗi từ API
+      let errorMessage = 'Đăng nhập thất bại';
+      
+      // Kiểm tra nếu data là string (thông báo lỗi trực tiếp từ API)
+      if (typeof data === 'string') {
+        errorMessage = data;
+      } 
+      // Kiểm tra các trường hợp lỗi khác
+      else if (data) {
+        if (data.message) errorMessage = data.message;
+        else if (data.title) errorMessage = data.title;
+        else if (data.value) errorMessage = data.value;
+      }
+
+      console.log('Login handler - Lỗi đăng nhập:', errorMessage);
+      
+      return res.status(400).json({
         success: false,
-        message: data.message || data.title || 'Đăng nhập thất bại'
+        message: errorMessage
       });
     } else {
       // Trường hợp server không trả về token nhưng response vẫn OK
