@@ -53,7 +53,7 @@ type UpdateResponse = {
 };
 
 /**
- * Lấy thông tin người dùng hiện tại từ API
+ * Lấy thông tin người dùng hiện tại từ API thông qua next.js API route
  * @returns Thông tin người dùng
  */
 export async function getUserProfile(): Promise<any> {
@@ -69,13 +69,28 @@ export async function getUserProfile(): Promise<any> {
       return null;
     }
 
+    // Lấy thông tin user ID từ localStorage hoặc cookie để gửi kèm
+    const userStr = getAuthCookie(USER_DATA_KEY) || localStorage.getItem(USER_DATA_KEY);
+    let userId = null;
+    
+    if (userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        userId = userData.id || userData.maTK;
+        console.log('getUserProfile - Lấy được ID người dùng từ storage:', userId);
+      } catch (e) {
+        console.error('getUserProfile - Lỗi khi parse thông tin người dùng:', e);
+      }
+    }
+
     console.log('getUserProfile - Đang gọi API với token:', token.substring(0, 15) + '...');
 
     // Gọi API lấy thông tin người dùng
     const response = await fetch('/api/user-profile', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-User-ID': userId ? String(userId) : '' // Gửi ID người dùng qua header
       }
     });
 
@@ -235,6 +250,51 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<Updat
   }
 }
 
+/**
+ * Lấy thông tin chi tiết người dùng theo ID trực tiếp từ API
+ * @param userId ID của người dùng cần lấy thông tin
+ * @returns Thông tin chi tiết của người dùng
+ */
+export async function getUserById(userId: number | string): Promise<any> {
+  try {
+    // Kiểm tra tham số
+    if (!userId) {
+      console.error('getUserById - Thiếu ID người dùng');
+      return null;
+    }
+    
+    // Lấy token
+    const token = getAuthCookie(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) {
+      console.error('getUserById - Không có token xác thực');
+      return null;
+    }
+    
+    console.log(`getUserById - Đang gọi API GetbyId/${userId}`);
+    
+    // Gọi API trực tiếp
+    const response = await fetch(`${BASE_URL}/User/GetbyId/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API trả về lỗi: ${response.status}`);
+    }
+    
+    const userData = await response.json();
+    console.log('getUserById - Dữ liệu nhận được từ API:', userData);
+    
+    return userData;
+  } catch (error) {
+    console.error(`Lỗi khi lấy thông tin người dùng ID ${userId}:`, error);
+    return null;
+  }
+}
+
 // API services cho người dùng
 export const userService = {
   // Lấy tất cả người dùng
@@ -249,9 +309,9 @@ export const userService = {
   },
   
   // Lấy người dùng theo ID
-  getUserById: async (id: number | string): Promise<User> => {
+  getUserByIdAxios: async (id: number | string): Promise<User> => {
     try {
-      const response = await axios.get(`${BASE_URL}/User/GetById?id=${id}`);
+      const response = await axios.get(`${BASE_URL}/User/GetbyId/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching user with id ${id}:`, error);
@@ -294,7 +354,8 @@ export const userService = {
   
   // Export các hàm riêng lẻ
   getUserProfile,
-  updateUserProfile
+  updateUserProfile,
+  getUserById
 };
 
 export default userService; 
