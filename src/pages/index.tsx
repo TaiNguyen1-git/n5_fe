@@ -5,6 +5,44 @@ import Link from 'next/link';
 import { getRooms, Room } from '../services/roomService';
 import { isAuthenticated, getCurrentUser, logout } from '../services/authService';
 import Layout from '../components/Layout';
+import axios from 'axios';
+
+// Cấu trúc phòng từ API mới
+interface APIRoom {
+  maPhong: number;
+  soPhong: string;
+  soNguoi: number;
+  hinhAnh: string | null;
+  moTa: string;
+  loaiPhong: {
+    maLoai: number;
+    tenLoai: string;
+    giaPhong: number;
+    phongs: null;
+  };
+  trangThaiPhong: {
+    maTT: number;
+    tenTT: string;
+    phongs: null;
+  };
+  trangThai: number;
+  tenTT: string;
+}
+
+// Format phòng cho UI
+interface FormattedRoom {
+  id: string;
+  maPhong: number;
+  tenPhong: string;
+  moTa: string;
+  hinhAnh: string;
+  giaTien: number;
+  soLuongKhach: number;
+  trangThai: number;
+  loaiPhong: string;
+  images?: string[];
+  features?: string[];
+}
 
 export default function Home() {
   const router = useRouter();
@@ -17,7 +55,7 @@ export default function Home() {
   const [rooms, setRooms] = useState(1);
   
   // Rooms state
-  const [hotelRooms, setHotelRooms] = useState<Room[]>([]);
+  const [hotelRooms, setHotelRooms] = useState<FormattedRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -30,16 +68,71 @@ export default function Home() {
     setError('');
     
     try {
-      const response = await getRooms();
+      // Sử dụng API proxy của Next.js thay vì gọi trực tiếp
+      const response = await axios.get('/api/proxy-rooms', {
+        timeout: 20000, // 20 giây timeout
+        headers: {
+          'Accept': '*/*'
+        }
+      });
       
-      if (response.success && response.data) {
-        setHotelRooms(response.data);
+      // Kiểm tra response có data không
+      if (response.data && Array.isArray(response.data.items)) {
+        // Format dữ liệu phòng theo đúng cấu trúc hiện tại
+        const formattedRooms: FormattedRoom[] = response.data.items.map((room: any) => ({
+          id: room.maPhong.toString(),
+          maPhong: room.maPhong,
+          tenPhong: room.soPhong || `Phòng ${room.maPhong}`,
+          moTa: room.moTa || 'Thông tin phòng đang được cập nhật',
+          hinhAnh: room.hinhAnh || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop',
+          giaTien: room.loaiPhong?.giaPhong || 500000,
+          soLuongKhach: room.soNguoi || 2,
+          trangThai: room.trangThai || 1,
+          loaiPhong: room.loaiPhong?.tenLoai || 'Standard',
+          features: room.moTa ? room.moTa.split(',').map((item: string) => item.trim()) : ['Wi-Fi miễn phí', 'Điều hòa', 'TV']
+        }));
+        
+        setHotelRooms(formattedRooms);
+        
+        // Cache dữ liệu
+        try {
+          localStorage.setItem('cached_rooms', JSON.stringify(formattedRooms));
+          localStorage.setItem('rooms_cache_time', new Date().toISOString());
+        } catch (cacheError) {
+          console.warn('Error caching rooms data:', cacheError);
+        }
       } else {
-        setError(response.message || 'Đã xảy ra lỗi khi tải dữ liệu từ máy chủ');
+        throw new Error('Không nhận được dữ liệu phòng từ API');
       }
     } catch (err) {
       console.error('Error fetching rooms:', err);
-      setError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+      
+      // Thử lấy dữ liệu từ cache nếu có lỗi
+      try {
+        const cachedRoomsStr = localStorage.getItem('cached_rooms');
+        if (cachedRoomsStr) {
+          const cachedRooms = JSON.parse(cachedRoomsStr);
+          setHotelRooms(cachedRooms);
+          setError('Không thể kết nối đến máy chủ. Dữ liệu đang được tải từ bộ nhớ đệm và có thể không phải là mới nhất.');
+        } else {
+          // Kiểm tra lỗi timeout
+          if (err instanceof Error) {
+            if (err.message.includes('timeout') || 
+                err.message.includes('network error') || 
+                (err as any).code === 'ECONNABORTED' || 
+                (err as any).code === 'ERR_NETWORK') {
+              setError('Máy chủ đang phản hồi chậm. Vui lòng thử lại sau hoặc kiểm tra kết nối internet của bạn.');
+            } else {
+              setError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+            }
+          } else {
+            setError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+          }
+        }
+      } catch (cacheError) {
+        console.error('Error reading from cache:', cacheError);
+        setError('Không thể tải dữ liệu phòng. Vui lòng thử lại sau.');
+      }
     } finally {
       setLoading(false);
     }
@@ -57,33 +150,14 @@ export default function Home() {
     // Get total guest count
     const totalGuests = adults + children;
     
-    // In a real app, you would search for available rooms using the API
-    fetchRoomsWithFilters(totalGuests);
+    // Filter rooms based on guest count
+    const filteredRooms = hotelRooms.filter(room => room.soLuongKhach >= totalGuests);
+    setHotelRooms(filteredRooms.length > 0 ? filteredRooms : hotelRooms);
     
     // Scroll to the rooms section
     const roomsSection = document.getElementById('popular-rooms');
     if (roomsSection) {
       roomsSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-  
-  const fetchRoomsWithFilters = async (guestCount: number) => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      const response = await getRooms({ soLuongKhach: guestCount });
-      
-      if (response.success && response.data) {
-        setHotelRooms(response.data);
-      } else {
-        setError(response.message || 'Đã xảy ra lỗi khi tải dữ liệu từ máy chủ');
-      }
-    } catch (err) {
-      console.error('Error fetching rooms with filters:', err);
-      setError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -180,12 +254,27 @@ export default function Home() {
                       src={room.hinhAnh} 
                       alt={room.tenPhong} 
                       className={styles.roomImage}
+                      onError={(e) => {
+                        // Fallback if image fails to load
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop';
+                      }}
                     />
                     <div className={styles.roomInfo}>
-                      <h3 className={styles.roomName}>{room.tenPhong}</h3>
+                      <div className={styles.roomHeader}>
+                        <h3 className={styles.roomName}>{room.tenPhong}</h3>
+                        <span className={styles.roomType}>{room.loaiPhong}</span>
+                      </div>
+                      <p className={styles.roomFeatures}>
+                        {room.soLuongKhach} khách · {room.features?.slice(0, 2).join(' · ')}
+                      </p>
                       <p className={styles.roomPrice}>
                         {room.giaTien?.toLocaleString('vi-VN')} VNĐ / đêm
                       </p>
+                      <div className={styles.roomStatus}>
+                        <span className={room.trangThai === 1 ? styles.available : styles.unavailable}>
+                          {room.trangThai === 1 ? 'Còn phòng' : 'Hết phòng'}
+                        </span>
+                      </div>
                     </div>
                   </Link>
                 ))}

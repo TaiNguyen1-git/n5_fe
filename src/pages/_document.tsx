@@ -2,9 +2,9 @@ import Document, { Html, Head, Main, NextScript, DocumentContext } from 'next/do
 
 export default function MyDocument() {
   return (
-    <Html lang="en">
+    <Html lang="en" className="light">
       <Head />
-      <body>
+      <body className="light-mode">
         <Main />
         <NextScript />
       </body>

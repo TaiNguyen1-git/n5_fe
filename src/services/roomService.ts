@@ -67,9 +67,60 @@ export const getRooms = async (
       }
     }
     
+    // Kiểm tra bộ nhớ cache trước
+    try {
+      const cachedRoomsStr = localStorage.getItem('cached_rooms');
+      const cacheTimeStr = localStorage.getItem('rooms_cache_time');
+      
+      if (cachedRoomsStr && cacheTimeStr) {
+        const cachedRooms = JSON.parse(cachedRoomsStr);
+        const cacheTime = new Date(cacheTimeStr);
+        const now = new Date();
+        
+        // Nếu cache còn hiệu lực (chưa quá 1 giờ)
+        if (now.getTime() - cacheTime.getTime() < 60 * 60 * 1000) {
+          console.log('Using cached rooms data');
+          
+          // Nếu có filter, lọc từ dữ liệu cache
+          if (filters) {
+            let filteredRooms = cachedRooms;
+            
+            if (filters.giaMin) {
+              filteredRooms = filteredRooms.filter((room: Room) => room.giaTien >= filters.giaMin!);
+            }
+            
+            if (filters.giaMax) {
+              filteredRooms = filteredRooms.filter((room: Room) => room.giaTien <= filters.giaMax!);
+            }
+            
+            if (filters.soLuongKhach) {
+              filteredRooms = filteredRooms.filter((room: Room) => room.soLuongKhach >= filters.soLuongKhach!);
+            }
+            
+            return {
+              success: true,
+              data: filteredRooms,
+              message: 'Dữ liệu đang được tải từ bộ nhớ đệm.'
+            };
+          }
+          
+          return {
+            success: true,
+            data: cachedRooms,
+            message: 'Dữ liệu đang được tải từ bộ nhớ đệm.'
+          };
+        }
+      }
+    } catch (cacheError) {
+      console.warn('Error reading from cache:', cacheError);
+    }
+    
     // Thử gọi API từ frontend proxy trước
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      const response = await fetch(url, { 
+        signal: AbortSignal.timeout(15000),  // Tăng timeout lên 15 giây
+        headers: { 'Cache-Control': 'no-store' }
+      });
       const data = await response.json();
       
       // Cache the rooms data in localStorage
@@ -87,7 +138,10 @@ export const getRooms = async (
       console.warn('Frontend proxy API failed, trying direct backend call:', error);
       
       // Nếu không thành công, thử gọi trực tiếp đến backend
-      const response = await axios.get(`${BASE_URL}/Phong/GetAll`, { timeout: 5000 });
+      const response = await axios.get(`${BASE_URL}/Phong/GetAll`, { 
+        timeout: 20000, // Tăng timeout lên 20 giây
+        headers: { 'Cache-Control': 'no-store' }
+      });
       const formattedData = response.data.map((room: any) => ({
         id: room.maPhong.toString(),
         maPhong: room.maPhong,
@@ -118,38 +172,21 @@ export const getRooms = async (
   } catch (error) {
     console.error('Error fetching rooms:', error);
     
-    // Try to get cached data if available
-    if (typeof window !== 'undefined') {
-      try {
-        const cachedRoomsStr = localStorage.getItem('cached_rooms');
-        const cacheTime = localStorage.getItem('rooms_cache_time');
+    // Thử lấy dữ liệu từ cache nếu có lỗi
+    try {
+      const cachedRoomsStr = localStorage.getItem('cached_rooms');
+      if (cachedRoomsStr) {
+        const cachedRooms = JSON.parse(cachedRoomsStr);
         
-        if (cachedRoomsStr) {
-          const cachedRooms = JSON.parse(cachedRoomsStr);
-          
-          // Apply filters to cached data if needed
-          let filteredRooms = cachedRooms;
-          if (filters) {
-            filteredRooms = cachedRooms.filter((room: Room) => {
-              let matches = true;
-              if (filters.giaMin) matches = matches && room.giaTien >= filters.giaMin;
-              if (filters.giaMax) matches = matches && room.giaTien <= filters.giaMax;
-              if (filters.soLuongKhach) matches = matches && room.soLuongKhach >= filters.soLuongKhach;
-              return matches;
-            });
-          }
-          
-          return {
-            success: true,
-            data: filteredRooms,
-            message: cacheTime ? 
-              `Dữ liệu được tải từ bộ nhớ đệm (cập nhật lần cuối: ${new Date(cacheTime).toLocaleString()}).` : 
-              'Dữ liệu được tải từ bộ nhớ đệm.'
-          };
-        }
-      } catch (cacheError) {
-        console.error('Error reading from cache:', cacheError);
+        // Thêm thông báo để người dùng biết đang xem dữ liệu cache
+        return {
+          success: true,
+          data: cachedRooms,
+          message: 'Không thể kết nối đến máy chủ. Dữ liệu đang được tải từ bộ nhớ đệm và có thể không phải là mới nhất.'
+        };
       }
+    } catch (cacheError) {
+      console.error('Error reading from cache:', cacheError);
     }
     
     return {
@@ -163,141 +200,218 @@ export const getRooms = async (
 /**
  * Get a room by ID
  */
-export const getRoomById = async (id: string): Promise<ApiResponse<Room>> => {
+export const getRoomById = async (id: string) => {
+  console.log(`Fetching room with ID: ${id}`);
   let retryCount = 0;
-  const maxRetries = 2;
-  const retryDelay = 1000; // 1 second
+  const maxRetries = 3;
   
-  const attemptFetch = async (): Promise<ApiResponse<Room>> => {
+  const fetchWithTimeout = async (url: string, options: any, timeout: number) => {
+    const controller = new AbortController();
+    const { signal } = controller;
+    
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
     try {
-      // Thử gọi API frontend proxy
-      try {
-        const response = await fetch(`/api/rooms/${id}`, { 
-          signal: AbortSignal.timeout(5000),
-          headers: { 'Cache-Control': 'no-cache' }
-        });
-        return await response.json();
-      } catch (error) {
-        console.warn('Frontend proxy API failed for room details, trying direct backend call:', error);
-        
-        // Gọi trực tiếp nếu không thành công
-        try {
-          const response = await axios.get(`${BASE_URL}/Phong/GetById?id=${id}`, { 
-            timeout: 8000,
-            headers: { 'Cache-Control': 'no-cache' }
-          });
-          const room = response.data;
-          
-          return {
-            success: true,
-            data: {
-              id: room.maPhong.toString(),
-              maPhong: room.maPhong,
-              tenPhong: room.ten,
-              moTa: room.moTa,
-              hinhAnh: room.hinhAnh,
-              giaTien: room.giaTien,
-              soLuongKhach: room.soLuongKhach,
-              trangThai: room.trangThai,
-              loaiPhong: room.loaiPhong,
-              images: [room.hinhAnh],
-              features: room.moTa.split(',').map((item: string) => item.trim())
-            }
-          };
-        } catch (axiosError) {
-          console.error('Both API calls failed:', axiosError);
-          throw axiosError;
-        }
-      }
+      const response = await fetch(url, { ...options, signal });
+      clearTimeout(timeoutId);
+      return response;
     } catch (error) {
-      // Check if we should retry
-      if (retryCount < maxRetries) {
-        retryCount++;
-        console.log(`Retry attempt ${retryCount} for room ${id}...`);
-        
-        // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
-        return attemptFetch();
-      }
-      
-      console.error(`Error fetching room ${id} after ${retryCount} retries:`, error);
-      
-      // If we've run out of retries, check if we have this room cached in localStorage
-      if (typeof window !== 'undefined') {
-        try {
-          const cachedRoomsStr = localStorage.getItem('cached_rooms');
-          if (cachedRoomsStr) {
-            const cachedRooms = JSON.parse(cachedRoomsStr);
-            const cachedRoom = cachedRooms.find((room: Room) => room.id === id || room.maPhong === parseInt(id));
-            
-            if (cachedRoom) {
-              console.log('Found cached room data:', cachedRoom);
-              return {
-                success: true,
-                data: cachedRoom,
-                message: 'Dữ liệu phòng đang được tải từ bộ nhớ đệm. Một số thông tin có thể không được cập nhật.'
-              };
-            }
-          }
-        } catch (cacheError) {
-          console.error('Error reading from cache:', cacheError);
-        }
-      }
-      
-      return {
-        success: false,
-        message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet và thử lại sau.'
-      };
+      clearTimeout(timeoutId);
+      throw error;
     }
   };
   
-  return attemptFetch();
+  // Kiểm tra cache trước
+  try {
+    const cachedData = localStorage.getItem(`room_${id}`);
+    if (cachedData) {
+      const parsedData = JSON.parse(cachedData);
+      const cacheTime = parsedData.timestamp;
+      const now = new Date().getTime();
+      
+      // Cache hợp lệ trong 5 phút
+      if (now - cacheTime < 5 * 60 * 1000) {
+        console.log('Returning data from cache');
+        return {
+          success: true,
+          data: parsedData.data,
+          message: 'Dữ liệu được lấy từ bộ nhớ đệm'
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error checking cache:', error);
+  }
+  
+  while (retryCount < maxRetries) {
+    try {
+      // Sử dụng fetch API với timeout để gọi API mới
+      const response = await fetchWithTimeout(`/api/room/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }, 15000); // 15 giây timeout
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // API mới trả về cấu trúc {success: boolean, data: Room}
+      if (!data.success) {
+        throw new Error(data.message || 'Không thể lấy thông tin phòng');
+      }
+      
+      // Lưu vào cache
+      try {
+        localStorage.setItem(`room_${id}`, JSON.stringify({
+          data: data.data,
+          timestamp: new Date().getTime()
+        }));
+      } catch (error) {
+        console.error('Error saving to cache:', error);
+      }
+      
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error(`Attempt ${retryCount + 1} failed:`, error);
+      retryCount++;
+      
+      if (retryCount < maxRetries) {
+        // Chờ trước khi thử lại (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+      }
+    }
+  }
+  
+  console.log('All fetch attempts failed, trying Axios as fallback');
+  
+  // Thử với Axios nếu fetch thất bại
+  try {
+    const axiosResponse = await axios.get(`/api/room/${id}`, {
+      timeout: 20000 // 20 giây timeout
+    });
+    
+    const data = axiosResponse.data;
+    
+    // Kiểm tra cấu trúc API mới
+    if (!data.success) {
+      throw new Error(data.message || 'Không thể lấy thông tin phòng');
+    }
+    
+    // Lưu vào cache
+    try {
+      localStorage.setItem(`room_${id}`, JSON.stringify({
+        data: data.data,
+        timestamp: new Date().getTime()
+      }));
+    } catch (error) {
+      console.error('Error saving to cache:', error);
+    }
+    
+    return {
+      success: true,
+      data: data.data
+    };
+  } catch (axiosError) {
+    console.error('Axios attempt also failed:', axiosError);
+    
+    // Kiểm tra xem có dữ liệu trong cache (ngay cả khi hết hạn) để sử dụng làm fallback cuối cùng
+    try {
+      const cachedData = localStorage.getItem(`room_${id}`);
+      if (cachedData) {
+        const parsedData = JSON.parse(cachedData);
+        console.log('Using expired cache as last resort');
+        return {
+          success: true,
+          data: parsedData.data,
+          message: 'Sử dụng dữ liệu cũ từ bộ nhớ đệm do không thể kết nối tới máy chủ'
+        };
+      }
+    } catch (cacheError) {
+      console.error('Error checking expired cache:', cacheError);
+    }
+    
+    return {
+      success: false,
+      message: 'Không thể kết nối tới máy chủ sau nhiều lần thử. Vui lòng kiểm tra kết nối mạng và thử lại sau.'
+    };
+  }
 };
 
 /**
  * Book a room
+ * API đặt phòng: POST https://ptud-web-1.onrender.com/api/DatPhong/Create
+ * Format dữ liệu POST:
+ * {
+ *   "maPhong": number,
+ *   "maKH": number | null,
+ *   "tenKH": string,
+ *   "email": string,
+ *   "soDienThoai": string,
+ *   "ngayBatDau": string, // Format: "YYYY-MM-DD"
+ *   "ngayKetThuc": string, // Format: "YYYY-MM-DD"
+ *   "soLuongKhach": number,
+ *   "tongTien": number,
+ *   "trangThai": number // 1: Đang xử lý, 2: Đã xác nhận, 3: Đã hủy
+ * }
  */
 export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> => {
   try {
-    // Thử gọi API frontend proxy
-    try {
-      const response = await fetch('/api/booking', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bookingData),
-        signal: AbortSignal.timeout(5000)
-      });
-      
-      return await response.json();
-    } catch (error) {
-      console.warn('Frontend proxy API failed for booking, trying direct backend call:', error);
-      
-      // Gọi trực tiếp nếu không thành công
-      const serverData = {
-        maPhong: bookingData.maPhong,
-        maKH: bookingData.maKH || null,
-        tenKH: bookingData.tenKH,
-        email: bookingData.email,
-        soDienThoai: bookingData.soDienThoai || '',
-        ngayBatDau: bookingData.ngayBatDau,
-        ngayKetThuc: bookingData.ngayKetThuc,
-        soLuongKhach: bookingData.soLuongKhach,
-        tongTien: bookingData.tongTien,
-        trangThai: bookingData.trangThai || 1
-      };
-      
-      const response = await axios.post(`${BASE_URL}/DatPhong/Create`, serverData, { timeout: 8000 });
-      
-      return {
-        success: true,
-        message: 'Đặt phòng thành công',
-        data: response.data
-      };
-    }
+    // Cấu trúc dữ liệu đặt phòng theo API
+    const serverData = {
+      maPhong: bookingData.maPhong,
+      maKH: bookingData.maKH || null,
+      tenKH: bookingData.tenKH,
+      email: bookingData.email,
+      soDienThoai: bookingData.soDienThoai || '',
+      ngayBatDau: bookingData.ngayBatDau,
+      ngayKetThuc: bookingData.ngayKetThuc,
+      soLuongKhach: bookingData.soLuongKhach,
+      tongTien: bookingData.tongTien,
+      trangThai: bookingData.trangThai || 1 // Mặc định là 1 (Đang xử lý)
+    };
+    
+    // Gọi API proxy thay vì gọi trực tiếp
+    const response = await axios.post('/api/book-room', serverData, { 
+      timeout: 15000, // 15 giây timeout
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('Booking response:', response.data);
+    
+    return {
+      success: true,
+      message: 'Đặt phòng thành công',
+      data: response.data
+    };
   } catch (error) {
     console.error('Error booking room:', error);
+    
+    // Xử lý lỗi cụ thể
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        // Có response từ server nhưng status code là lỗi
+        return {
+          success: false,
+          message: error.response.data?.message || 'Không thể đặt phòng. Vui lòng kiểm tra thông tin và thử lại.'
+        };
+      } else if (error.request) {
+        // Không nhận được response từ server
+        return {
+          success: false,
+          message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet và thử lại sau.'
+        };
+      }
+    }
+    
     return {
       success: false,
       message: 'Không thể đặt phòng. Vui lòng thử lại sau.'
@@ -307,19 +421,19 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
 
 /**
  * Get user bookings
+ * API lấy danh sách đặt phòng của người dùng: GET https://ptud-web-1.onrender.com/api/DatPhong/GetByUser?id={userId}
  */
 export const getUserBookings = async (userId: string): Promise<ApiResponse<Booking[]>> => {
   try {
-    // Thử gọi API frontend proxy
-    try {
-      const response = await fetch(`/api/booking?userId=${userId}`, { signal: AbortSignal.timeout(5000) });
-      return await response.json();
-    } catch (error) {
-      console.warn('Frontend proxy API failed for user bookings, trying direct backend call:', error);
-      
-      // Gọi trực tiếp nếu không thành công
-      const response = await axios.get(`${BASE_URL}/DatPhong/GetByUser?id=${userId}`, { timeout: 8000 });
-      
+    // Gọi trực tiếp API lấy danh sách đặt phòng
+    const response = await axios.get(`${BASE_URL}/DatPhong/GetByUser?id=${userId}`, { 
+      timeout: 15000, // 15 giây timeout
+      headers: {
+        'Accept': '*/*'
+      }
+    });
+    
+    if (Array.isArray(response.data)) {
       const formattedData = response.data.map((booking: any) => ({
         maHD: booking.maHD,
         maPhong: booking.maPhong,
@@ -334,14 +448,32 @@ export const getUserBookings = async (userId: string): Promise<ApiResponse<Booki
         trangThai: booking.trangThai,
         ngayTao: booking.ngayTao
       }));
-      
+    
       return {
         success: true,
         data: formattedData
       };
+    } else {
+      return {
+        success: false,
+        message: 'Định dạng dữ liệu không hợp lệ',
+        data: []
+      };
     }
   } catch (error) {
     console.error('Error fetching user bookings:', error);
+    
+    // Xử lý lỗi cụ thể
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 404) {
+        return {
+          success: true,
+          message: 'Không tìm thấy đặt phòng nào',
+          data: []
+        };
+      }
+    }
+    
     return {
       success: false,
       message: 'Không thể lấy danh sách đặt phòng. Vui lòng kiểm tra kết nối internet và thử lại sau.',
@@ -352,10 +484,16 @@ export const getUserBookings = async (userId: string): Promise<ApiResponse<Booki
 
 /**
  * Hủy đặt phòng
+ * API hủy đặt phòng: PUT https://ptud-web-1.onrender.com/api/DatPhong/Cancel?id={bookingId}
  */
 export const cancelBooking = async (bookingId: number): Promise<ApiResponse<any>> => {
   try {
-    const response = await axios.put(`${BASE_URL}/DatPhong/Cancel?id=${bookingId}`, {}, { timeout: 8000 });
+    const response = await axios.put(`${BASE_URL}/DatPhong/Cancel?id=${bookingId}`, {}, { 
+      timeout: 15000, // 15 giây timeout
+      headers: {
+        'Accept': '*/*'
+      }
+    });
     
     return {
       success: true,
@@ -364,12 +502,28 @@ export const cancelBooking = async (bookingId: number): Promise<ApiResponse<any>
     };
   } catch (error) {
     console.error('Error canceling booking:', error);
+    
+    // Xử lý lỗi cụ thể
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        return {
+          success: false,
+          message: error.response.data?.message || 'Không thể hủy đặt phòng. Vui lòng thử lại sau.'
+        };
+      }
+    }
+    
     return {
       success: false,
       message: 'Không thể hủy đặt phòng. Vui lòng thử lại sau.'
     };
   }
 };
+
+// API lấy chi tiết phòng: GET https://ptud-web-1.onrender.com/api/Phong/GetById?id={roomId}
+// API lấy danh sách phòng: GET https://ptud-web-1.onrender.com/api/Phong/GetAll
+// API lấy danh sách phòng theo loại: GET https://ptud-web-1.onrender.com/api/Phong/GetByLoai?id={loaiId}
+// API tìm kiếm phòng trống: GET https://ptud-web-1.onrender.com/api/Phong/SearchEmpty?ngayBD={ngayBD}&ngayKT={ngayKT}
 
 export default {
   getRooms,
