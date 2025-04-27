@@ -1,9 +1,32 @@
 // Authentication service
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
 const BASE_URL = 'https://ptud-web-1.onrender.com/api';
 const AUTH_TOKEN_KEY = 'auth_token';
 const USER_DATA_KEY = 'user';
+
+// Cookie options
+const COOKIE_EXPIRES = 7; // 7 days
+const COOKIE_OPTIONS = {
+  expires: COOKIE_EXPIRES,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
+  path: '/'
+};
+
+// Utility functions for cookies
+const setAuthCookie = (name: string, value: string) => {
+  Cookies.set(name, value, COOKIE_OPTIONS);
+};
+
+const getAuthCookie = (name: string): string | undefined => {
+  return Cookies.get(name);
+};
+
+const removeAuthCookie = (name: string) => {
+  Cookies.remove(name, { path: '/' });
+};
 
 type LoginCredentials = {
   username: string;
@@ -30,8 +53,14 @@ type UpdateProfileData = {
 
 // UserData type
 type UserData = {
+  id?: string | number;
   tenTK: string;
+  username?: string;
   tenHienThi: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  phoneNumber?: string;
   role: string;
   loaiTK: number;
 };
@@ -119,10 +148,16 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
     console.log('Login response:', data);
     
     if (response.ok && data.success) {
-      // Create user object from response
+      
       const user: UserData = {
+        id: data.data.user.id || data.data.user.maTK,
         tenTK: data.data.user.username,
+        username: data.data.user.username,
         tenHienThi: data.data.user.fullName,
+        fullName: data.data.user.fullName,
+        email: data.data.user.email,
+        phone: data.data.user.phone || data.data.user.phoneNumber || data.data.user.soDienThoai,
+        phoneNumber: data.data.user.phone || data.data.user.phoneNumber || data.data.user.soDienThoai,
         role: data.data.user.role || 'user',
         loaiTK: data.data.user.loaiTK || 0
       };
@@ -132,12 +167,47 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
       console.log('User account type (loaiTK):', user.loaiTK);
       console.log('User role:', user.role);
       
-      // Store auth token and user data
+      // Store auth token and user data in cookies
+      setAuthCookie(AUTH_TOKEN_KEY, data.data.token);
+      setAuthCookie(USER_DATA_KEY, JSON.stringify(user));
+      
+      // Also store in localStorage as a fallback for older code
       localStorage.setItem(AUTH_TOKEN_KEY, data.data.token);
       localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
       
       // Dispatch login success event
       window.dispatchEvent(new CustomEvent('loginSuccess', { detail: user }));
+      
+      // Fetch additional profile data
+      try {
+        // We'll import this dynamically to avoid circular dependencies
+        setTimeout(() => {
+          import('./userService').then(async ({ getUserProfile }) => {
+            console.log('Login: Đang tải profile đầy đủ...');
+            const profileData = await getUserProfile();
+            if (profileData) {
+              console.log('Login: Đã tải profile đầy đủ từ API:', profileData);
+              
+              // Cập nhật lại cookie/localStorage với dữ liệu mới nhất
+              const userData = {
+                ...user,
+                ...profileData
+              };
+              
+              // Lưu lại vào cả cookie và localStorage
+              setAuthCookie(USER_DATA_KEY, JSON.stringify(userData));
+              localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+              console.log('Login: Đã cập nhật dữ liệu đầy đủ trong storage');
+            } else {
+              console.log('Login: Không lấy được dữ liệu profile từ API');
+            }
+          }).catch(err => {
+            console.error('Error loading user profile after login:', err);
+          });
+        }, 1000); // Delay 1 giây để đảm bảo token đã được lưu và có thể sử dụng
+      } catch (profileError) {
+        console.error('Error fetching profile after login:', profileError);
+      }
       
       return {
         success: true,
@@ -170,17 +240,23 @@ function attemptLocalLogin(credentials: LoginCredentials): AuthResponse {
     // Tạo token giả
     const token = 'local-token-' + Math.random().toString(36).substring(2);
     
-    // Lưu token và thông tin người dùng
-    localStorage.setItem('auth_token', token);
+    // Lưu token và thông tin người dùng vào cookie
     const userData = {
       id: user.id || user.username,
       username: user.username,
+      tenTK: user.username,
       fullName: user.fullName,
+      tenHienThi: user.fullName,
       email: user.email,
       role: user.role || 'customer',
       loaiTK: user.loaiTK || 3
     };
-    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // Lưu vào cả cookie và localStorage
+    setAuthCookie(AUTH_TOKEN_KEY, token);
+    setAuthCookie(USER_DATA_KEY, JSON.stringify(userData));
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+    localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
     
     console.log('Login success with local account:', userData);
     
@@ -389,7 +465,8 @@ export const updateUserProfile = async (profileData: UpdateProfileData): Promise
 export const isAuthenticated = (): boolean => {
   if (typeof window === 'undefined') return false;
   
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  // Kiểm tra token từ cookie
+  const token = getAuthCookie(AUTH_TOKEN_KEY);
   if (!token) return false;
   
   // Kiểm tra token có hợp lệ không
@@ -418,7 +495,8 @@ export const getCurrentUser = (): User | null => {
   // Kiểm tra token trước
   if (!isAuthenticated()) return null;
   
-  const userStr = localStorage.getItem('user');
+  // Lấy thông tin người dùng từ cookie
+  const userStr = getAuthCookie(USER_DATA_KEY);
   if (!userStr) return null;
   
   try {
@@ -458,9 +536,21 @@ export const getCurrentUser = (): User | null => {
       }
     }
     
+    // Chuẩn hóa dữ liệu người dùng để đảm bảo có cả 2 cách đặt tên
+    if (userData.username && !userData.tenTK) userData.tenTK = userData.username;
+    if (userData.tenTK && !userData.username) userData.username = userData.tenTK;
+    if (userData.fullName && !userData.tenHienThi) userData.tenHienThi = userData.fullName;
+    if (userData.tenHienThi && !userData.fullName) userData.fullName = userData.tenHienThi;
+    if (userData.phone && !userData.phoneNumber) userData.phoneNumber = userData.phone;
+    if (userData.phoneNumber && !userData.phone) userData.phone = userData.phoneNumber;
+    if (userData.gender && !userData.gioiTinh) userData.gioiTinh = userData.gender;
+    if (userData.gioiTinh && !userData.gender) userData.gender = userData.gioiTinh;
+    if (userData.address && !userData.diaChi) userData.diaChi = userData.address;
+    if (userData.diaChi && !userData.address) userData.address = userData.diaChi;
+    
     return userData;
   } catch (e) {
-    console.error('Error parsing user data from localStorage', e);
+    console.error('Error parsing user data from cookie', e);
     return null;
   }
 };
@@ -471,8 +561,19 @@ export const getCurrentUser = (): User | null => {
 export const logout = (): void => {
   if (typeof window === 'undefined') return;
   
-  localStorage.removeItem('auth_token');
-  localStorage.removeItem('user');
+  // Xóa tất cả dữ liệu người dùng khỏi cookies
+  removeAuthCookie(AUTH_TOKEN_KEY);
+  removeAuthCookie(USER_DATA_KEY);
+  
+  // Xóa cả localStorage để đồng bộ
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(USER_DATA_KEY);
+  
+  // Xóa các session storage nếu có
+  sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  sessionStorage.removeItem(USER_DATA_KEY);
+  
+  console.log('Đã đăng xuất và xóa dữ liệu người dùng');
   
   // Kích hoạt sự kiện để thông báo cho Header
   const logoutEvent = new Event('user-logout');

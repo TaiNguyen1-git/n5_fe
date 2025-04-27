@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
 import styles from '../styles/Auth.module.css';
 import { getCurrentUser, deleteUser } from '../services/authService';
 import { updateUserProfile, getUserProfile } from '../services/userService';
@@ -63,20 +64,19 @@ export default function Profile() {
       if (profileData) {
         console.log('Thông tin người dùng từ API (chi tiết):', JSON.stringify(profileData));
         
-        // Đảm bảo phone luôn là string
         const phoneNumber = profileData.phone ? String(profileData.phone) : '';
         
         setFormData({
-          username: profileData.tenTK || '',
-          fullName: profileData.tenHienThi || '',
+          username: profileData.tenTK || profileData.username || '',
+          fullName: profileData.tenHienThi || profileData.fullName || '',
           email: profileData.email || '',
           password: '********',
           phoneNumber: phoneNumber,
-          gender: 'Nam',
+          gender: profileData.gioiTinh || profileData.gender || 'Nam',
           birthDay: '',
           birthMonth: '',
           birthYear: '',
-          address: ''
+          address: profileData.diaChi || profileData.address || ''
         });
         
         // Log để debug giá trị phone
@@ -88,27 +88,27 @@ export default function Profile() {
       console.error('Lỗi khi lấy thông tin từ API:', error);
     }
     
-    // Fallback: Nếu không lấy được từ API, dùng dữ liệu từ localStorage
+    // Fallback: Nếu không lấy được từ API, dùng dữ liệu từ cookie hoặc localStorage
     try {
-      const storedUserData = localStorage.getItem('user');
+      const storedUserData = Cookies.get('user') || localStorage.getItem('user');
       if (storedUserData) {
         const userData = JSON.parse(storedUserData);
         
         setFormData({
-          username: userData.username || '',
-          fullName: userData.fullName || '',
+          username: userData.username || userData.tenTK || '',
+          fullName: userData.fullName || userData.tenHienThi || '',
           email: userData.email || '',
           password: '********',
-          phoneNumber: userData.phoneNumber || '',
-          gender: 'Nam',
+          phoneNumber: userData.phoneNumber || userData.phone || '',
+          gender: userData.gender || userData.gioiTinh || 'Nam',
           birthDay: '',
           birthMonth: '',
           birthYear: '',
-          address: ''
+          address: userData.address || userData.diaChi || ''
         });
       }
     } catch (err) {
-      console.error('Error loading user data from localStorage:', err);
+      console.error('Error loading user data:', err);
       setError('Có lỗi khi tải thông tin người dùng');
     }
   };
@@ -152,24 +152,7 @@ export default function Profile() {
       const response = await updateUserProfile(updateData);
 
       if (response.success) {
-        // Cập nhật thông tin vào localStorage
-        const currentUserStr = localStorage.getItem('user');
-        if (currentUserStr) {
-          try {
-            const currentUser = JSON.parse(currentUserStr);
-            const updatedUser = {
-              ...currentUser,
-              fullName: formData.fullName,
-              email: formData.email,
-              phoneNumber: formData.phoneNumber,
-            };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-            console.log('Đã lưu thông tin người dùng vào localStorage:', updatedUser);
-          } catch (err) {
-            console.error('Lỗi khi cập nhật thông tin người dùng vào localStorage:', err);
-          }
-        }
-        
+        // Hiển thị thông báo thành công
         const successMessage = document.createElement('div');
         successMessage.className = styles.successMessage;
         successMessage.textContent = 'Cập nhật thông tin thành công!';
@@ -183,11 +166,11 @@ export default function Profile() {
           }, 3000);
         }
 
-        // Đặt lại trạng thái loading và không chuyển hướng
+        // Đặt lại trạng thái loading
         setLoading(false);
         
         // Tải lại dữ liệu từ API sau khi cập nhật thành công
-        fetchUserProfile();
+        await fetchUserProfile();
       } else {
         setError(response.message || 'Có lỗi xảy ra khi cập nhật thông tin');
       }

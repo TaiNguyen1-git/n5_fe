@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
 import { login, isAuthenticated } from '../services/authService';
 import styles from '../styles/Auth.module.css';
 
@@ -73,13 +74,24 @@ export default function Login() {
       if (result.success) {
         // Lưu token và thông tin người dùng
         if (result.data && result.data.token) {
+          // Lưu token vào cookie
+          Cookies.set('auth_token', result.data.token, {
+            expires: 7, // 7 ngày
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/'
+          });
+          
+          // Cũng lưu vào localStorage để tương thích với code cũ
           localStorage.setItem('auth_token', result.data.token);
           
           // Xử lý dữ liệu người dùng
           const userData = {
             id: result.data.maTK || result.data.id,
             username: result.data.tenTK || result.data.username || result.data.tenDangNhap,
+            tenTK: result.data.tenTK || result.data.username || result.data.tenDangNhap,
             fullName: result.data.tenHienThi || result.data.fullName || result.data.hoTen || result.data.tenTK,
+            tenHienThi: result.data.tenHienThi || result.data.fullName || result.data.hoTen || result.data.tenTK,
             email: result.data.email,
             role: result.data.role || 'customer',
             loaiTK: processLoaiTK(result.data.loaiTK),
@@ -99,7 +111,49 @@ export default function Login() {
           }
           
           console.log('Login page - Thông tin người dùng đầy đủ:', JSON.stringify(userData));
+          
+          // Lưu dữ liệu người dùng vào cả cookie và localStorage
+          Cookies.set('user', JSON.stringify(userData), {
+            expires: 7,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/'
+          });
           localStorage.setItem('user', JSON.stringify(userData));
+          
+          // Tải thông tin profile đầy đủ
+          try {
+            setTimeout(() => {
+              import('../services/userService').then(({ getUserProfile }) => {
+                console.log('Login page: Đang tải profile sau đăng nhập...');
+                getUserProfile().then(profileData => {
+                  if (profileData) {
+                    console.log('Login page: Đã tải thành công profile:', profileData);
+                    
+                    // Cập nhật lại dữ liệu người dùng để đảm bảo đồng bộ
+                    const updatedUserData = {
+                      ...userData,
+                      ...profileData
+                    };
+                    
+                    // Lưu vào cả cookie và localStorage
+                    Cookies.set('user', JSON.stringify(updatedUserData), {
+                      expires: 7,
+                      secure: process.env.NODE_ENV === 'production',
+                      sameSite: 'strict',
+                      path: '/'
+                    });
+                    localStorage.setItem('user', JSON.stringify(updatedUserData));
+                    console.log('Login page: Đã cập nhật dữ liệu người dùng đầy đủ');
+                  } else {
+                    console.log('Login page: Không lấy được profile từ API');
+                  }
+                });
+              });
+            }, 1500); // Đợi 1.5 giây để đảm bảo token đã được lưu và sẵn sàng sử dụng
+          } catch (profileError) {
+            console.error('Lỗi khi tải profile:', profileError);
+          }
           
           // Kích hoạt sự kiện để thông báo cho Header
           const loginEvent = new Event('user-login');
