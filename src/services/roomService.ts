@@ -245,8 +245,11 @@ export const getRoomById = async (id: string) => {
   
   while (retryCount < maxRetries) {
     try {
-      // Sử dụng fetch API với timeout để gọi API mới
-      const response = await fetchWithTimeout(`/api/room/${id}`, {
+      // Sử dụng mã phòng nguyên bản
+      console.log(`Gọi API với mã phòng: ${id}`);
+      
+      // Sử dụng API route trung gian để tránh lỗi CORS
+      const response = await fetchWithTimeout(`/api/room-detail?roomNumber=${id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -257,17 +260,27 @@ export const getRoomById = async (id: string) => {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
-      const data = await response.json();
+      const roomData = await response.json();
       
-      // API mới trả về cấu trúc {success: boolean, data: Room}
-      if (!data.success) {
-        throw new Error(data.message || 'Không thể lấy thông tin phòng');
-      }
+      // Chuyển đổi dữ liệu từ backend sang định dạng frontend cần
+      const formattedData = {
+        id: roomData.maPhong?.toString() || '0',
+        maPhong: roomData.maPhong || 0,
+        tenPhong: roomData.ten || '',
+        moTa: roomData.moTa || '',
+        hinhAnh: roomData.hinhAnh || '',
+        giaTien: roomData.giaTien || 0,
+        soLuongKhach: roomData.soLuongKhach || 1,
+        trangThai: roomData.trangThai || 0,
+        loaiPhong: roomData.loaiPhong || '',
+        images: roomData.hinhAnh ? [roomData.hinhAnh] : [],
+        features: roomData.moTa ? roomData.moTa.split(',').map((item: string) => item.trim()) : []
+      };
       
       // Lưu vào cache
       try {
         localStorage.setItem(`room_${id}`, JSON.stringify({
-          data: data.data,
+          data: formattedData,
           timestamp: new Date().getTime()
         }));
       } catch (error) {
@@ -276,7 +289,7 @@ export const getRoomById = async (id: string) => {
       
       return {
         success: true,
-        data: data.data
+        data: formattedData
       };
     } catch (error) {
       console.error(`Attempt ${retryCount + 1} failed:`, error);
@@ -289,25 +302,39 @@ export const getRoomById = async (id: string) => {
     }
   }
   
-  console.log('All fetch attempts failed, trying Axios as fallback');
+  console.log('All fetch attempts failed, trying axios as fallback');
   
-  // Thử với Axios nếu fetch thất bại
+  // Thử sử dụng axios với API route trung gian
   try {
-    const axiosResponse = await axios.get(`/api/room/${id}`, {
+    // Sử dụng mã phòng nguyên bản
+    console.log(`Fallback: Gọi API với mã phòng: ${id}`);
+    
+    // Sử dụng API route trung gian để tránh lỗi CORS
+    const axiosResponse = await axios.get(`/api/room-detail?roomNumber=${id}`, {
       timeout: 20000 // 20 giây timeout
     });
     
-    const data = axiosResponse.data;
+    const roomData = axiosResponse.data;
     
-    // Kiểm tra cấu trúc API mới
-    if (!data.success) {
-      throw new Error(data.message || 'Không thể lấy thông tin phòng');
-    }
+    // Chuyển đổi dữ liệu từ backend sang định dạng frontend cần
+    const formattedData = {
+      id: roomData.maPhong.toString(),
+      maPhong: roomData.maPhong,
+      tenPhong: roomData.ten,
+      moTa: roomData.moTa,
+      hinhAnh: roomData.hinhAnh,
+      giaTien: roomData.giaTien,
+      soLuongKhach: roomData.soLuongKhach,
+      trangThai: roomData.trangThai,
+      loaiPhong: roomData.loaiPhong,
+      images: [roomData.hinhAnh],
+      features: roomData.moTa.split(',').map((item: string) => item.trim())
+    };
     
     // Lưu vào cache
     try {
       localStorage.setItem(`room_${id}`, JSON.stringify({
-        data: data.data,
+        data: formattedData,
         timestamp: new Date().getTime()
       }));
     } catch (error) {
@@ -316,10 +343,10 @@ export const getRoomById = async (id: string) => {
     
     return {
       success: true,
-      data: data.data
+      data: formattedData
     };
   } catch (axiosError) {
-    console.error('Axios attempt also failed:', axiosError);
+    console.error('Direct backend call also failed:', axiosError);
     
     // Kiểm tra xem có dữ liệu trong cache (ngay cả khi hết hạn) để sử dụng làm fallback cuối cùng
     try {

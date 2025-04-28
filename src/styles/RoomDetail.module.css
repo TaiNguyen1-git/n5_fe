@@ -18,13 +18,28 @@
 
 @media (min-width: 992px) {
   .roomDetailContainer {
-    grid-template-columns: 1fr 1fr 350px;
+    grid-template-columns: 2fr 1fr;
+  }
+  
+  .roomGallery {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  
+  .roomInfo {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  
+  .bookingForm {
+    grid-column: 2;
+    grid-row: 1 / span 2;
   }
 }
 
 /* Room Gallery */
 .roomGallery {
-  grid-column: span 2;
+  width: 100%;
 }
 
 .mainImage {
@@ -171,38 +186,58 @@
 .bookingForm {
   padding: 1.5rem;
   background-color: #f8fafc;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 20px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.bookingForm:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
 .bookingForm h2 {
-  font-size: 1.4rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   margin-bottom: 1.5rem;
   color: #1e3a8a;
   text-align: center;
+  border-bottom: 2px solid #3b82f6;
+  padding-bottom: 0.75rem;
 }
 
 .formGroup {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .formGroup label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #475569;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.95rem;
 }
 
 .formGroup input,
 .formGroup select {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   border: 1px solid #cbd5e1;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 1rem;
+  background-color: white;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .totalPrice {
@@ -210,32 +245,44 @@
   justify-content: space-between;
   align-items: center;
   margin: 1.5rem 0;
-  padding: 0.75rem 0;
+  padding: 1rem 0;
   border-top: 1px solid #e2e8f0;
   border-bottom: 1px solid #e2e8f0;
+  background-color: #f1f5f9;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .price {
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 800;
   color: #0f766e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .bookButton {
   width: 100%;
-  padding: 0.75rem;
+  padding: 1rem;
   background-color: #2563eb;
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 600;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
 }
 
 .bookButton:hover {
   background-color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(29, 78, 216, 0.3);
 }
 
 .bookButton:disabled {
