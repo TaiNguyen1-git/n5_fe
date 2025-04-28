@@ -1,9 +1,70 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const BASE_URL = 'https://ptud-web-1.onrender.com/api';
+// Use relative URL for API calls, Next.js will proxy them
+const BASE_URL = '/api';
 const AUTH_TOKEN_KEY = 'auth_token';
 const USER_DATA_KEY = 'user';
+
+// Axios instance with default config
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10000, // 10 seconds
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
+
+// Add request interceptor
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // Get token from storage
+    const token = getAuthCookie(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY);
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.code === 'ECONNABORTED') {
+      console.error('Request timeout');
+      return Promise.reject({
+        success: false,
+        message: 'Request timeout. Please try again.'
+      });
+    }
+    
+    if (!error.response) {
+      console.error('Network error:', error);
+      return Promise.reject({
+        success: false,
+        message: 'Network error. Please check your connection and try again.'
+      });
+    }
+
+    if (error.response.status === 401) {
+      // Clear auth data
+      Cookies.remove(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      window.location.href = '/login';
+      return Promise.reject({
+        success: false,
+        message: 'Session expired. Please login again.'
+      });
+    }
+
+    return Promise.reject(error.response.data);
+  }
+);
 
 // Cookie options
 const COOKIE_OPTIONS = {
@@ -69,19 +130,14 @@ export async function getUserProfile(): Promise<User | null> {
       return null;
     }
 
-    console.log('getUserProfile - Calling API with token:', token.substring(0, 15) + '...');
+    console.log('getUserProfile - Calling API...');
 
-    const response = await axios.get<ApiResponse<User>>(`${BASE_URL}/TaiKhoan/Profile`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await axiosInstance.get<ApiResponse<User>>('/TaiKhoan/Profile');
 
     if (response.data.success && response.data.data) {
       const userData = response.data.data;
       
       try {
-        // Save to both cookie and localStorage
         setAuthCookie(USER_DATA_KEY, JSON.stringify(userData));
         localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
         console.log('getUserProfile - Updated user data:', userData);
@@ -111,24 +167,11 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<ApiRe
       };
     }
 
-    const token = getAuthCookie(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY);
-    if (!token) {
-      return {
-        success: false,
-        message: 'Authentication token not found'
-      };
-    }
-
     console.log('Updating user profile:', userData);
 
-    const response = await axios.put<ApiResponse>(`${BASE_URL}/TaiKhoan/Update`, userData, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await axiosInstance.put<ApiResponse>('/TaiKhoan/Update', userData);
 
     if (response.data.success) {
-      // Update local storage with new data
       const currentUserStr = getAuthCookie(USER_DATA_KEY) || localStorage.getItem(USER_DATA_KEY);
       if (currentUserStr) {
         try {
@@ -148,14 +191,11 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<ApiRe
     }
 
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating user profile:', error);
-    if (axios.isAxiosError(error) && error.response?.data) {
-      return error.response.data as ApiResponse;
-    }
     return {
       success: false,
-      message: 'Failed to update profile'
+      message: error.message || 'Failed to update profile'
     };
   }
 }
@@ -165,42 +205,27 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<ApiRe
  */
 export async function changePassword(oldPassword: string, newPassword: string): Promise<ApiResponse> {
   try {
-    const token = getAuthCookie(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY);
-    if (!token) {
-      return {
-        success: false,
-        message: 'Authentication token not found'
-      };
-    }
-
-    const response = await axios.put<ApiResponse>(`${BASE_URL}/TaiKhoan/ChangePassword`, {
+    const response = await axiosInstance.put<ApiResponse>('/TaiKhoan/ChangePassword', {
       oldPassword,
       newPassword
-    }, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
     });
 
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error changing password:', error);
-    if (axios.isAxiosError(error) && error.response?.data) {
-      return error.response.data as ApiResponse;
-    }
     return {
       success: false,
-      message: 'Failed to change password'
+      message: error.message || 'Failed to change password'
     };
   }
 }
 
-// API services cho người dùng
+// API services for user management
 export const userService = {
-  // Lấy tất cả người dùng
+  // Get all users
   getAllUsers: async (): Promise<User[]> => {
     try {
-      const response = await axios.get(`${BASE_URL}/User/GetAll`);
+      const response = await axiosInstance.get('/User/GetAll');
       return response.data;
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -208,10 +233,10 @@ export const userService = {
     }
   },
   
-  // Lấy người dùng theo ID
+  // Get user by ID
   getUserById: async (id: number | string): Promise<User> => {
     try {
-      const response = await axios.get(`${BASE_URL}/User/GetById?id=${id}`);
+      const response = await axiosInstance.get(`/User/GetById?id=${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching user with id ${id}:`, error);
@@ -219,10 +244,10 @@ export const userService = {
     }
   },
 
-  // Cập nhật người dùng
+  // Update user
   updateUser: async (id: number | string, userData: Partial<User>): Promise<any> => {
     try {
-      const response = await axios.put(`${BASE_URL}/User/Update?id=${id}`, userData);
+      const response = await axiosInstance.put(`/User/Update?id=${id}`, userData);
       return response.data;
     } catch (error) {
       console.error(`Error updating user with id ${id}:`, error);
@@ -230,10 +255,10 @@ export const userService = {
     }
   },
   
-  // Xóa người dùng
+  // Delete user
   deleteUser: async (id: number | string): Promise<any> => {
     try {
-      const response = await axios.delete(`${BASE_URL}/User/Delete?id=${id}`);
+      const response = await axiosInstance.delete(`/User/Delete?id=${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error deleting user with id ${id}:`, error);
@@ -241,10 +266,10 @@ export const userService = {
     }
   },
   
-  // Kiểm tra xem người dùng đã tồn tại
+  // Check if user exists
   checkUserExists: async (username: string): Promise<boolean> => {
     try {
-      const response = await axios.get(`${BASE_URL}/User/CheckExists?username=${username}`);
+      const response = await axiosInstance.get(`/User/CheckExists?username=${username}`);
       return response.data;
     } catch (error) {
       console.error(`Error checking if user exists: ${username}`, error);
@@ -252,7 +277,7 @@ export const userService = {
     }
   },
   
-  // Export các hàm riêng lẻ
+  // Export individual functions
   getUserProfile,
   updateUserProfile,
   changePassword
