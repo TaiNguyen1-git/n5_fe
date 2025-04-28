@@ -284,17 +284,49 @@ export default function Contact() {
             </div>
             
             <div className={styles.mapSection}>
-              <h2>Bản đồ</h2>
+              <h2>
+                <svg className={styles.sectionIcon} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="currentColor"/>
+                </svg>
+                Bản đồ
+              </h2>
               <div className={styles.map}>
                 <iframe 
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3916.4241674197956!2d106.8127!3d10.9559!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3174d85e042d14b1%3A0xef77cd47a1cc691e!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBCw6FjaCBraG9hIC0gxJDhuqFpIGjhu41jIFF14buRYyBnaWEgVFAuSENN!5e0!3m2!1svi!2s!4v1620000000000!5m2!1svi!2s" 
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d979.5395698051257!2d106.83071003021407!3d10.87199223933095!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3174deb37a7c53c5%3A0xd43b745f0c0759d9!2zMTAgSHXhu7NuaCBWxINuIE5naOG7hywgUGjGsOG7nW5nIELhu611IExvbmcsIEJpw6puIEjDsmEsIMSQ4buTbmcgTmFp!5e0!3m2!1svi!2s!4v1713776636108!5m2!1svi!2s" 
                   width="100%" 
                   height="100%" 
                   style={{ border: 0 }} 
                   allowFullScreen 
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
+                  title="Trường Đại học Lạc Hồng - 10 Huỳnh Văn Nghệ, Bửu Long, Đồng Nai"
                 ></iframe>
+                <div className={styles.mapOverlay}>
+                  <div className={styles.mapPin}>
+                    <div className={styles.mapPinIcon}>
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="currentColor"/>
+                      </svg>
+                    </div>
+                    <div className={styles.mapPinInfo}>
+                      <h3>Trường Đại học Lạc Hồng</h3>
+                      <p>10 Huỳnh Văn Nghệ, P.Bửu Long, TP.Biên Hòa, Đồng Nai</p>
+                      <a 
+                        href="https://www.google.com/maps/dir//Tr%C6%B0%E1%BB%9Dng+%C4%90%E1%BA%A1i+h%E1%BB%8Dc+L%E1%BA%A1c+H%E1%BB%93ng,+10+Hu%E1%BB%B3nh+V%C4%83n+Ngh%E1%BB%87,+Ph%C6%B0%E1%BB%9Dng+B%E1%BB%ADu+Long,+Bi%C3%AAn+H%C3%B2a,+%C4%90%E1%BB%93ng+Nai/@10.8719722,106.8305309,17z"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.mapDirectionBtn}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M22.43 10.59L13.42 1.58C12.64 0.8 11.36 0.8 10.58 1.58L1.57 10.59C0.79 11.37 0.79 12.65 1.57 13.43L10.58 22.44C11.36 23.22 12.64 23.22 13.42 22.44L22.43 13.43C23.21 12.65 23.21 11.37 22.43 10.59ZM12 18.5L5.5 12L12 5.5L18.5 12L12 18.5Z" fill="currentColor"/>
+                          <path d="M12 8.25C10.76 8.25 9.75 9.26 9.75 10.5C9.75 11.74 10.76 12.75 12 12.75C13.24 12.75 14.25 11.74 14.25 10.5C14.25 9.26 13.24 8.25 12 8.25Z" fill="currentColor"/>
+                        </svg>
+                        Chỉ đường
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
