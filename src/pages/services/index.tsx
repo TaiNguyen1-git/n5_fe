@@ -44,7 +44,7 @@ const mapApiToServiceData = (apiData: DichVu[]): Service[] => {
     // Kiểm tra tên dịch vụ để chọn hình ảnh đặc biệt và mô tả
     if (service.ten.toLowerCase().includes('giặt') || service.ten.toLowerCase().includes('ủi')) {
       // Sử dụng hình ảnh minh họa cho dịch vụ giặt ủi
-      imageUrl = 'https://png.pngtree.com/png-clipart/20230913/original/pngtree-laundry-clipart-an-illustration-of-a-washing-machine-cartoon-vector-png-image_11067540.png';
+      imageUrl = '';
       featured = true;
       badge = 'Phổ biến';
       
