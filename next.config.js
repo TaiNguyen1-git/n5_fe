@@ -7,6 +7,9 @@ const nextConfig = {
         destination: 'https://ptud-web-1.onrender.com/api/:path*'
       }
     ]
+  },
+  images: {
+    domains: ['images.unsplash.com'],
   }
 }
 
