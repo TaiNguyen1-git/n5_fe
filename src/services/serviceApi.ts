@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://ptud-web-1.onrender.com/api'; // URL backend mới
+const BASE_URL = '/api'; // Sử dụng proxy đã cấu hình trong next.config.js
 
 // Định nghĩa interface cho dữ liệu dịch vụ
 export interface DichVu {
@@ -12,16 +12,40 @@ export interface DichVu {
   trangThai: number;
 }
 
+// Interface cho response từ API
+interface ApiResponse<T> {
+  items: T[];
+  totalItems: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 // API services cho dịch vụ
 export const serviceApi = {
   // Lấy tất cả dịch vụ
   getAllServices: async (): Promise<DichVu[]> => {
     try {
-      const response = await axios.get(`${BASE_URL}/DichVu/GetAll`);
-      return response.data;
-    } catch (error) {
+      const response = await axios.get<ApiResponse<DichVu>>(`${BASE_URL}/DichVu/GetAll`, {
+        timeout: 15000 // Tăng timeout lên 15 giây
+      });
+      // Trả về mảng items từ response
+      return response.data.items || [];
+    } catch (error: any) {
       console.error('Error fetching services:', error);
-      throw error;
+      
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Kết nối tới máy chủ quá thời gian. Vui lòng thử lại sau.');
+      } else if (error.response) {
+        // Lỗi từ phía server
+        throw new Error(`Lỗi server: ${error.response.status} - ${error.response.data?.message || 'Không xác định'}`);
+      } else if (error.request) {
+        // Không nhận được phản hồi từ server
+        throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.');
+      } else {
+        // Lỗi khác
+        throw new Error('Có lỗi xảy ra khi tải dữ liệu dịch vụ.');
+      }
     }
   },
 

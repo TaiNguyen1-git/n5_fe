@@ -4,10 +4,11 @@ import Head from 'next/head';
 import Image from 'next/image';
 import styles from '../../styles/Services.module.css';
 import Link from 'next/link';
-import { Menu, Dropdown, message, Badge, Button } from 'antd';
+import { Menu, Dropdown, message, Badge, Button, Spin } from 'antd';
 import { DownOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { isAuthenticated, redirectToLoginIfNotAuthenticated, getCurrentUser } from '../../services/authService';
 import Layout from '../../components/Layout';
+import { serviceApi, DichVu } from '../../services/serviceApi';
 
 interface Service {
   id: number;
@@ -16,6 +17,9 @@ interface Service {
   price: number;
   category: string;
   imageUrl: string;
+  featured?: boolean;
+  badge?: string;
+  details?: string[];
 }
 
 interface CartItem {
@@ -27,60 +31,66 @@ const formatPrice = (price: number): string => {
   return `${price.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")} ₫`;
 };
 
-const hotelServices: Service[] = [
-  {
-    id: 1,
-    title: "Dịch vụ dọn phòng tiêu chuẩn",
-    description: "Dọn dẹp toàn diện phòng của bạn, bao gồm gấp giường, hút bụi, lau chùi và vệ sinh phòng tắm.",
-    price: 350000,
-    category: "Dọn dẹp",
-    imageUrl: "https://images.unsplash.com/photo-1600585152220-90363fe7e115?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-  },
-  {
-    id: 2,
-    title: "Dịch vụ đưa đón cao cấp",
-    description: "Dịch vụ tài xế riêng bằng xe sang cho việc đưa đón sân bay hoặc tham quan thành phố.",
-    price: 899000,
-    category: "Di chuyển",
-    imageUrl: "https://images.unsplash.com/photo-1517520287167-4bbf64a00d66?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-  },
-  {
-    id: 3,
-    title: "Ăn uống tại phòng",
-    description: "Thực đơn đa dạng được chuẩn bị bởi đầu bếp nổi tiếng và phục vụ trực tiếp tại phòng của bạn.",
-    price: 455000,
-    category: "Ẩm thực",
-    imageUrl: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-  },
-  {
-    id: 4,
-    title: "Dịch vụ Spa",
-    description: "Massage và liệu pháp spa thư giãn được thực hiện bởi chuyên gia có chứng nhận.",
-    price: 1200000,
-    category: "Sức khỏe",
-    imageUrl: "https://images.unsplash.com/photo-1600334129128-685c5582fd35?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-  },
-  {
-    id: 5,
-    title: "Dịch vụ lễ tân",
-    description: "Hỗ trợ cá nhân hóa cho việc đặt vé, đặt chỗ và sắp xếp các trải nghiệm đặc biệt trong thời gian lưu trú.",
-    price: 250000,
-    category: "Hỗ trợ",
-    imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-  },
-  {
-    id: 6,
-    title: "Trung tâm doanh nhân",
-    description: "Truy cập vào trung tâm doanh nhân đầy đủ tiện nghi với internet tốc độ cao, máy in và phòng họp.",
-    price: 500000,
-    category: "Kinh doanh",
-    imageUrl: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-  },
-];
+// Chuyển đổi từ dữ liệu API sang định dạng của frontend
+const mapApiToServiceData = (apiData: DichVu[]): Service[] => {
+  return apiData.map(service => {
+    let imageUrl = 'https://png.pngtree.com/png-clipart/20230913/original/pngtree-laundry-clipart-an-illustration-of-a-washing-machine-cartoon-vector-png-image_11067540.png';
+    let description = service.moTa;
+    let title = service.ten;
+    let featured = false;
+    let badge = '';
+    let details: string[] = [];
+    
+    // Kiểm tra tên dịch vụ để chọn hình ảnh đặc biệt và mô tả
+    if (service.ten.toLowerCase().includes('giặt') || service.ten.toLowerCase().includes('ủi')) {
+      // Sử dụng hình ảnh minh họa cho dịch vụ giặt ủi
+      imageUrl = 'https://png.pngtree.com/png-clipart/20230913/original/pngtree-laundry-clipart-an-illustration-of-a-washing-machine-cartoon-vector-png-image_11067540.png';
+      featured = true;
+      badge = 'Phổ biến';
+      
+      // Thêm chi tiết dịch vụ
+      details = [
+      ];
+      
+      // Nếu mô tả quá ngắn hoặc chỉ là "string", cung cấp mô tả chi tiết hơn
+      if (!description || description === "string" || description.length < 10) {
+        description = "Dịch vụ giặt ủi cao cấp với thiết bị hiện đại";
+      }
+      
+      // Đảm bảo tên dịch vụ rõ ràng
+      if (title === "string" || !title || title.length < 3) {
+        title = "Dịch vụ giặt ủi cao cấp";
+      }
+    }
+    // Kiểm tra URL hình ảnh
+    else if (service.hinhAnh && service.hinhAnh !== 'string') {
+      // Nếu là URL tương đối, thêm domain
+      if (service.hinhAnh.startsWith('/')) {
+        imageUrl = `https://ptud-web-1.onrender.com${service.hinhAnh}`;
+      } 
+      // Nếu là URL đầy đủ, sử dụng trực tiếp
+      else if (service.hinhAnh.startsWith('http')) {
+        imageUrl = service.hinhAnh;
+      }
+    }
+    
+    return {
+      id: service.maDichVu || 0,
+      title,
+      description,
+      price: service.gia,
+      category: 'Dịch vụ', // Sử dụng loại chung nếu không có category từ API
+      imageUrl,
+      featured,
+      badge,
+      details
+    };
+  });
+};
 
 const Services = () => {
   const router = useRouter();
-  const [services, setServices] = useState<Service[]>(hotelServices);
+  const [services, setServices] = useState<Service[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
@@ -88,6 +98,29 @@ const Services = () => {
   const [sortOrder, setSortOrder] = useState('');
   const [showCart, setShowCart] = useState(false);
   const [addingToCart, setAddingToCart] = useState<{[key: number]: boolean}>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Lấy dữ liệu từ API khi component được mount
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        const apiData = await serviceApi.getAllServices();
+        console.log('API data received:', apiData); // Ghi log dữ liệu nhận được
+        const mappedServices = mapApiToServiceData(apiData);
+        setServices(mappedServices);
+        setError(null);
+      } catch (err: any) {
+        console.error('Lỗi khi lấy dữ liệu dịch vụ:', err);
+        setError(err?.message || 'Không thể tải dữ liệu dịch vụ. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   const categories = Array.from(new Set(services.map(service => service.category)));
 
@@ -213,16 +246,18 @@ const Services = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           
-          <select
-            className={styles.categoryFilter}
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            <option value="all">Tất cả danh mục</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
+          {categories.length > 0 && (
+            <select
+              className={styles.categoryFilter}
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="all">Tất cả danh mục</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          )}
 
           <div className={styles.cartButton}>
             <Badge count={cart.reduce((total, item) => total + item.quantity, 0)} showZero>
@@ -238,145 +273,156 @@ const Services = () => {
           </div>
         </div>
         
-        <div className={styles.servicesContainer}>
-          <div className={styles.filterSection}>
-            <h2>Sắp xếp kết quả</h2>
-            <div className={styles.sortOptions}>
-              <label className={styles.radioLabel}>
-                <input
-                  type="radio"
-                  name="sort"
-                  value="highest"
-                  checked={sortOrder === 'highest'}
-                  onChange={() => setSortOrder('highest')}
-                />
-                <span>Giá cao nhất</span>
-              </label>
-              <label className={styles.radioLabel}>
-                <input
-                  type="radio"
-                  name="sort"
-                  value="lowest"
-                  checked={sortOrder === 'lowest'}
-                  onChange={() => setSortOrder('lowest')}
-                />
-                <span>Giá thấp nhất</span>
-              </label>
-            </div>
-
-            <div className={styles.categoryFilter}>
-              <h2>Danh mục dịch vụ</h2>
-              <div className={styles.categoryOptions}>
+        {loading ? (
+          <div className={styles.loadingContainer}>
+            <Spin size="large" />
+            <p>Đang tải dịch vụ...</p>
+          </div>
+        ) : error ? (
+          <div className={styles.errorContainer}>
+            <p>{error}</p>
+            <Button onClick={() => window.location.reload()}>Thử lại</Button>
+          </div>
+        ) : (
+          <div className={styles.servicesContainer}>
+            <div className={styles.filterSection}>
+              <h2>Sắp xếp kết quả</h2>
+              <div className={styles.sortOptions}>
                 <label className={styles.radioLabel}>
                   <input
                     type="radio"
-                    name="category"
-                    value="all"
-                    checked={selectedCategory === 'all'}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    name="sort"
+                    value="highest"
+                    checked={sortOrder === 'highest'}
+                    onChange={() => setSortOrder('highest')}
                   />
-                  <span>Tất cả dịch vụ</span>
+                  Giá cao đến thấp
                 </label>
-                {categories.filter(c => c !== 'all').map(category => (
-                  <label key={category} className={styles.radioLabel}>
-                    <input
-                      type="radio"
-                      name="category"
-                      value={category}
-                      checked={selectedCategory === category}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                    />
-                    <span>{category}</span>
-                  </label>
-                ))}
+                <label className={styles.radioLabel}>
+                  <input
+                    type="radio"
+                    name="sort"
+                    value="lowest"
+                    checked={sortOrder === 'lowest' || sortOrder === ''}
+                    onChange={() => setSortOrder('lowest')}
+                  />
+                  Giá thấp đến cao
+                </label>
               </div>
             </div>
-          </div>
 
-          <div className={styles.servicesList}>
-            <div className={styles.servicesGrid}>
-              {filteredServices.map((service) => (
-                <div key={service.id} className={styles.serviceCard}>
-                  <div className={styles.serviceBanner}>
-                    <Image
-                      src={service.imageUrl}
-                      alt={service.title}
-                      className={styles.serviceImage}
-                      width={400}
-                      height={200}
-                    />
-                  </div>
-                  <div className={styles.serviceCardContent}>
-                    <div className={styles.serviceInfo}>
+            {filteredServices.length > 0 ? (
+              <div className={styles.serviceGrid}>
+                {filteredServices.map(service => (
+                  <div key={service.id} className={styles.serviceCard}>
+                    <div className={styles.serviceImageContainer}>
+                      <Image 
+                        src={service.imageUrl} 
+                        alt={service.title}
+                        width={300}
+                        height={200}
+                        className={styles.serviceImage}
+                        unoptimized
+                        onError={(e) => {
+                          (e.target as any).src = 'https://via.placeholder.com/500?text=Dịch+vụ+khách+sạn';
+                        }}
+                      />
+                      <div className={styles.serviceCategory}>{service.category}</div>
+                      {service.badge && (
+                        <div className={styles.serviceBadge}>{service.badge}</div>
+                      )}
+                    </div>
+                    <div className={styles.serviceContent}>
                       <h3 className={styles.serviceTitle}>{service.title}</h3>
                       <p className={styles.serviceDescription}>{service.description}</p>
-                      <span className={styles.serviceCategory}>{service.category}</span>
-                    </div>
-                    <div className={styles.serviceFooter}>
-                      <span className={styles.price}>{formatPrice(service.price)}</span>
-                      <button 
-                        className={styles.addButton}
-                        onClick={() => handleAddToCart(service)}
-                        disabled={addingToCart[service.id]}
-                      >
-                        {addingToCart[service.id] ? 'Đang thêm...' : 'Thêm vào giỏ'}
-                      </button>
+                      
+                      {service.details && service.details.length > 0 && (
+                        <ul className={styles.serviceDetailsList}>
+                          {service.details.map((detail, index) => (
+                            <li key={index} className={styles.serviceDetailItem}>{detail}</li>
+                          ))}
+                        </ul>
+                      )}
+                      
+                      <div className={styles.servicePriceRow}>
+                        <span className={styles.servicePrice}>{formatPrice(service.price)}</span>
+                        <Button
+                          type="primary"
+                          onClick={() => handleAddToCart(service)}
+                          loading={addingToCart[service.id]}
+                        >
+                          Thêm vào giỏ
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Modal giỏ hàng */}
-        {showCart && (
-          <div className={styles.modalOverlay} onClick={() => setShowCart(false)}>
-            <div className={styles.cartModal} onClick={e => e.stopPropagation()}>
-              <h2 className={styles.cartTitle}>Giỏ dịch vụ của bạn</h2>
-              
-              {cart.length === 0 ? (
-                <div className={styles.emptyCart}>Giỏ dịch vụ trống</div>
-              ) : (
-                <>
-                  {cart.map(item => (
-                    <div key={item.service.id} className={styles.cartItem}>
-                      <div className={styles.cartItemInfo}>
-                        <h4>{item.service.title}</h4>
-                        <div className={styles.cartItemPrice}>{formatPrice(item.service.price)}</div>
-                      </div>
-                      <div className={styles.cartQuantity}>
-                        <button 
-                          className={styles.quantityButton}
-                          onClick={() => updateQuantity(item.service.id, -1)}
-                        >
-                          -
-                        </button>
-                        <span className={styles.quantityCount}>{item.quantity}</span>
-                        <button 
-                          className={styles.quantityButton}
-                          onClick={() => updateQuantity(item.service.id, 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                ))}
+              </div>
+            ) : (
+              <div className={styles.noResults}>
+                <p>Không tìm thấy dịch vụ nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
+              </div>
+            )}
+            
+            {/* Modal giỏ hàng */}
+            {showCart && (
+              <div className={styles.cartModal}>
+                <div className={styles.cartContent}>
+                  <div className={styles.cartHeader}>
+                    <h2>Giỏ hàng của bạn</h2>
+                    <button className={styles.closeButton} onClick={() => setShowCart(false)}>×</button>
+                  </div>
                   
-                  <div className={styles.cartTotal}>
-                    <div>Tổng tiền:</div>
-                    <div className={styles.totalAmount}>{formatPrice(calculateTotal())}</div>
-                  </div>
-
-                  <button 
-                    className={styles.checkoutButton}
-                    onClick={handleCheckout}
-                  >
-                    {isAuthenticated() ? 'Tiến hành thanh toán' : 'Đăng nhập để thanh toán'}
-                  </button>
-                </>
-              )}
-            </div>
+                  {cart.length > 0 ? (
+                    <>
+                      <div className={styles.cartItems}>
+                        {cart.map(item => (
+                          <div key={item.service.id} className={styles.cartItem}>
+                            <div className={styles.cartItemImage}>
+                              <Image
+                                src={item.service.imageUrl}
+                                alt={item.service.title}
+                                width={80}
+                                height={60}
+                              />
+                            </div>
+                            <div className={styles.cartItemInfo}>
+                              <h4>{item.service.title}</h4>
+                              <p className={styles.itemPrice}>{formatPrice(item.service.price)}</p>
+                            </div>
+                            <div className={styles.cartItemQuantity}>
+                              <button onClick={() => updateQuantity(item.service.id, -1)}>-</button>
+                              <span>{item.quantity}</span>
+                              <button onClick={() => updateQuantity(item.service.id, 1)}>+</button>
+                            </div>
+                            <div className={styles.cartItemTotal}>
+                              {formatPrice(item.service.price * item.quantity)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className={styles.cartFooter}>
+                        <div className={styles.cartTotal}>
+                          <span>Tổng cộng:</span>
+                          <span className={styles.totalPrice}>{formatPrice(calculateTotal())}</span>
+                        </div>
+                        <Button type="primary" size="large" onClick={handleCheckout}>
+                          Thanh toán
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className={styles.emptyCart}>
+                      <p>Giỏ hàng của bạn đang trống</p>
+                      <Button type="primary" onClick={() => setShowCart(false)}>
+                        Tiếp tục mua sắm
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
