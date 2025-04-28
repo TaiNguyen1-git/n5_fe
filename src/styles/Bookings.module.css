@@ -112,3 +112,88 @@
   margin-bottom: 8px;
   font-weight: 500;
 }
+
+.bookingStats {
+  margin-bottom: 30px;
+}
+
+.bookingStats .ant-row {
+  margin-bottom: 20px;
+}
+
+.bookingStats .ant-card {
+  height: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.bookingStats .ant-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.bookingStats .ant-card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.bookingStats .ant-statistic {
+  width: 100%;
+}
+
+.bookingStats .ant-statistic-title {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+  text-align: center;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bookingStats .ant-statistic-content {
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.bookingStats .ant-statistic-content-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+}
+
+.bookingStats .ant-statistic-content-prefix {
+  margin-right: 8px;
+}
+
+.bookingStats .ant-statistic-content-suffix {
+  font-size: 16px;
+  margin-left: 4px;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .bookingStats .ant-card-body {
+    padding: 15px 10px;
+  }
+  
+  .bookingStats .ant-statistic-title {
+    font-size: 12px;
+  }
+  
+  .bookingStats .ant-statistic-content {
+    font-size: 18px;
+  }
+  
+  .bookingStats .ant-statistic-content-suffix {
+    font-size: 14px;
+  }
+}

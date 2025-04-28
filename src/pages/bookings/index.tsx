@@ -438,13 +438,13 @@ export default function BookingHistory() {
           
           {/* Dashboard Stats */}
           <div className={styles.bookingStats}>
-            <Row gutter={16}>
+            <Row gutter={[16, 16]}>
               <Col xs={24} sm={12} md={8} lg={4}>
                 <Card>
                   <Statistic
                     title="Tổng số đặt phòng"
                     value={totalBookings}
-                    prefix={<HistoryOutlined />}
+                    prefix={<HistoryOutlined style={{ fontSize: '18px' }} />}
                   />
                 </Card>
               </Col>
@@ -454,7 +454,7 @@ export default function BookingHistory() {
                     title="Sắp tới"
                     value={upcomingBookings}
                     valueStyle={{ color: '#1890ff' }}
-                    prefix={<CalendarOutlined />}
+                    prefix={<CalendarOutlined style={{ fontSize: '18px' }} />}
                   />
                 </Card>
               </Col>
@@ -464,7 +464,7 @@ export default function BookingHistory() {
                     title="Đang diễn ra"
                     value={activeBookings}
                     valueStyle={{ color: '#52c41a' }}
-                    prefix={<CheckOutlined />}
+                    prefix={<CheckOutlined style={{ fontSize: '18px' }} />}
                   />
                 </Card>
               </Col>
@@ -474,7 +474,7 @@ export default function BookingHistory() {
                     title="Hoàn thành"
                     value={completedBookings}
                     valueStyle={{ color: '#722ed1' }}
-                    prefix={<CheckOutlined />}
+                    prefix={<CheckOutlined style={{ fontSize: '18px' }} />}
                   />
                 </Card>
               </Col>
@@ -484,7 +484,7 @@ export default function BookingHistory() {
                     title="Đã hủy"
                     value={cancelledBookings}
                     valueStyle={{ color: '#f5222d' }}
-                    prefix={<CloseOutlined />}
+                    prefix={<CloseOutlined style={{ fontSize: '18px' }} />}
                   />
                 </Card>
               </Col>
@@ -496,6 +496,7 @@ export default function BookingHistory() {
                     precision={0}
                     valueStyle={{ color: '#cf1322' }}
                     suffix="VNĐ"
+                    formatter={(value) => value?.toLocaleString('vi-VN')}
                   />
                 </Card>
               </Col>
