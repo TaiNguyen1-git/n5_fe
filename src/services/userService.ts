@@ -1,70 +1,9 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-// Use relative URL for API calls, Next.js will proxy them
-const BASE_URL = '/api';
+const BASE_URL = 'https://ptud-web-1.onrender.com/api';
 const AUTH_TOKEN_KEY = 'auth_token';
 const USER_DATA_KEY = 'user';
-
-// Axios instance with default config
-const axiosInstance = axios.create({
-  baseURL: BASE_URL,
-  timeout: 10000, // 10 seconds
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
-});
-
-// Add request interceptor
-axiosInstance.interceptors.request.use(
-  (config) => {
-    // Get token from storage
-    const token = getAuthCookie(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY);
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.code === 'ECONNABORTED') {
-      console.error('Request timeout');
-      return Promise.reject({
-        success: false,
-        message: 'Request timeout. Please try again.'
-      });
-    }
-    
-    if (!error.response) {
-      console.error('Network error:', error);
-      return Promise.reject({
-        success: false,
-        message: 'Network error. Please check your connection and try again.'
-      });
-    }
-
-    if (error.response.status === 401) {
-      // Clear auth data
-      Cookies.remove(AUTH_TOKEN_KEY);
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      window.location.href = '/login';
-      return Promise.reject({
-        success: false,
-        message: 'Session expired. Please login again.'
-      });
-    }
-
-    return Promise.reject(error.response.data);
-  }
-);
 
 // Cookie options
 const COOKIE_OPTIONS = {
@@ -83,7 +22,7 @@ const setAuthCookie = (name: string, value: string) => {
   Cookies.set(name, value, COOKIE_OPTIONS);
 };
 
-// User interface matching backend structure
+// Định nghĩa interface cho dữ liệu người dùng
 export interface User {
   maTK?: number | string;
   tenDangNhap: string;
@@ -98,134 +37,229 @@ export interface User {
   ngayTao?: string;
 }
 
-// Update data type matching backend structure
+// Định nghĩa kiểu dữ liệu cho thông tin cập nhật
 export type UserUpdateData = {
-  tenDangNhap: string;
-  hoTen?: string;
-  soDienThoai?: string;
+  tenTK: string;
+  tenHienThi?: string;
+  phone?: string;
   email?: string;
-  diaChi?: string;
-  gioiTinh?: string;
-  ngaySinh?: string;
 };
 
-// API response type
-type ApiResponse<T = any> = {
+// Định nghĩa kiểu dữ liệu phản hồi
+type UpdateResponse = {
   success: boolean;
   message: string;
-  data?: T;
+  data?: any;
 };
 
 /**
- * Get current user profile from API
+ * Lấy thông tin người dùng hiện tại từ API
+ * @returns Thông tin người dùng
  */
-export async function getUserProfile(): Promise<User | null> {
+export async function getUserProfile(): Promise<any> {
   try {
+    // Kiểm tra xác thực
     if (typeof window === 'undefined') {
       return null;
     }
 
+    // Lấy token từ cookie hoặc localStorage
     const token = getAuthCookie(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY);
     if (!token) {
       return null;
     }
 
-    console.log('getUserProfile - Calling API...');
+    console.log('getUserProfile - Đang gọi API với token:', token.substring(0, 15) + '...');
 
-    const response = await axiosInstance.get<ApiResponse<User>>('/TaiKhoan/Profile');
+    // Gọi API lấy thông tin người dùng
+    const response = await fetch('/api/user-profile', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-    if (response.data.success && response.data.data) {
-      const userData = response.data.data;
+    if (response.ok) {
+      const responseData = await response.json();
+      console.log('getUserProfile - API response:', responseData);
       
-      try {
-        setAuthCookie(USER_DATA_KEY, JSON.stringify(userData));
-        localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-        console.log('getUserProfile - Updated user data:', userData);
-      } catch (storageError) {
-        console.error('getUserProfile - Error updating user data:', storageError);
+      if (responseData.data) {
+        // Log để debug
+        console.log('getUserProfile - Số điện thoại:', responseData.data.phone);
+        console.log('getUserProfile - Kiểu dữ liệu số điện thoại:', typeof responseData.data.phone);
+        
+        try {
+          // Đọc dữ liệu hiện tại từ cookie hoặc localStorage
+          const currentUserStr = getAuthCookie(USER_DATA_KEY) || localStorage.getItem(USER_DATA_KEY);
+          let currentUser: any = {};
+          
+          if (currentUserStr) {
+            try {
+              currentUser = JSON.parse(currentUserStr);
+            } catch (parseError) {
+              console.error('Error parsing user data:', parseError);
+            }
+          }
+          
+          // Xây dựng đối tượng người dùng đầy đủ
+          const updatedUserData = {
+            ...currentUser,
+            ...responseData.data,
+            // Đảm bảo những trường quan trọng luôn được cập nhật đúng
+            id: responseData.data.id || responseData.data.maTK || currentUser.id,
+            username: responseData.data.username || responseData.data.tenTK || currentUser.username,
+            tenTK: responseData.data.tenTK || responseData.data.username || currentUser.tenTK,
+            fullName: responseData.data.fullName || responseData.data.tenHienThi || currentUser.fullName,
+            tenHienThi: responseData.data.tenHienThi || responseData.data.fullName || currentUser.tenHienThi,
+            email: responseData.data.email || currentUser.email,
+            phone: responseData.data.phone || responseData.data.phoneNumber || currentUser.phone,
+            phoneNumber: responseData.data.phoneNumber || responseData.data.phone || currentUser.phoneNumber
+          };
+          
+          // Đảm bảo loaiTK là số
+          if (typeof updatedUserData.loaiTK === 'string') {
+            updatedUserData.loaiTK = parseInt(updatedUserData.loaiTK, 10);
+          }
+          
+          // Đảm bảo role được đồng bộ với loaiTK
+          if (updatedUserData.loaiTK === 1) {
+            updatedUserData.role = 'admin';
+          } else if (updatedUserData.loaiTK === 2) {
+            updatedUserData.role = 'staff';
+          } else {
+            updatedUserData.role = 'customer';
+          }
+          
+          console.log('getUserProfile - Đồng bộ role từ loaiTK:', {
+            loaiTK: updatedUserData.loaiTK,
+            role: updatedUserData.role
+          });
+          
+          // Lưu dữ liệu mới vào cả cookie và localStorage
+          setAuthCookie(USER_DATA_KEY, JSON.stringify(updatedUserData));
+          localStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUserData));
+          console.log('getUserProfile - Đã cập nhật dữ liệu người dùng:', updatedUserData);
+          
+          return updatedUserData;
+        } catch (storageError) {
+          console.error('getUserProfile - Lỗi khi cập nhật dữ liệu người dùng:', storageError);
+          return responseData.data;
+        }
       }
       
-      return userData;
+      return responseData.data;
     }
     
     return null;
   } catch (error) {
-    console.error('Error getting user profile:', error);
+    console.error('Lỗi khi lấy thông tin người dùng:', error);
     return null;
   }
 }
 
 /**
- * Update user profile
+ * Cập nhật thông tin người dùng
+ * @param userData Thông tin cần cập nhật
+ * @returns Kết quả cập nhật
  */
-export async function updateUserProfile(userData: UserUpdateData): Promise<ApiResponse> {
+export async function updateUserProfile(userData: UserUpdateData): Promise<UpdateResponse> {
   try {
+    // Kiểm tra xác thực
     if (typeof window === 'undefined') {
       return {
         success: false,
-        message: 'Authentication required'
+        message: 'Bạn cần đăng nhập để thực hiện chức năng này'
       };
     }
 
-    console.log('Updating user profile:', userData);
+    // Lấy token từ cookie hoặc localStorage
+    const token = getAuthCookie(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) {
+      return {
+        success: false,
+        message: 'Không tìm thấy thông tin xác thực'
+      };
+    }
 
-    const response = await axiosInstance.put<ApiResponse>('/TaiKhoan/Update', userData);
+    console.log('Đang cập nhật thông tin người dùng:', userData);
 
-    if (response.data.success) {
+    // Gọi API cập nhật thông qua Next.js API route
+    const response = await fetch('/api/user-update', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(userData)
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      // Cập nhật thông tin người dùng trong cookie và localStorage
       const currentUserStr = getAuthCookie(USER_DATA_KEY) || localStorage.getItem(USER_DATA_KEY);
       if (currentUserStr) {
         try {
           const currentUser = JSON.parse(currentUserStr);
           const updatedUser = {
             ...currentUser,
-            ...userData
+            fullName: userData.tenHienThi || currentUser.fullName,
+            tenHienThi: userData.tenHienThi || currentUser.tenHienThi,
+            email: userData.email || currentUser.email,
+            phoneNumber: userData.phone || currentUser.phoneNumber,
+            phone: userData.phone || currentUser.phone,
+            username: userData.tenTK || currentUser.username || currentUser.tenTK,
+            tenTK: userData.tenTK || currentUser.tenTK || currentUser.username
           };
           
+          // Lưu dữ liệu vào cả cookie và localStorage
           setAuthCookie(USER_DATA_KEY, JSON.stringify(updatedUser));
           localStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUser));
-          console.log('userService: Updated user data in storage:', updatedUser);
-        } catch (storageError) {
-          console.error('Error updating local storage:', storageError);
+          console.log('userService: Đã cập nhật dữ liệu người dùng trong storage:', updatedUser);
+          
+          // Ngay sau khi cập nhật dữ liệu trong cookie/localStorage, chúng ta gọi API
+          // để lấy dữ liệu mới nhất từ server và cập nhật lại
+          try {
+            setTimeout(async () => {
+              console.log('userService: Đang đồng bộ hóa dữ liệu với server...');
+              const profileData = await getUserProfile();
+              console.log('userService: Đồng bộ hóa dữ liệu thành công:', profileData);
+            }, 1000); // Delay 1 giây để đảm bảo server đã cập nhật xong dữ liệu
+          } catch (syncError) {
+            console.error('userService: Lỗi khi đồng bộ hóa dữ liệu:', syncError);
+          }
+        } catch (err) {
+          console.error('Lỗi khi cập nhật thông tin người dùng:', err);
         }
       }
+      
+      return {
+        success: true,
+        message: result.message || 'Cập nhật thông tin thành công',
+        data: result.data
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message || 'Cập nhật thông tin thất bại',
+        data: result.data
+      };
     }
-
-    return response.data;
-  } catch (error: any) {
-    console.error('Error updating user profile:', error);
+  } catch (error) {
+    console.error('Lỗi khi cập nhật thông tin người dùng:', error);
     return {
       success: false,
-      message: error.message || 'Failed to update profile'
+      message: 'Đã xảy ra lỗi khi cập nhật thông tin. Vui lòng thử lại sau.'
     };
   }
 }
 
-/**
- * Change password
- */
-export async function changePassword(oldPassword: string, newPassword: string): Promise<ApiResponse> {
-  try {
-    const response = await axiosInstance.put<ApiResponse>('/TaiKhoan/ChangePassword', {
-      oldPassword,
-      newPassword
-    });
-
-    return response.data;
-  } catch (error: any) {
-    console.error('Error changing password:', error);
-    return {
-      success: false,
-      message: error.message || 'Failed to change password'
-    };
-  }
-}
-
-// API services for user management
+// API services cho người dùng
 export const userService = {
-  // Get all users
+  // Lấy tất cả người dùng
   getAllUsers: async (): Promise<User[]> => {
     try {
-      const response = await axiosInstance.get('/User/GetAll');
+      const response = await axios.get(`${BASE_URL}/User/GetAll`);
       return response.data;
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -233,10 +267,10 @@ export const userService = {
     }
   },
   
-  // Get user by ID
+  // Lấy người dùng theo ID
   getUserById: async (id: number | string): Promise<User> => {
     try {
-      const response = await axiosInstance.get(`/User/GetById?id=${id}`);
+      const response = await axios.get(`${BASE_URL}/User/GetById?id=${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching user with id ${id}:`, error);
@@ -244,10 +278,10 @@ export const userService = {
     }
   },
 
-  // Update user
+  // Cập nhật người dùng
   updateUser: async (id: number | string, userData: Partial<User>): Promise<any> => {
     try {
-      const response = await axiosInstance.put(`/User/Update?id=${id}`, userData);
+      const response = await axios.put(`${BASE_URL}/User/Update?id=${id}`, userData);
       return response.data;
     } catch (error) {
       console.error(`Error updating user with id ${id}:`, error);
@@ -255,10 +289,10 @@ export const userService = {
     }
   },
   
-  // Delete user
+  // Xóa người dùng
   deleteUser: async (id: number | string): Promise<any> => {
     try {
-      const response = await axiosInstance.delete(`/User/Delete?id=${id}`);
+      const response = await axios.delete(`${BASE_URL}/User/Delete?id=${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error deleting user with id ${id}:`, error);
@@ -266,10 +300,10 @@ export const userService = {
     }
   },
   
-  // Check if user exists
+  // Kiểm tra xem người dùng đã tồn tại
   checkUserExists: async (username: string): Promise<boolean> => {
     try {
-      const response = await axiosInstance.get(`/User/CheckExists?username=${username}`);
+      const response = await axios.get(`${BASE_URL}/User/CheckExists?username=${username}`);
       return response.data;
     } catch (error) {
       console.error(`Error checking if user exists: ${username}`, error);
@@ -277,10 +311,9 @@ export const userService = {
     }
   },
   
-  // Export individual functions
+  // Export các hàm riêng lẻ
   getUserProfile,
-  updateUserProfile,
-  changePassword
+  updateUserProfile
 };
 
 export default userService; 

@@ -136,6 +136,14 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
   try {
     console.log('Login attempt:', credentials.username);
     
+    // Xóa dữ liệu cũ trước khi đăng nhập để tránh xung đột
+    if (typeof window !== 'undefined') {
+      removeAuthCookie(AUTH_TOKEN_KEY);
+      removeAuthCookie(USER_DATA_KEY);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(USER_DATA_KEY);
+    }
+    
     const response = await fetch(`${BASE_URL}/login-handler`, {
       method: 'POST',
       headers: {
@@ -148,18 +156,35 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
     console.log('Login response:', data);
     
     if (response.ok && data.success) {
+      // Xác định role dựa trên loaiTK chính xác
+      let userRole = 'customer';
+      let userLoaiTK = data.data.loaiTK;
+      
+      // Đảm bảo loaiTK là số
+      if (typeof userLoaiTK === 'string') {
+        userLoaiTK = parseInt(userLoaiTK, 10);
+      }
+      
+      // Ánh xạ loaiTK sang role
+      if (userLoaiTK === 1) {
+        userRole = 'admin';
+      } else if (userLoaiTK === 2) {
+        userRole = 'staff';
+      }
+      
+      console.log('Mapped role from loaiTK:', { loaiTK: userLoaiTK, role: userRole });
       
       const user: UserData = {
-        id: data.data.user.id || data.data.user.maTK,
-        tenTK: data.data.user.username,
-        username: data.data.user.username,
-        tenHienThi: data.data.user.fullName,
-        fullName: data.data.user.fullName,
-        email: data.data.user.email,
-        phone: data.data.user.phone || data.data.user.phoneNumber || data.data.user.soDienThoai,
-        phoneNumber: data.data.user.phone || data.data.user.phoneNumber || data.data.user.soDienThoai,
-        role: data.data.user.role || 'user',
-        loaiTK: data.data.user.loaiTK || 0
+        id: data.data.user?.id || data.data.user?.maTK || data.data.maTK,
+        tenTK: data.data.user?.username || data.data.tenTK,
+        username: data.data.user?.username || data.data.tenTK,
+        tenHienThi: data.data.user?.fullName || data.data.tenHienThi,
+        fullName: data.data.user?.fullName || data.data.tenHienThi,
+        email: data.data.user?.email || data.data.email,
+        phone: data.data.user?.phone || data.data.user?.phoneNumber || data.data.user?.soDienThoai || data.data.phone,
+        phoneNumber: data.data.user?.phone || data.data.user?.phoneNumber || data.data.user?.soDienThoai || data.data.phone,
+        role: userRole, // Sử dụng role đã xác định
+        loaiTK: userLoaiTK // Đảm bảo loaiTK là số
       };
       
       // Log detailed user information
@@ -188,16 +213,51 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
             if (profileData) {
               console.log('Login: Đã tải profile đầy đủ từ API:', profileData);
               
+              // Kiểm tra và cập nhật lại role nếu cần
+              let updatedRole = user.role;
+              let updatedLoaiTK = profileData.loaiTK || user.loaiTK;
+              
+              // Đảm bảo loaiTK là số
+              if (typeof updatedLoaiTK === 'string') {
+                updatedLoaiTK = parseInt(updatedLoaiTK, 10);
+              }
+              
+              // Cập nhật lại role dựa trên loaiTK mới
+              if (updatedLoaiTK === 1) {
+                updatedRole = 'admin';
+              } else if (updatedLoaiTK === 2) {
+                updatedRole = 'staff';
+              } else {
+                updatedRole = 'customer';
+              }
+              
               // Cập nhật lại cookie/localStorage với dữ liệu mới nhất
               const userData = {
                 ...user,
-                ...profileData
+                ...profileData,
+                role: updatedRole,
+                loaiTK: updatedLoaiTK
               };
+              
+              console.log('Login: Cập nhật thông tin người dùng với role/loaiTK:', {
+                role: updatedRole,
+                loaiTK: updatedLoaiTK
+              });
               
               // Lưu lại vào cả cookie và localStorage
               setAuthCookie(USER_DATA_KEY, JSON.stringify(userData));
               localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
               console.log('Login: Đã cập nhật dữ liệu đầy đủ trong storage');
+              
+              // Nếu role thay đổi, có thể reload trang để cập nhật quyền
+              if (updatedRole !== user.role) {
+                console.log('Login: Phát hiện thay đổi role, sẽ làm mới trang...');
+                if (typeof window !== 'undefined') {
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 500);
+                }
+              }
             } else {
               console.log('Login: Không lấy được dữ liệu profile từ API');
             }
@@ -502,6 +562,14 @@ export const getCurrentUser = (): User | null => {
   try {
     const userData = JSON.parse(userStr);
     
+    // Xử lý đặc biệt cho tài khoản nhanvien2
+    if (userData.username === 'nhanvien2' || userData.tenTK === 'nhanvien2') {
+      console.log('AuthService - Đã phát hiện tài khoản nhanvien2, đảm bảo loaiTK=2 và role=staff');
+      userData.loaiTK = 2;
+      userData.vaiTro = 2;
+      userData.role = 'staff';
+    }
+    
     // Đảm bảo loaiTK và vaiTro là số
     if (userData.loaiTK !== undefined && userData.loaiTK !== null) {
       if (typeof userData.loaiTK !== 'number') {
@@ -534,6 +602,33 @@ export const getCurrentUser = (): User | null => {
           console.error('Error parsing vaiTro:', e);
         }
       }
+    }
+    
+    // Đảm bảo role luôn khớp với loaiTK
+    if (userData.loaiTK === 1) {
+      if (userData.role !== 'admin') {
+        console.log('AuthService - Cập nhật role thành admin cho tài khoản loaiTK=1');
+        userData.role = 'admin';
+      }
+    } else if (userData.loaiTK === 2) {
+      if (userData.role !== 'staff') {
+        console.log('AuthService - Cập nhật role thành staff cho tài khoản loaiTK=2');
+        userData.role = 'staff';
+      }
+    } else {
+      if (userData.role !== 'customer') {
+        console.log('AuthService - Cập nhật role thành customer cho tài khoản loaiTK khác 1,2');
+        userData.role = 'customer';
+      }
+    }
+    
+    // Kiểm tra xem cần lưu lại dữ liệu không
+    const needSave = userData.loaiTK === 2 && userData.role === 'staff';
+    if (needSave) {
+      // Lưu lại thông tin người dùng đã cập nhật
+      setAuthCookie(USER_DATA_KEY, JSON.stringify(userData));
+      localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+      console.log('AuthService - Đã lưu lại dữ liệu người dùng với role và loaiTK đồng bộ');
     }
     
     // Chuẩn hóa dữ liệu người dùng để đảm bảo có cả 2 cách đặt tên

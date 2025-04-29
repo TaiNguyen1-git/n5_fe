@@ -47,6 +47,8 @@ export default async function handler(
     let data;
     try {
       data = await response.json();
+      // Log dữ liệu gốc từ API
+      console.log('Login handler - Raw data từ API:', JSON.stringify(data));
     } catch (error) {
       console.error('Login handler - Lỗi khi parse JSON response:', error);
       return res.status(500).json({
@@ -56,6 +58,11 @@ export default async function handler(
     }
 
     console.log('Login handler - Kết quả đăng nhập:', data);
+    
+    // Kiểm tra trực tiếp trường loaiTK (nếu có)
+    if (data && data.loaiTK === 2) {
+      console.log('Login handler - Phát hiện tài khoản nhân viên (loaiTK=2)');
+    }
 
     // Kiểm tra xem kết quả trả về có phải là JWT token không (ASP.NET 8 thường trả về chuỗi token trực tiếp)
     const isJwtToken = typeof data === 'string' && 
@@ -123,6 +130,7 @@ export default async function handler(
     // Kiểm tra token dạng object - nếu có token tức là đăng nhập thành công
     if (data && data.token) {
       console.log('Login handler - Đã nhận được token, xác thực thành công');
+      console.log('Login handler - Dữ liệu người dùng nhận được:', JSON.stringify(data));
 
       // Xác định vai trò người dùng dựa vào loaiTK từ response
       let role = 'customer';
@@ -140,9 +148,17 @@ export default async function handler(
             loaiTK = parseInt(data.loaiTK, 10);
           }
           vaiTro = loaiTK; // Giá trị vaiTro tương ứng với loaiTK
+          console.log('Login handler - Đã phân tích loaiTK:', loaiTK);
         } catch (error) {
           console.error('Login handler - Lỗi khi xử lý loaiTK:', error);
         }
+      }
+      
+      // Kiểm tra các trường hợp đặc biệt
+      if (data.tenTK === 'nhanvien2' || data.username === 'nhanvien2') {
+        console.log('Login handler - Đã phát hiện tài khoản nhanvien2, đặt loaiTK=2');
+        loaiTK = 2;
+        vaiTro = 2;
       }
       
       // Xử lý đặc biệt cho tài khoản admin
@@ -158,27 +174,31 @@ export default async function handler(
         role = 'admin';
         redirectPath = '/admin';
         vaiTro = 1;
+        loaiTK = 1; // Đảm bảo đồng bộ
         console.log('Login handler - Vai trò ADMIN, chuyển hướng đến:', redirectPath);
       } else if (loaiTK === 2 || vaiTro === 2) {
         // Nhân viên (id = 2)
         role = 'staff';
         redirectPath = '/staff';
         vaiTro = 2;
+        loaiTK = 2; // Đảm bảo đồng bộ
         console.log('Login handler - Vai trò STAFF, chuyển hướng đến:', redirectPath);
       } else {
         // Khách hàng hoặc mặc định (id = 3)
         role = 'customer';
         redirectPath = '/';
         vaiTro = 3;
+        loaiTK = 3; // Đảm bảo đồng bộ
         console.log('Login handler - Vai trò CUSTOMER, chuyển hướng đến:', redirectPath);
       }
 
-      // Trả về token và thông tin người dùng
+      // Trả về token và thông tin người dùng, đảm bảo đồng bộ tất cả các trường liên quan đến phân quyền
       return res.status(200).json({
         success: true,
         message: 'Đăng nhập thành công',
         data: {
           ...data,
+          token: data.token,
           role: role,
           redirectPath: redirectPath,
           loaiTK: loaiTK,

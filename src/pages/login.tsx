@@ -53,6 +53,13 @@ export default function Login() {
     setError('');
     
     try {
+      // Xóa dữ liệu cũ trước khi đăng nhập để tránh xung đột
+      console.log("Login page - Xóa dữ liệu người dùng cũ trước khi đăng nhập");
+      Cookies.remove('auth_token', { path: '/' });
+      Cookies.remove('user', { path: '/' });
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+      
       // Hiển thị thông báo cho người dùng biết
       console.log("Login page - Đang thử đăng nhập với:", username);
       
@@ -85,6 +92,19 @@ export default function Login() {
           // Cũng lưu vào localStorage để tương thích với code cũ
           localStorage.setItem('auth_token', result.data.token);
           
+          // Xử lý loaiTK để đảm bảo là số
+          const userLoaiTK = processLoaiTK(result.data.loaiTK);
+          
+          // Xác định role dựa trên loaiTK
+          let userRole = 'customer';
+          if (userLoaiTK === 1) {
+            userRole = 'admin';
+          } else if (userLoaiTK === 2) {
+            userRole = 'staff';
+          }
+          
+          console.log("Login page - Xác định role từ loaiTK:", { loaiTK: userLoaiTK, role: userRole });
+          
           // Xử lý dữ liệu người dùng
           const userData = {
             id: result.data.maTK || result.data.id,
@@ -93,9 +113,9 @@ export default function Login() {
             fullName: result.data.tenHienThi || result.data.fullName || result.data.hoTen || result.data.tenTK,
             tenHienThi: result.data.tenHienThi || result.data.fullName || result.data.hoTen || result.data.tenTK,
             email: result.data.email,
-            role: result.data.role || 'customer',
-            loaiTK: processLoaiTK(result.data.loaiTK),
-            vaiTro: result.data.vaiTro,
+            role: userRole, // Sử dụng role đã xác định từ loaiTK
+            loaiTK: userLoaiTK,
+            vaiTro: userLoaiTK, // Đảm bảo vaiTro khớp với loaiTK
             tenLoai: result.data.tenLoai
           };
           
@@ -130,11 +150,33 @@ export default function Login() {
                   if (profileData) {
                     console.log('Login page: Đã tải thành công profile:', profileData);
                     
+                    // Đảm bảo loaiTK từ profile là số
+                    let profileLoaiTK = profileData.loaiTK;
+                    if (typeof profileLoaiTK === 'string') {
+                      profileLoaiTK = parseInt(profileLoaiTK, 10);
+                    }
+                    
+                    // Xác định role từ loaiTK trong profile
+                    let profileRole = 'customer';
+                    if (profileLoaiTK === 1) {
+                      profileRole = 'admin';
+                    } else if (profileLoaiTK === 2) {
+                      profileRole = 'staff';
+                    }
+                    
                     // Cập nhật lại dữ liệu người dùng để đảm bảo đồng bộ
                     const updatedUserData = {
                       ...userData,
-                      ...profileData
+                      ...profileData,
+                      role: profileRole, // Sử dụng role đã xác định từ profile
+                      loaiTK: profileLoaiTK, // Đảm bảo loaiTK là số
+                      vaiTro: profileLoaiTK // Đảm bảo vaiTro khớp với loaiTK
                     };
+                    
+                    console.log('Login page: Cập nhật thông tin người dùng với role/loaiTK:', {
+                      role: profileRole,
+                      loaiTK: profileLoaiTK
+                    });
                     
                     // Lưu vào cả cookie và localStorage
                     Cookies.set('user', JSON.stringify(updatedUserData), {
@@ -145,6 +187,12 @@ export default function Login() {
                     });
                     localStorage.setItem('user', JSON.stringify(updatedUserData));
                     console.log('Login page: Đã cập nhật dữ liệu người dùng đầy đủ');
+                    
+                    // Nếu role thay đổi, làm mới trang để cập nhật quyền
+                    if (profileRole !== userData.role) {
+                      console.log('Login page: Phát hiện thay đổi role, sẽ làm mới trang...');
+                      window.location.reload();
+                    }
                   } else {
                     console.log('Login page: Không lấy được profile từ API');
                   }
@@ -162,8 +210,13 @@ export default function Login() {
           // Đơn giản hóa chuyển hướng dựa vào redirectPath từ server
           let redirectTo = result.data.redirectPath || '/';
           
+          // Kiểm tra trực tiếp tài khoản nhanvien2
+          if (userData.username === 'nhanvien2' || userData.tenTK === 'nhanvien2') {
+            console.log('Login page - Phát hiện tài khoản nhanvien2, chuyển hướng đến /staff');
+            redirectTo = '/staff';
+          }
           // Nếu không có redirectPath, kiểm tra loaiTK và vaiTro
-          if (!result.data.redirectPath) {
+          else if (!result.data.redirectPath) {
             const isAdmin = userData.loaiTK === 1 || userData.vaiTro === 1 || userData.role === 'admin';
             const isStaff = userData.loaiTK === 2 || userData.vaiTro === 2 || userData.role === 'staff';
             

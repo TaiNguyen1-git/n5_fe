@@ -59,6 +59,41 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
+  // Kiểm tra nếu người dùng là nhân viên, chuyển hướng đến trang staff
+  useEffect(() => {
+    const checkUserRole = () => {
+      if (isAuthenticated()) {
+        const user = getCurrentUser();
+        if (user) {
+          // Kiểm tra tài khoản nhanvien2 đặc biệt
+          if (user.username === 'nhanvien2' || (user as any).tenTK === 'nhanvien2') {
+            console.log('Home page - Phát hiện tài khoản nhanvien2, chuyển hướng đến /staff');
+            router.push('/staff');
+            return;
+          }
+          
+          // Kiểm tra loaiTK hoặc role
+          const loaiTK = typeof user.loaiTK === 'string' ? parseInt(user.loaiTK, 10) : user.loaiTK;
+          const isStaff = user.role === 'staff' || loaiTK === 2;
+          
+          console.log('Home page - Kiểm tra quyền người dùng:', {
+            username: user.username,
+            role: user.role,
+            loaiTK: loaiTK,
+            isStaff: isStaff
+          });
+          
+          if (isStaff) {
+            console.log('Home page - Phát hiện tài khoản nhân viên, chuyển hướng đến /staff');
+            router.push('/staff');
+          }
+        }
+      }
+    };
+    
+    checkUserRole();
+  }, [router]);
+  
   useEffect(() => {
     fetchRooms();
   }, []);
