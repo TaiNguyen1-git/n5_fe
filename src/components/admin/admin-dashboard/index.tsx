@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Typography, Button, Avatar, Card, Row, Col, Table, Tag, Space, Modal, message } from 'antd';
-import { 
-  UserOutlined, 
-  TeamOutlined, 
-  BarChartOutlined, 
+import {
+  UserOutlined,
+  TeamOutlined,
+  BarChartOutlined,
   LogoutOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   DashboardOutlined,
   SettingOutlined,
-  HomeOutlined
+  HomeOutlined,
+  FileTextOutlined,
+  CalendarOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import { logout, getCurrentUser } from '../../../services/authService';
@@ -17,12 +19,14 @@ import StaffManagement from './staff-management';
 import UserManagement from './user-management';
 import ReportManagement from './report-management';
 import RoomManagement from './room-management';
+import BillManagement from './bill-management';
+import BookingManagement from './booking-management';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 const AdminDashboard = () => {
-  const [tab, setTab] = useState<'staff' | 'user' | 'report' | 'room'>('staff');
+  const [tab, setTab] = useState<'staff' | 'user' | 'report' | 'room' | 'bill' | 'booking'>('staff');
   const [collapsed, setCollapsed] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const router = useRouter();
@@ -68,6 +72,16 @@ const AdminDashboard = () => {
               label: 'Quản lý phòng',
             },
             {
+              key: 'booking',
+              icon: <CalendarOutlined />,
+              label: 'Quản lý đặt phòng',
+            },
+            {
+              key: 'bill',
+              icon: <FileTextOutlined />,
+              label: 'Quản lý hóa đơn',
+            },
+            {
               key: 'report',
               icon: <BarChartOutlined />,
               label: 'Báo cáo & Thống kê',
@@ -100,6 +114,8 @@ const AdminDashboard = () => {
           {tab === 'staff' && <StaffManagement />}
           {tab === 'user' && <UserManagement />}
           {tab === 'room' && <RoomManagement />}
+          {tab === 'booking' && <BookingManagement />}
+          {tab === 'bill' && <BillManagement />}
           {tab === 'report' && <ReportManagement />}
         </Content>
       </Layout>

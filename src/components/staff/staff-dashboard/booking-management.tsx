@@ -7,69 +7,32 @@ import dayjs from 'dayjs';
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
-// Mock data cho đặt phòng
-const mockBookings = [
-  {
-    id: 1,
-    roomNumber: '101',
-    roomType: 'Single',
-    guestName: 'Nguyễn Văn A',
-    phone: '0901234567',
-    checkIn: '2025-04-22',
-    checkOut: '2025-04-25',
-    status: 'confirmed',
-    totalPrice: 3000000,
-    paymentStatus: 'paid',
-    createdAt: '2025-04-15'
-  },
-  {
-    id: 2,
-    roomNumber: '102',
-    roomType: 'VIP',
-    guestName: 'Trần Thị B',
-    phone: '0909876543',
-    checkIn: '2025-04-23',
-    checkOut: '2025-04-26',
-    status: 'pending',
-    totalPrice: 5400000,
-    paymentStatus: 'unpaid',
-    createdAt: '2025-04-16'
-  },
-  {
-    id: 3,
-    roomNumber: '201',
-    roomType: 'Duo',
-    guestName: 'Lê Văn C',
-    phone: '0977889900',
-    checkIn: '2025-04-20',
-    checkOut: '2025-04-21',
-    status: 'completed',
-    totalPrice: 1800000,
-    paymentStatus: 'paid',
-    createdAt: '2025-04-10'
-  },
-  {
-    id: 4,
-    roomNumber: '202',
-    roomType: 'Single',
-    guestName: 'Phạm Thị D',
-    phone: '0988776655',
-    checkIn: '2025-04-25',
-    checkOut: '2025-04-28',
-    status: 'pending',
-    totalPrice: 3600000,
-    paymentStatus: 'unpaid',
-    createdAt: '2025-04-18'
-  }
-];
+// Định nghĩa cấu trúc dữ liệu đặt phòng
+interface Booking {
+  id: number;
+  roomNumber: string;
+  roomType: string;
+  guestName: string;
+  phone: string;
+  checkIn: string;
+  checkOut: string;
+  status: string;
+  totalPrice: number;
+  paymentStatus: string;
+  createdAt: string;
+}
 
-// Mock data cho phòng trống
-const mockAvailableRooms = [
-  { id: 1, number: '101', type: 'Single', price: 1000000 },
-  { id: 2, number: '102', type: 'VIP', price: 1800000 },
-  { id: 3, number: '201', type: 'Duo', price: 1200000 },
-  { id: 4, number: '204', type: 'Triple', price: 1800000 },
-];
+// Định nghĩa cấu trúc dữ liệu phòng trống
+interface AvailableRoom {
+  id: number;
+  number: string;
+  type: string;
+  price: number;
+}
+
+// Khởi tạo mảng dữ liệu rỗng
+const mockBookings: Booking[] = [];
+const mockAvailableRooms: AvailableRoom[] = [];
 
 const BookingManagement = () => {
   const [bookings, setBookings] = useState(mockBookings);
@@ -97,7 +60,7 @@ const BookingManagement = () => {
       cancelText: 'Hủy',
       onOk: () => {
         try {
-          const updatedBookings = bookings.map(booking => 
+          const updatedBookings = bookings.map(booking =>
             booking.id === id ? {...booking, status: 'confirmed'} : booking
           );
           setBookings(updatedBookings);
@@ -120,7 +83,7 @@ const BookingManagement = () => {
       cancelText: 'Hủy',
       onOk: () => {
         try {
-          const updatedBookings = bookings.map(booking => 
+          const updatedBookings = bookings.map(booking =>
             booking.id === id ? {...booking, status: 'cancelled'} : booking
           );
           setBookings(updatedBookings);
@@ -173,7 +136,7 @@ const BookingManagement = () => {
 
   // Xử lý xác nhận thanh toán
   const handleConfirmPayment = () => {
-    setBookings(bookings.map(booking => 
+    setBookings(bookings.map(booking =>
       booking.id === currentBooking.id ? {...booking, paymentStatus: 'paid'} : booking
     ));
     setPaymentModalVisible(false);
@@ -197,24 +160,24 @@ const BookingManagement = () => {
 
   // Lọc danh sách đặt phòng
   const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = 
+    const matchesSearch =
       booking.guestName.toLowerCase().includes(searchText.toLowerCase()) ||
       booking.phone.includes(searchText) ||
       booking.roomNumber.includes(searchText);
-    
+
     const matchesStatus = statusFilter ? booking.status === statusFilter : true;
-    
+
     let matchesDateRange = true;
     if (dateRange && dateRange[0] && dateRange[1]) {
       const bookingCheckIn = dayjs(booking.checkIn);
       const bookingCheckOut = dayjs(booking.checkOut);
       const filterStart = dateRange[0];
       const filterEnd = dateRange[1];
-      
+
       // Kiểm tra nếu khoảng thời gian đặt phòng có giao với khoảng thời gian lọc
       matchesDateRange = !(bookingCheckOut.isBefore(filterStart) || bookingCheckIn.isAfter(filterEnd));
     }
-    
+
     return matchesSearch && matchesStatus && matchesDateRange;
   });
 
@@ -266,7 +229,7 @@ const BookingManagement = () => {
       render: (status) => {
         let color = 'default';
         let text = '';
-        
+
         switch(status) {
           case 'pending':
             color = 'gold';
@@ -287,7 +250,7 @@ const BookingManagement = () => {
           default:
             text = status;
         }
-        
+
         return <Tag color={color}>{text}</Tag>;
       },
     },
@@ -298,7 +261,7 @@ const BookingManagement = () => {
       render: (status) => {
         let color = status === 'paid' ? 'green' : 'volcano';
         let text = status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán';
-        
+
         return <Tag color={color}>{text}</Tag>;
       },
     },
@@ -307,26 +270,26 @@ const BookingManagement = () => {
       key: 'action',
       render: (_, record) => (
         <Space size="small">
-          <Button 
-            icon={<EyeOutlined />} 
+          <Button
+            icon={<EyeOutlined />}
             onClick={() => handleView(record)}
             size="small"
           >
             Xem
           </Button>
-          
+
           {record.status === 'pending' && (
             <>
-              <Button 
-                icon={<CheckCircleOutlined />} 
+              <Button
+                icon={<CheckCircleOutlined />}
                 type="primary"
                 onClick={() => handleConfirmBookingDirect(record.id)}
                 size="small"
               >
                 Xác nhận
               </Button>
-              <Button 
-                icon={<CloseCircleOutlined />} 
+              <Button
+                icon={<CloseCircleOutlined />}
                 danger
                 onClick={() => handleRejectBookingDirect(record.id)}
                 size="small"
@@ -335,10 +298,10 @@ const BookingManagement = () => {
               </Button>
             </>
           )}
-          
+
           {record.status === 'confirmed' && record.paymentStatus === 'unpaid' && (
-            <Button 
-              icon={<CreditCardOutlined />} 
+            <Button
+              icon={<CreditCardOutlined />}
               type="primary"
               onClick={() => handlePayment(record)}
               size="small"
@@ -357,42 +320,42 @@ const BookingManagement = () => {
         <Row gutter={16}>
           <Col span={6}>
             <Card>
-              <Statistic 
-                title="Tổng đặt phòng" 
-                value={bookings.length} 
+              <Statistic
+                title="Tổng đặt phòng"
+                value={bookings.length}
               />
             </Card>
           </Col>
           <Col span={6}>
             <Card>
-              <Statistic 
-                title="Chờ xác nhận" 
-                value={bookings.filter(b => b.status === 'pending').length} 
+              <Statistic
+                title="Chờ xác nhận"
+                value={bookings.filter(b => b.status === 'pending').length}
                 valueStyle={{ color: '#faad14' }}
               />
             </Card>
           </Col>
           <Col span={6}>
             <Card>
-              <Statistic 
-                title="Đã xác nhận" 
-                value={bookings.filter(b => b.status === 'confirmed').length} 
+              <Statistic
+                title="Đã xác nhận"
+                value={bookings.filter(b => b.status === 'confirmed').length}
                 valueStyle={{ color: '#52c41a' }}
               />
             </Card>
           </Col>
           <Col span={6}>
             <Card>
-              <Statistic 
-                title="Chưa thanh toán" 
-                value={bookings.filter(b => b.paymentStatus === 'unpaid').length} 
+              <Statistic
+                title="Chưa thanh toán"
+                value={bookings.filter(b => b.paymentStatus === 'unpaid').length}
                 valueStyle={{ color: '#f5222d' }}
               />
             </Card>
           </Col>
         </Row>
       </div>
-      
+
       <div style={{ marginBottom: '20px', display: 'flex', gap: '16px' }}>
         <Input.Search
           placeholder="Tìm kiếm theo tên, SĐT, phòng"
@@ -400,10 +363,10 @@ const BookingManagement = () => {
           style={{ width: 300 }}
           allowClear
         />
-        
+
         <Select
           placeholder="Lọc theo trạng thái"
-          style={{ 
+          style={{
             width: 200,
             backgroundColor: '#fff'
           }}
@@ -416,7 +379,7 @@ const BookingManagement = () => {
           <Option value="completed" style={{ color: '#333' }}>Hoàn thành</Option>
           <Option value="cancelled" style={{ color: '#333' }}>Đã hủy</Option>
         </Select>
-        
+
         <RangePicker
           onChange={handleDateRangeChange}
           placeholder={['Từ ngày', 'Đến ngày']}
@@ -424,14 +387,14 @@ const BookingManagement = () => {
           popupStyle={{ backgroundColor: '#fff' }}
         />
       </div>
-      
+
       <Table
         columns={columns}
         dataSource={filteredBookings}
         rowKey="id"
         pagination={{ pageSize: 10 }}
       />
-      
+
       {/* Modal xem chi tiết đặt phòng */}
       <Modal
         title="Chi tiết đặt phòng"
@@ -456,13 +419,13 @@ const BookingManagement = () => {
             <p>
               <strong>Trạng thái:</strong> {' '}
               <Tag color={
-                viewBooking.status === 'pending' ? 'gold' : 
-                viewBooking.status === 'confirmed' ? 'green' : 
+                viewBooking.status === 'pending' ? 'gold' :
+                viewBooking.status === 'confirmed' ? 'green' :
                 viewBooking.status === 'completed' ? 'blue' : 'red'
               }>
                 {
-                  viewBooking.status === 'pending' ? 'Chờ xác nhận' : 
-                  viewBooking.status === 'confirmed' ? 'Đã xác nhận' : 
+                  viewBooking.status === 'pending' ? 'Chờ xác nhận' :
+                  viewBooking.status === 'confirmed' ? 'Đã xác nhận' :
                   viewBooking.status === 'completed' ? 'Hoàn thành' : 'Đã hủy'
                 }
               </Tag>
@@ -477,7 +440,7 @@ const BookingManagement = () => {
           </div>
         )}
       </Modal>
-      
+
       {/* Modal thanh toán */}
       <Modal
         title="Xác nhận thanh toán"
@@ -493,7 +456,7 @@ const BookingManagement = () => {
             <p><strong>Phòng:</strong> {currentBooking.roomNumber} ({currentBooking.roomType})</p>
             <p><strong>Khách hàng:</strong> {currentBooking.guestName}</p>
             <p><strong>Tổng tiền:</strong> {currentBooking.totalPrice.toLocaleString('vi-VN')} VNĐ</p>
-            
+
             <Form layout="vertical" style={{ marginTop: 20 }}>
               <Form.Item label="Phương thức thanh toán" required>
                 <Select

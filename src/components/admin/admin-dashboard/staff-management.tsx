@@ -6,12 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 const { Title } = Typography;
 const { Option } = Select;
 
-// Mock data cho nhân viên
-const mockStaffs = [
-  { id: 1, name: 'Nguyễn Văn A', role: 'letan', username: 'letan1', password: '******', salary: 8000000 },
-  { id: 2, name: 'Trần Thị B', role: 'donphong', username: 'donphong1', password: '******', salary: 7000000 },
-  { id: 3, name: 'Lê Văn C', role: 'ketoan', username: 'ketoan1', password: '******', salary: 9000000 },
-];
+
 
 const roles = [
   { value: 'letan', label: 'Lễ tân' },
@@ -21,7 +16,7 @@ const roles = [
 ];
 
 const StaffManagement = () => {
-  const [staffs, setStaffs] = useState(mockStaffs);
+  const [staffs, setStaffs] = useState<any[]>([]);
   const [editingStaff, setEditingStaff] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
@@ -63,17 +58,17 @@ const StaffManagement = () => {
       key: 'action',
       render: (_, record) => (
         <Space size="small">
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             size="small"
           >
             Sửa
           </Button>
-          <Button 
-            danger 
-            icon={<DeleteOutlined />} 
+          <Button
+            danger
+            icon={<DeleteOutlined />}
             onClick={() => handleDelete(record.id)}
             size="small"
           >
@@ -124,9 +119,9 @@ const StaffManagement = () => {
     form.validateFields().then(values => {
       if (editingStaff) {
         // Cập nhật nhân viên hiện có
-        setStaffs(staffs.map(staff => 
-          staff.id === editingStaff.id 
-            ? { ...staff, ...values, password: values.password || staff.password } 
+        setStaffs(staffs.map(staff =>
+          staff.id === editingStaff.id
+            ? { ...staff, ...values, password: values.password || staff.password }
             : staff
         ));
         message.success('Cập nhật nhân viên thành công');
@@ -148,18 +143,18 @@ const StaffManagement = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={4}>Quản lý nhân viên</Title>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />} 
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
           onClick={handleAdd}
         >
           Thêm nhân viên
         </Button>
       </div>
 
-      <Table 
-        columns={columns} 
-        dataSource={staffs} 
+      <Table
+        columns={columns}
+        dataSource={staffs}
         rowKey="id"
         bordered
       />
@@ -222,8 +217,8 @@ const StaffManagement = () => {
             label="Lương"
             rules={[{ required: true, message: 'Vui lòng nhập lương' }]}
           >
-            <InputNumber 
-              style={{ width: '100%' }} 
+            <InputNumber
+              style={{ width: '100%' }}
               formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               parser={value => value!.replace(/\$\s?|(,*)/g, '')}
               placeholder="Nhập lương"

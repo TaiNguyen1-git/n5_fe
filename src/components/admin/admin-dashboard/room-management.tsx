@@ -7,57 +7,22 @@ const { Title } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
-// Mock data cho phòng
-const mockRooms = [
-  { 
-    id: 101, 
-    name: 'Phòng 101', 
-    type: 'single', 
-    price: 1000000, 
-    description: 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản, phù hợp cho cặp đôi hoặc khách du lịch một mình.',
-    status: 'available',
-    maxGuests: 2,
-    bedType: 'Giường đôi',
-    area: 25,
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng']
-  },
-  { 
-    id: 102, 
-    name: 'Phòng 102', 
-    type: 'vip', 
-    price: 2000000, 
-    description: 'Phòng VIP với không gian rộng rãi, view đẹp và đầy đủ tiện nghi cao cấp.',
-    status: 'booked',
-    maxGuests: 2,
-    bedType: 'Giường King',
-    area: 35,
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng', 'Bồn tắm', 'Ban công']
-  },
-  { 
-    id: 201, 
-    name: 'Phòng 201', 
-    type: 'duo', 
-    price: 1500000, 
-    description: 'Phòng đôi với hai giường đơn, phù hợp cho bạn bè hoặc đồng nghiệp.',
-    status: 'occupied',
-    maxGuests: 2,
-    bedType: '2 Giường đơn',
-    area: 30,
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng']
-  },
-  { 
-    id: 202, 
-    name: 'Phòng 202', 
-    type: 'triple', 
-    price: 1800000, 
-    description: 'Phòng ba người với không gian rộng rãi, phù hợp cho gia đình nhỏ.',
-    status: 'maintenance',
-    maxGuests: 3,
-    bedType: '1 Giường đôi + 1 Giường đơn',
-    area: 40,
-    features: ['Wi-Fi miễn phí', 'Điều hòa', 'TV màn hình phẳng', 'Minibar', 'Phòng tắm riêng', 'Bàn làm việc']
-  },
-];
+// Định nghĩa cấu trúc dữ liệu phòng
+interface Room {
+  id: number;
+  name: string;
+  type: string;
+  price: number;
+  description: string;
+  status: string;
+  maxGuests: number;
+  bedType: string;
+  area: number;
+  features: string[];
+}
+
+// Khởi tạo mảng phòng rỗng
+const mockRooms: Room[] = [];
 
 const roomTypes = [
   { value: 'single', label: 'Phòng đơn' },
@@ -158,25 +123,25 @@ const RoomManagement = () => {
       key: 'action',
       render: (_, record) => (
         <Space size="small">
-          <Button 
-            type="default" 
-            icon={<EditOutlined />} 
+          <Button
+            type="default"
+            icon={<EditOutlined />}
             onClick={() => handleView(record)}
             size="small"
           >
             Xem
           </Button>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             size="small"
           >
             Sửa
           </Button>
-          <Button 
-            danger 
-            icon={<DeleteOutlined />} 
+          <Button
+            danger
+            icon={<DeleteOutlined />}
             onClick={() => handleDelete(record.id)}
             size="small"
           >
@@ -236,12 +201,12 @@ const RoomManagement = () => {
   const handleSave = () => {
     form.validateFields().then(values => {
       const features = values.features.split(',').map((feature: string) => feature.trim());
-      
+
       if (editingRoom) {
         // Cập nhật phòng hiện có
-        setRooms(rooms.map(room => 
-          room.id === editingRoom.id 
-            ? { ...room, ...values, features } 
+        setRooms(rooms.map(room =>
+          room.id === editingRoom.id
+            ? { ...room, ...values, features }
             : room
         ));
         message.success('Cập nhật phòng thành công');
@@ -263,9 +228,9 @@ const RoomManagement = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={4}>Quản lý phòng</Title>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />} 
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
           onClick={handleAdd}
         >
           Thêm phòng
@@ -275,45 +240,45 @@ const RoomManagement = () => {
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={4}>
           <Card>
-            <Statistic 
-              title="Tổng số phòng" 
-              value={roomStats.total} 
+            <Statistic
+              title="Tổng số phòng"
+              value={roomStats.total}
               prefix={<HomeOutlined />}
             />
           </Card>
         </Col>
         <Col span={5}>
           <Card>
-            <Statistic 
-              title="Phòng trống" 
-              value={roomStats.available} 
+            <Statistic
+              title="Phòng trống"
+              value={roomStats.available}
               valueStyle={{ color: 'green' }}
             />
           </Card>
         </Col>
         <Col span={5}>
           <Card>
-            <Statistic 
-              title="Đã đặt" 
-              value={roomStats.booked} 
+            <Statistic
+              title="Đã đặt"
+              value={roomStats.booked}
               valueStyle={{ color: 'blue' }}
             />
           </Card>
         </Col>
         <Col span={5}>
           <Card>
-            <Statistic 
-              title="Đang sử dụng" 
-              value={roomStats.occupied} 
+            <Statistic
+              title="Đang sử dụng"
+              value={roomStats.occupied}
               valueStyle={{ color: 'orange' }}
             />
           </Card>
         </Col>
         <Col span={5}>
           <Card>
-            <Statistic 
-              title="Đang bảo trì" 
-              value={roomStats.maintenance} 
+            <Statistic
+              title="Đang bảo trì"
+              value={roomStats.maintenance}
               valueStyle={{ color: 'red' }}
             />
           </Card>
@@ -343,9 +308,9 @@ const RoomManagement = () => {
         </Select>
       </div>
 
-      <Table 
-        columns={columns} 
-        dataSource={filteredRooms} 
+      <Table
+        columns={columns}
+        dataSource={filteredRooms}
         rowKey="id"
         bordered
         pagination={{ pageSize: 10 }}
@@ -462,8 +427,8 @@ const RoomManagement = () => {
                 label="Giá phòng"
                 rules={[{ required: true, message: 'Vui lòng nhập giá phòng' }]}
               >
-                <InputNumber 
-                  style={{ width: '100%' }} 
+                <InputNumber
+                  style={{ width: '100%' }}
                   formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                   parser={value => value!.replace(/\$\s?|(,*)/g, '')}
                   placeholder="Nhập giá phòng"

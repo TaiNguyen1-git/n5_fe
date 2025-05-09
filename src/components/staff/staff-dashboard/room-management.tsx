@@ -3,11 +3,16 @@ import { Table, Button, Select, Input, Tag, Space, Modal, message } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SaveOutlined, CloseOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 
-const mockRooms = [
-  { id: 1, name: '101', type: 'single', status: 'trống' },
-  { id: 2, name: '102', type: 'vip', status: 'đã đặt' },
-  { id: 3, name: '201', type: 'duo', status: 'đang dọn dẹp' },
-];
+// Định nghĩa cấu trúc dữ liệu phòng
+interface Room {
+  id: number;
+  name: string;
+  type: string;
+  status: string;
+}
+
+// Khởi tạo mảng phòng rỗng
+const mockRooms: Room[] = [];
 const roomTypes = [
   { value: 'single', label: 'Single' },
   { value: 'duo', label: 'Duo' },
@@ -89,8 +94,8 @@ const RoomManagement = () => {
       key: 'action',
       render: (_, record) => (
         <Space size="small">
-          <Button 
-            icon={<EyeOutlined />} 
+          <Button
+            icon={<EyeOutlined />}
             onClick={() => handleView(record)}
             type="primary"
             size="small"

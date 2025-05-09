@@ -7,27 +7,49 @@ import dayjs from 'dayjs';
 const { TabPane } = Tabs;
 const { Option } = Select;
 
-// Mock data cho thông tin người dùng
-const mockUserData = {
-  username: 'nhanvien1',
-  fullName: 'Nhân Viên Test',
-  email: 'nhanvien@hotel.com',
-  phone: '0901234567',
+// Định nghĩa cấu trúc dữ liệu người dùng
+interface UserData {
+  username: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  role: string;
+  department: string;
+  avatar: string | null;
+}
+
+// Định nghĩa cấu trúc dữ liệu cài đặt hệ thống
+interface SystemSettings {
+  language: string;
+  theme: string;
+  checkInTime: dayjs.Dayjs;
+  checkOutTime: dayjs.Dayjs;
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  desktopNotifications: boolean;
+  autoLogout: number;
+}
+
+// Khởi tạo dữ liệu mặc định
+const defaultUserData: UserData = {
+  username: '',
+  fullName: '',
+  email: '',
+  phone: '',
   role: 'staff',
   department: 'reception',
   avatar: null,
 };
 
-// Mock data cho cài đặt hệ thống
-const mockSystemSettings = {
+const defaultSystemSettings: SystemSettings = {
   language: 'vi',
   theme: 'light',
   checkInTime: dayjs('14:00', 'HH:mm'),
   checkOutTime: dayjs('12:00', 'HH:mm'),
-  emailNotifications: true,
+  emailNotifications: false,
   smsNotifications: false,
-  desktopNotifications: true,
-  autoLogout: 30, // minutes
+  desktopNotifications: false,
+  autoLogout: 30,
 };
 
 const SettingsManagement = () => {
@@ -35,14 +57,14 @@ const SettingsManagement = () => {
   const [passwordForm] = Form.useForm();
   const [systemForm] = Form.useForm();
   const [notificationForm] = Form.useForm();
-  const [userData, setUserData] = useState(mockUserData);
-  const [systemSettings, setSystemSettings] = useState(mockSystemSettings);
+  const [userData, setUserData] = useState(defaultUserData);
+  const [systemSettings, setSystemSettings] = useState(defaultSystemSettings);
   const [loading, setLoading] = useState(false);
 
   // Xử lý cập nhật thông tin cá nhân
   const handleUpdateProfile = (values: any) => {
     setLoading(true);
-    
+
     // Giả lập API call
     setTimeout(() => {
       setUserData({ ...userData, ...values });
@@ -54,7 +76,7 @@ const SettingsManagement = () => {
   // Xử lý đổi mật khẩu
   const handleChangePassword = (values: any) => {
     setLoading(true);
-    
+
     // Giả lập API call
     setTimeout(() => {
       setLoading(false);
@@ -66,7 +88,7 @@ const SettingsManagement = () => {
   // Xử lý cập nhật cài đặt hệ thống
   const handleUpdateSystemSettings = (values: any) => {
     setLoading(true);
-    
+
     // Giả lập API call
     setTimeout(() => {
       setSystemSettings({ ...systemSettings, ...values });
@@ -78,7 +100,7 @@ const SettingsManagement = () => {
   // Xử lý cập nhật cài đặt thông báo
   const handleUpdateNotificationSettings = (values: any) => {
     setLoading(true);
-    
+
     // Giả lập API call
     setTimeout(() => {
       setSystemSettings({ ...systemSettings, ...values });
@@ -117,23 +139,23 @@ const SettingsManagement = () => {
   return (
     <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
       <h2 style={{ marginBottom: 24 }}>Cài đặt</h2>
-      
+
       <Tabs defaultActiveKey="1">
-        <TabPane 
-          tab={<span><UserOutlined />Thông tin cá nhân</span>} 
+        <TabPane
+          tab={<span><UserOutlined />Thông tin cá nhân</span>}
           key="1"
         >
           <Row gutter={24}>
             <Col span={8}>
               <Card title="Ảnh đại diện" style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <Avatar 
-                    size={120} 
-                    icon={<UserOutlined />} 
+                  <Avatar
+                    size={120}
+                    icon={<UserOutlined />}
                     src={userData.avatar}
                     style={{ marginBottom: 16 }}
                   />
-                  <Upload 
+                  <Upload
                     onChange={handleAvatarUpload}
                     showUploadList={false}
                     action="https://www.mocky.io/v2/5cc8019d300000980a055e76" // Mock API endpoint
@@ -142,18 +164,18 @@ const SettingsManagement = () => {
                   </Upload>
                 </div>
               </Card>
-              
+
               <Card title="Thông tin tài khoản">
                 <p><strong>Tên đăng nhập:</strong> {userData.username}</p>
                 <p><strong>Vai trò:</strong> {userData.role === 'staff' ? 'Nhân viên' : 'Quản lý'}</p>
                 <p><strong>Bộ phận:</strong> {
-                  userData.department === 'reception' ? 'Lễ tân' : 
-                  userData.department === 'housekeeping' ? 'Dọn phòng' : 
+                  userData.department === 'reception' ? 'Lễ tân' :
+                  userData.department === 'housekeeping' ? 'Dọn phòng' :
                   userData.department === 'accounting' ? 'Kế toán' : 'Khác'
                 }</p>
               </Card>
             </Col>
-            
+
             <Col span={16}>
               <Card title="Thông tin cá nhân">
                 <Form
@@ -169,7 +191,7 @@ const SettingsManagement = () => {
                   >
                     <Input prefix={<UserOutlined />} placeholder="Họ tên" />
                   </Form.Item>
-                  
+
                   <Form.Item
                     name="email"
                     label="Email"
@@ -180,7 +202,7 @@ const SettingsManagement = () => {
                   >
                     <Input prefix={<MailOutlined />} placeholder="Email" />
                   </Form.Item>
-                  
+
                   <Form.Item
                     name="phone"
                     label="Số điện thoại"
@@ -188,11 +210,11 @@ const SettingsManagement = () => {
                   >
                     <Input prefix={<PhoneOutlined />} placeholder="Số điện thoại" />
                   </Form.Item>
-                  
+
                   <Form.Item>
-                    <Button 
-                      type="primary" 
-                      htmlType="submit" 
+                    <Button
+                      type="primary"
+                      htmlType="submit"
                       loading={loading}
                       icon={<SaveOutlined />}
                     >
@@ -201,7 +223,7 @@ const SettingsManagement = () => {
                   </Form.Item>
                 </Form>
               </Card>
-              
+
               <Card title="Đổi mật khẩu" style={{ marginTop: 16 }}>
                 <Form
                   form={passwordForm}
@@ -215,7 +237,7 @@ const SettingsManagement = () => {
                   >
                     <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu hiện tại" />
                   </Form.Item>
-                  
+
                   <Form.Item
                     name="newPassword"
                     label="Mật khẩu mới"
@@ -226,7 +248,7 @@ const SettingsManagement = () => {
                   >
                     <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu mới" />
                   </Form.Item>
-                  
+
                   <Form.Item
                     name="confirmPassword"
                     label="Xác nhận mật khẩu mới"
@@ -245,11 +267,11 @@ const SettingsManagement = () => {
                   >
                     <Input.Password prefix={<LockOutlined />} placeholder="Xác nhận mật khẩu mới" />
                   </Form.Item>
-                  
+
                   <Form.Item>
-                    <Button 
-                      type="primary" 
-                      htmlType="submit" 
+                    <Button
+                      type="primary"
+                      htmlType="submit"
                       loading={loading}
                       icon={<LockOutlined />}
                     >
@@ -261,9 +283,9 @@ const SettingsManagement = () => {
             </Col>
           </Row>
         </TabPane>
-        
-        <TabPane 
-          tab={<span><SettingOutlined />Cài đặt hệ thống</span>} 
+
+        <TabPane
+          tab={<span><SettingOutlined />Cài đặt hệ thống</span>}
           key="2"
         >
           <Card title="Cài đặt chung">
@@ -284,7 +306,7 @@ const SettingsManagement = () => {
                       <Option value="en">Tiếng Anh</Option>
                     </Select>
                   </Form.Item>
-                  
+
                   <Form.Item
                     name="theme"
                     label="Giao diện"
@@ -294,7 +316,7 @@ const SettingsManagement = () => {
                       <Option value="dark">Tối</Option>
                     </Select>
                   </Form.Item>
-                  
+
                   <Form.Item
                     name="autoLogout"
                     label="Tự động đăng xuất sau (phút)"
@@ -308,7 +330,7 @@ const SettingsManagement = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-                
+
                 <Col span={12}>
                   <Form.Item
                     name="checkInTime"
@@ -316,7 +338,7 @@ const SettingsManagement = () => {
                   >
                     <TimePicker format="HH:mm" style={{ width: '100%' }} />
                   </Form.Item>
-                  
+
                   <Form.Item
                     name="checkOutTime"
                     label="Giờ trả phòng mặc định"
@@ -325,14 +347,14 @@ const SettingsManagement = () => {
                   </Form.Item>
                 </Col>
               </Row>
-              
+
               <Divider />
-              
+
               <Form.Item>
                 <Space>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit" 
+                  <Button
+                    type="primary"
+                    htmlType="submit"
                     loading={loading}
                     icon={<SaveOutlined />}
                   >
@@ -344,9 +366,9 @@ const SettingsManagement = () => {
             </Form>
           </Card>
         </TabPane>
-        
-        <TabPane 
-          tab={<span><BellOutlined />Cài đặt thông báo</span>} 
+
+        <TabPane
+          tab={<span><BellOutlined />Cài đặt thông báo</span>}
           key="3"
         >
           <Card title="Cài đặt thông báo">
@@ -363,7 +385,7 @@ const SettingsManagement = () => {
               >
                 <Switch />
               </Form.Item>
-              
+
               <Form.Item
                 name="smsNotifications"
                 label="Thông báo qua SMS"
@@ -371,7 +393,7 @@ const SettingsManagement = () => {
               >
                 <Switch />
               </Form.Item>
-              
+
               <Form.Item
                 name="desktopNotifications"
                 label="Thông báo trên màn hình"
@@ -379,14 +401,14 @@ const SettingsManagement = () => {
               >
                 <Switch />
               </Form.Item>
-              
+
               <Divider />
-              
+
               <Form.Item>
                 <Space>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit" 
+                  <Button
+                    type="primary"
+                    htmlType="submit"
                     loading={loading}
                     icon={<SaveOutlined />}
                   >
@@ -400,9 +422,9 @@ const SettingsManagement = () => {
             </Form>
           </Card>
         </TabPane>
-        
-        <TabPane 
-          tab={<span><GlobalOutlined />Giới thiệu</span>} 
+
+        <TabPane
+          tab={<span><GlobalOutlined />Giới thiệu</span>}
           key="4"
         >
           <Card>

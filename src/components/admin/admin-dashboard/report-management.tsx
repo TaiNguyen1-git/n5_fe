@@ -9,30 +9,33 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 const { Title } = Typography;
 
-// Mock data cho báo cáo doanh thu
-const mockRevenueData = [
-  { id: 1, date: '2025-04-01', roomRevenue: 5000000, serviceRevenue: 2000000, totalRevenue: 7000000 },
-  { id: 2, date: '2025-04-02', roomRevenue: 6000000, serviceRevenue: 1500000, totalRevenue: 7500000 },
-  { id: 3, date: '2025-04-03', roomRevenue: 4500000, serviceRevenue: 2500000, totalRevenue: 7000000 },
-  { id: 4, date: '2025-04-04', roomRevenue: 7000000, serviceRevenue: 3000000, totalRevenue: 10000000 },
-  { id: 5, date: '2025-04-05', roomRevenue: 8000000, serviceRevenue: 2800000, totalRevenue: 10800000 },
-];
+// Định nghĩa cấu trúc dữ liệu
+interface RevenueData {
+  id: number;
+  date: string;
+  roomRevenue: number;
+  serviceRevenue: number;
+  totalRevenue: number;
+}
 
-// Mock data cho báo cáo tình trạng phòng
-const mockRoomStatusData = [
-  { status: 'Trống', count: 10, percentage: 50 },
-  { status: 'Đã đặt', count: 5, percentage: 25 },
-  { status: 'Đang sử dụng', count: 4, percentage: 20 },
-  { status: 'Đang dọn dẹp', count: 1, percentage: 5 },
-];
+interface RoomStatusData {
+  status: string;
+  count: number;
+  percentage: number;
+}
 
-// Mock data cho báo cáo khách hàng
-const mockCustomerData = [
-  { id: 1, month: 'Tháng 1', domestic: 120, foreign: 45, total: 165 },
-  { id: 2, month: 'Tháng 2', domestic: 150, foreign: 60, total: 210 },
-  { id: 3, month: 'Tháng 3', domestic: 180, foreign: 75, total: 255 },
-  { id: 4, month: 'Tháng 4', domestic: 200, foreign: 90, total: 290 },
-];
+interface CustomerData {
+  id: number;
+  month: string;
+  domestic: number;
+  foreign: number;
+  total: number;
+}
+
+// Khởi tạo mảng dữ liệu rỗng
+const mockRevenueData: RevenueData[] = [];
+const mockRoomStatusData: RoomStatusData[] = [];
+const mockCustomerData: CustomerData[] = [];
 
 const ReportManagement = () => {
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([dayjs().subtract(7, 'day'), dayjs()]);
@@ -138,71 +141,23 @@ const ReportManagement = () => {
     return mockCustomerData.reduce((sum, item) => sum + item.total, 0);
   };
 
-  // Tạo dữ liệu giả cho biểu đồ
+  // Tạo biểu đồ
   const renderBarChart = () => {
     return (
-      <div style={{ height: 300, background: '#f0f2f5', borderRadius: 8, display: 'flex', alignItems: 'flex-end', padding: '20px 10px', gap: 15 }}>
-        {mockRevenueData.map((item, index) => (
-          <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-            <div style={{ width: '100%', display: 'flex', height: 200, flexDirection: 'column', gap: 4 }}>
-              <div 
-                style={{ 
-                  height: `${(item.serviceRevenue / 10000000) * 100}%`, 
-                  background: '#1890ff',
-                  borderTopLeftRadius: 4,
-                  borderTopRightRadius: 4,
-                }} 
-              />
-              <div 
-                style={{ 
-                  height: `${(item.roomRevenue / 10000000) * 100}%`, 
-                  background: '#52c41a',
-                  borderBottomLeftRadius: 4,
-                  borderBottomRightRadius: 4,
-                }} 
-              />
-            </div>
-            <div style={{ marginTop: 8, fontSize: 12 }}>{dayjs(item.date).format('DD/MM')}</div>
-          </div>
-        ))}
+      <div style={{ height: 300, background: '#f0f2f5', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <p>Không có dữ liệu để hiển thị</p>
+        </div>
       </div>
     );
   };
 
-  // Tạo dữ liệu giả cho biểu đồ tròn
+  // Tạo biểu đồ tròn
   const renderPieChart = () => {
     return (
-      <div style={{ height: 300, background: '#f0f2f5', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <div style={{ position: 'relative', width: 200, height: 200 }}>
-          {/* Tạo biểu đồ tròn giả */}
-          <svg width="200" height="200" viewBox="0 0 200 200">
-            <circle cx="100" cy="100" r="80" fill="transparent" stroke="#52c41a" strokeWidth="40" strokeDasharray="251.2" strokeDashoffset="0" />
-            <circle cx="100" cy="100" r="80" fill="transparent" stroke="#1890ff" strokeWidth="40" strokeDasharray="251.2" strokeDashoffset="188.4" />
-            <circle cx="100" cy="100" r="80" fill="transparent" stroke="#faad14" strokeWidth="40" strokeDasharray="251.2" strokeDashoffset="125.6" />
-            <circle cx="100" cy="100" r="80" fill="transparent" stroke="#f5222d" strokeWidth="40" strokeDasharray="251.2" strokeDashoffset="62.8" />
-          </svg>
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 'bold' }}>20</div>
-            <div>Phòng</div>
-          </div>
-        </div>
-        <div style={{ marginLeft: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ width: 12, height: 12, background: '#52c41a', marginRight: 8, borderRadius: 2 }}></div>
-            <div>Trống (50%)</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ width: 12, height: 12, background: '#1890ff', marginRight: 8, borderRadius: 2 }}></div>
-            <div>Đã đặt (25%)</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ width: 12, height: 12, background: '#faad14', marginRight: 8, borderRadius: 2 }}></div>
-            <div>Đang sử dụng (20%)</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ width: 12, height: 12, background: '#f5222d', marginRight: 8, borderRadius: 2 }}></div>
-            <div>Đang dọn dẹp (5%)</div>
-          </div>
+      <div style={{ height: 300, background: '#f0f2f5', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <p>Không có dữ liệu để hiển thị</p>
         </div>
       </div>
     );
@@ -213,12 +168,12 @@ const ReportManagement = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={4}>Báo cáo & Thống kê</Title>
         <div style={{ display: 'flex', gap: 16 }}>
-          <RangePicker 
+          <RangePicker
             value={dateRange}
             onChange={(dates) => dates && setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
           />
-          <Select 
-            value={reportType} 
+          <Select
+            value={reportType}
             onChange={setReportType}
             style={{ width: 120 }}
           >
@@ -230,13 +185,13 @@ const ReportManagement = () => {
           <Button type="primary" icon={<DownloadOutlined />}>Xuất báo cáo</Button>
         </div>
       </div>
-      
+
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={6}>
           <Card>
-            <Statistic 
-              title="Tổng doanh thu" 
-              value={calculateTotalRevenue()} 
+            <Statistic
+              title="Tổng doanh thu"
+              value={calculateTotalRevenue()}
               valueStyle={{ color: '#1890ff' }}
               suffix="VNĐ"
               prefix={<DollarOutlined />}
@@ -246,9 +201,9 @@ const ReportManagement = () => {
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic 
-              title="Doanh thu phòng" 
-              value={calculateTotalRoomRevenue()} 
+            <Statistic
+              title="Doanh thu phòng"
+              value={calculateTotalRoomRevenue()}
               valueStyle={{ color: '#52c41a' }}
               suffix="VNĐ"
               prefix={<HomeOutlined />}
@@ -258,9 +213,9 @@ const ReportManagement = () => {
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic 
-              title="Doanh thu dịch vụ" 
-              value={calculateTotalServiceRevenue()} 
+            <Statistic
+              title="Doanh thu dịch vụ"
+              value={calculateTotalServiceRevenue()}
               valueStyle={{ color: '#faad14' }}
               suffix="VNĐ"
               prefix={<DollarOutlined />}
@@ -270,19 +225,19 @@ const ReportManagement = () => {
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic 
-              title="Tổng khách hàng" 
-              value={calculateTotalCustomers()} 
+            <Statistic
+              title="Tổng khách hàng"
+              value={calculateTotalCustomers()}
               valueStyle={{ color: '#ff4d4f' }}
               prefix={<TeamOutlined />}
             />
           </Card>
         </Col>
       </Row>
-      
+
       <Tabs defaultActiveKey="1">
-        <TabPane 
-          tab={<span><BarChartOutlined />Báo cáo doanh thu</span>} 
+        <TabPane
+          tab={<span><BarChartOutlined />Báo cáo doanh thu</span>}
           key="1"
         >
           <Card title="Biểu đồ doanh thu" style={{ marginBottom: 16 }}>
@@ -298,9 +253,9 @@ const ReportManagement = () => {
               </div>
             </div>
           </Card>
-          
-          <Table 
-            columns={revenueColumns} 
+
+          <Table
+            columns={revenueColumns}
             dataSource={mockRevenueData}
             rowKey="id"
             pagination={false}
@@ -324,9 +279,9 @@ const ReportManagement = () => {
             )}
           />
         </TabPane>
-        
-        <TabPane 
-          tab={<span><PieChartOutlined />Báo cáo tình trạng phòng</span>} 
+
+        <TabPane
+          tab={<span><PieChartOutlined />Báo cáo tình trạng phòng</span>}
           key="2"
         >
           <Row gutter={16}>
@@ -337,8 +292,8 @@ const ReportManagement = () => {
             </Col>
             <Col span={12}>
               <Card title="Chi tiết tình trạng phòng">
-                <Table 
-                  columns={roomStatusColumns} 
+                <Table
+                  columns={roomStatusColumns}
                   dataSource={mockRoomStatusData}
                   rowKey="status"
                   pagination={false}
@@ -347,14 +302,14 @@ const ReportManagement = () => {
             </Col>
           </Row>
         </TabPane>
-        
-        <TabPane 
-          tab={<span><LineChartOutlined />Báo cáo khách hàng</span>} 
+
+        <TabPane
+          tab={<span><LineChartOutlined />Báo cáo khách hàng</span>}
           key="3"
         >
           <Card title="Thống kê khách hàng theo tháng">
-            <Table 
-              columns={customerColumns} 
+            <Table
+              columns={customerColumns}
               dataSource={mockCustomerData}
               rowKey="id"
               pagination={false}
