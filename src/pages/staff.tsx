@@ -14,20 +14,31 @@ const StaffPage = () => {
       return;
     }
 
-    // Kiểm tra vai trò người dùng bằng loaiTK
+    // Lấy thông tin người dùng hiện tại
     const user = getCurrentUser();
-    console.log('Staff Page - Thông tin người dùng:', user);
+    console.log('Staff Page - Thông tin người dùng đầy đủ:', user);
     
-    // Kiểm tra cả role và loaiTK để phát hiện staff
-    const isStaff = user?.role === 'staff' || user?.loaiTK === 2;
+    // Xử lý loaiTK đảm bảo là số
+    const loaiTK = typeof user?.loaiTK === 'string' ? parseInt(user.loaiTK, 10) : user?.loaiTK;
+    
+    // Kiểm tra quyền truy cập dựa trên loaiTK và role
+    const isStaff = user?.role === 'staff' || loaiTK === 2;
+    
+    // Log chi tiết thông tin quyền truy cập
+    console.log('Staff Page - Kiểm tra quyền truy cập:', {
+      username: user?.username,
+      role: user?.role,
+      loaiTK: loaiTK,
+      isStaff: isStaff
+    });
     
     if (!isStaff) {
-      console.log('Staff Page - Người dùng không phải nhân viên:', 
-                 user?.role, user?.loaiTK);
+      console.log('Staff Page - Người dùng không phải nhân viên, chuyển hướng về trang chủ');
       router.push('/');
-    } else {
-      console.log('Staff Page - Xác nhận người dùng là nhân viên');
+      return;
     }
+    
+    console.log('Staff Page - Xác nhận người dùng là nhân viên, cho phép truy cập');
   }, [router]);
 
   return (

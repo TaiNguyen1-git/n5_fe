@@ -116,18 +116,19 @@ export default async function handler(
       
       // Nếu tìm thấy user
       if (currentUser) {
-        // Tạo đối tượng người dùng với các trường đúng theo định dạng mà profile.tsx đang mong đợi
+        // Tạo đối tượng người dùng tinh gọn
         const userProfile = {
           id: currentUser.maTK,
-          tenDangNhap: currentUser.tenTK,
-          ten: currentUser.tenHienThi || username,
+          username: currentUser.tenTK,
+          fullName: currentUser.tenHienThi || username,
           email: currentUser.email || '',
-          matKhau: '********',
-          soDienThoai: currentUser.phone || '',
-          loaiTK: currentUser.loaiTK || 3
+          phone: currentUser.phone || '',
+          loaiTK: currentUser.loaiTK || 3,
+          role: currentUser.loaiTK === 1 ? 'admin' : (currentUser.loaiTK === 2 ? 'staff' : 'customer')
         };
         
         console.log('API user-profile - Thông tin user tìm thấy:', userProfile);
+        console.log('API user-profile - Đã xác định loaiTK:', userProfile.loaiTK, 'role:', userProfile.role);
         
         return res.status(200).json({
           success: true,
@@ -149,11 +150,10 @@ export default async function handler(
       
       const fakeUser = {
         id: 0,
-        tenDangNhap: username,
-        ten: payload.name || username,
+        username: username,
+        fullName: payload.name || username,
         email: '',
-        matKhau: '********',
-        soDienThoai: '',
+        phone: '',
         loaiTK: loaiTK
       };
       
@@ -181,11 +181,10 @@ export default async function handler(
       
       const fakeUser = {
         id: 0,
-        tenDangNhap: username,
-        ten: payload.name || username,
+        username: username,
+        fullName: payload.name || username,
         email: '',
-        matKhau: '********',
-        soDienThoai: '',
+        phone: '',
         loaiTK: loaiTK
       };
       

@@ -44,6 +44,25 @@ const StaffDashboard = () => {
 
     // Lấy thông tin người dùng hiện tại
     const user = getCurrentUser();
+    
+    // Kiểm tra quyền truy cập dựa trên loaiTK và role
+    const loaiTK = typeof user?.loaiTK === 'string' ? parseInt(user.loaiTK, 10) : user?.loaiTK;
+    const isStaff = user?.role === 'staff' || loaiTK === 2;
+    
+    console.log('StaffDashboard - Thông tin người dùng:', {
+      username: user?.username || (user as any)?.tenTK,
+      role: user?.role,
+      loaiTK: loaiTK,
+      isStaff: isStaff
+    });
+    
+    if (!isStaff) {
+      console.log('StaffDashboard - Người dùng không phải nhân viên, chuyển hướng về trang chủ');
+      router.push('/');
+      return;
+    }
+    
+    console.log('StaffDashboard - Xác nhận người dùng là nhân viên, cho phép truy cập');
     setUserData(user);
     setLoading(false);
   }, [router]);
