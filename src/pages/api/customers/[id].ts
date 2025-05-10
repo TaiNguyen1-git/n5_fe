@@ -38,28 +38,16 @@ export default async function handler(
       return res.status(200).json(response.data);
     } else {
       console.error(`API returned status code ${response.status} or empty data`);
-
-      // Return fallback data with 200 status to prevent frontend errors
-      return res.status(200).json({
-        maKH: id,
-        hoTen: `Khách hàng #${id}`,
-        soDienThoai: '',
-        email: '',
-        diaChi: '',
-        soLanGheTham: 1
+      return res.status(response.status || 404).json({
+        success: false,
+        message: 'Không tìm thấy thông tin khách hàng'
       });
     }
   } catch (error: any) {
     console.error('API proxy error:', error.message);
-
-    // Return fallback data with 200 status to prevent frontend errors
-    return res.status(200).json({
-      maKH: id,
-      hoTen: `Khách hàng #${id}`,
-      soDienThoai: '',
-      email: '',
-      diaChi: '',
-      soLanGheTham: 1
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi khi kết nối đến máy chủ'
     });
   }
 }

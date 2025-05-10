@@ -191,24 +191,12 @@ export default async function handler(
         }
       }
 
-      // If all attempts failed, create a fallback room object
+      // If all attempts failed, return error
       if (!success) {
-        room = {
-          id: id,
-          maPhong: parseInt(id as string) || 0,
-          name: `Phòng ${id}`,
-          price: 800000,
-          description: 'Thông tin phòng không có sẵn',
-          features: ['Wifi', 'Điều hòa', 'TV'],
-          imageUrl: '/images/rooms/default-room.jpg',
-          images: ['/images/rooms/default-room.jpg'],
-          maxGuests: 2,
-          beds: [{ type: 'Giường đôi', count: 1 }],
-          loaiPhong: 'Standard',
-          trangThai: 0, // Set to unavailable (Không khả dụng)
-          soPhong: id,
-          giaPhong: 800000
-        };
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy thông tin phòng'
+        });
       }
 
       return res.status(200).json({
@@ -217,26 +205,9 @@ export default async function handler(
       });
     } catch (error) {
       console.error(`Error fetching room with ID ${id}:`, error);
-
-      // Return fallback data if the API call fails
-      return res.status(200).json({
-        success: true,
-        data: {
-          id: id,
-          maPhong: parseInt(id as string) || 0,
-          name: `Phòng ${id}`,
-          price: 800000,
-          description: 'Thông tin phòng không có sẵn',
-          features: ['Wifi', 'Điều hòa', 'TV'],
-          imageUrl: '/images/rooms/default-room.jpg',
-          images: ['/images/rooms/default-room.jpg'],
-          maxGuests: 2,
-          beds: [{ type: 'Giường đôi', count: 1 }],
-          loaiPhong: 'Standard',
-          trangThai: 0, // Set to unavailable (Không khả dụng)
-          soPhong: id,
-          giaPhong: 800000
-        }
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi khi kết nối đến máy chủ'
       });
     }
   } else {

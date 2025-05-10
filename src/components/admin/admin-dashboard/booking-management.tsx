@@ -12,7 +12,8 @@ const { RangePicker } = DatePicker;
 // Interface for booking data
 interface Booking {
   id: number;
-  roomNumber: string;
+  roomId: string; // Original room ID from API
+  roomNumber: string; // Room number fetched from room API
   roomType?: string;
   customerName: string;
   customerId?: number;
@@ -58,6 +59,7 @@ const BookingManagement = () => {
   const [roomDetails, setRoomDetails] = useState<Room | null>(null);
   const [customerLoading, setCustomerLoading] = useState(false);
   const [roomLoading, setRoomLoading] = useState(false);
+  const [roomNumbersMap, setRoomNumbersMap] = useState<Record<string, string>>({});
 
   // Fetch bookings on component mount
   useEffect(() => {
@@ -78,24 +80,70 @@ const BookingManagement = () => {
         throw new Error('Invalid response format');
       }
 
-      const formattedBookings = response.data.items.map((booking: any) => ({
+      // First, create the basic booking objects
+      const initialBookings = response.data.items.map((booking: any) => ({
         id: booking.maDatPhong || Math.floor(Math.random() * 1000),
-        roomNumber: booking.maPhong?.toString() || '',
+        roomId: booking.maPhong?.toString() || '',
+        roomNumber: booking.maPhong?.toString() || '', // Initially set to room ID, will be updated
         customerName: booking.tenKH || 'Khách hàng',
         customerId: booking.maKH,
         phone: booking.phone || '',
         email: booking.email || '',
         checkIn: booking.checkIn || dayjs().format('YYYY-MM-DD'),
         checkOut: booking.checkOut || dayjs().add(1, 'day').format('YYYY-MM-DD'),
-        status: booking.trangThai === 1 ? 'confirmed' :
-                booking.trangThai === 2 ? 'completed' :
+        status: booking.trangThai === 1 ? 'pending' : // Mã 1 là "Chưa xác nhận"
+                booking.trangThai === 2 ? 'confirmed' : // Mã 2 là "Đã xác nhận"
+                booking.trangThai === 3 ? 'checked_in' : // Mã 3 là "Đã nhận phòng"
+                booking.trangThai === 4 ? 'checked_out' : // Mã 4 là "Đã trả phòng"
                 booking.trangThai === 0 ? 'cancelled' : 'pending',
         totalPrice: booking.tongTien || 0,
         createdAt: booking.ngayTao || dayjs().format('YYYY-MM-DD'),
         guestCount: booking.soLuongKhach || 1
       }));
 
-      setBookings(formattedBookings);
+      // Set initial bookings
+      setBookings(initialBookings);
+
+      // Then fetch room numbers for each booking
+      const updatedBookings = await Promise.all(
+        initialBookings.map(async (booking: Booking) => {
+          if (!booking.roomId) return booking;
+
+          try {
+            // Fetch room details to get the room number
+            const response = await axios.get(`/api/rooms/${booking.roomId}`, {
+              timeout: 5000,
+              validateStatus: () => true
+            });
+
+            if (response.status >= 200 && response.status < 300 && response.data) {
+              const roomData = response.data.data || response.data;
+              if (roomData && roomData.soPhong) {
+                // Update room number in our map
+                setRoomNumbersMap(prev => ({
+                  ...prev,
+                  [booking.roomId]: roomData.soPhong
+                }));
+
+                // Return updated booking with room number
+                return {
+                  ...booking,
+                  roomNumber: roomData.soPhong,
+                  roomType: roomData.loaiPhong || 'Standard'
+                };
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching room details for booking ${booking.id}:`, error);
+          }
+
+          // If we couldn't get the room number, return the original booking
+          return booking;
+        })
+      );
+
+      // Update bookings with room numbers
+      setBookings(updatedBookings);
     } catch (error: any) {
       console.error('Error fetching bookings:', error);
 
@@ -125,7 +173,7 @@ const BookingManagement = () => {
       // Use the API proxy endpoint to avoid CORS issues
       const response = await axios.get(`/api/customers/${customerId}`, {
         timeout: 8000, // 8 second timeout
-        validateStatus: function (status) {
+        validateStatus: function () {
           // Accept all status codes to handle them manually
           return true;
         }
@@ -160,30 +208,19 @@ const BookingManagement = () => {
         return;
       }
 
-      // Use booking data as fallback
-      if (viewBooking) {
-        setCustomerDetails({
-          id: customerId,
-          name: viewBooking.customerName || `Khách hàng #${customerId}`,
-          phone: viewBooking.phone || '',
-          email: viewBooking.email || '',
-          address: '',
-          visits: 1
-        });
-      } else {
-        setCustomerDetails(null);
-      }
+      // Set customer details to null when we can't fetch data
+      setCustomerDetails(null);
     } finally {
       setCustomerLoading(false);
     }
   };
 
-  // Fetch room details with retry logic
-  const fetchRoomDetails = async (roomNumber: string, retryCount = 0) => {
+  // Fetch room details with retry logic for modal view
+  const fetchRoomDetails = async (roomId: string, retryCount = 0) => {
     setRoomLoading(true);
     try {
       // Use the API proxy endpoint to avoid CORS issues
-      const response = await axios.get(`/api/rooms/${roomNumber}`, {
+      const response = await axios.get(`/api/rooms/${roomId}`, {
         timeout: 8000, // 8 second timeout
         validateStatus: function () {
           // Accept all status codes to handle them manually
@@ -203,8 +240,8 @@ const BookingManagement = () => {
         const roomData = response.data.data || response.data;
 
         setRoomDetails({
-          id: roomData.maPhong || parseInt(roomNumber) || 0,
-          number: roomData.soPhong || roomNumber,
+          id: roomData.maPhong || parseInt(roomId) || 0,
+          number: roomData.soPhong || roomId,
           type: roomData.loaiPhong || 'Standard',
           price: roomData.giaPhong || roomData.price || 800000,
           status: roomData.trangThai === 1 ? 'available' :
@@ -223,20 +260,13 @@ const BookingManagement = () => {
       if (retryCount < 2) {
         console.log(`Retrying room details fetch (${retryCount + 1}/2)...`);
         setTimeout(() => {
-          fetchRoomDetails(roomNumber, retryCount + 1);
+          fetchRoomDetails(roomId, retryCount + 1);
         }, 1500 * (retryCount + 1)); // Exponential backoff
         return;
       }
 
-      // Create fallback room data
-      setRoomDetails({
-        id: parseInt(roomNumber) || 0,
-        number: roomNumber,
-        type: 'Standard',
-        price: 800000,
-        status: 'unavailable',
-        description: 'Thông tin phòng không có sẵn'
-      });
+      // Set room details to null when we can't fetch data
+      setRoomDetails(null);
     } finally {
       setRoomLoading(false);
     }
@@ -251,7 +281,7 @@ const BookingManagement = () => {
     } else {
       setCustomerDetails(null);
     }
-    fetchRoomDetails(booking.roomNumber);
+    fetchRoomDetails(booking.roomId);
   };
 
   // Handle search
@@ -295,7 +325,9 @@ const BookingManagement = () => {
   // Calculate statistics
   const totalBookings = bookings.length;
   const confirmedBookings = bookings.filter(booking => booking.status === 'confirmed').length;
-  const completedBookings = bookings.filter(booking => booking.status === 'completed').length;
+  const checkedInBookings = bookings.filter(booking => booking.status === 'checked_in').length;
+  const checkedOutBookings = bookings.filter(booking => booking.status === 'checked_out').length;
+  const completedBookings = checkedInBookings + checkedOutBookings; // Combined for the statistics card
   const cancelledBookings = bookings.filter(booking => booking.status === 'cancelled').length;
 
   // Define columns for the table
@@ -352,11 +384,15 @@ const BookingManagement = () => {
             break;
           case 'pending':
             color = 'gold';
-            text = 'Chờ xác nhận';
+            text = 'Chưa xác nhận';
             break;
-          case 'completed':
+          case 'checked_in':
             color = 'blue';
-            text = 'Hoàn thành';
+            text = 'Đã nhận phòng';
+            break;
+          case 'checked_out':
+            color = 'cyan';
+            text = 'Đã trả phòng';
             break;
           case 'cancelled':
             color = 'red';
@@ -370,8 +406,9 @@ const BookingManagement = () => {
       },
       filters: [
         { text: 'Đã xác nhận', value: 'confirmed' },
-        { text: 'Chờ xác nhận', value: 'pending' },
-        { text: 'Hoàn thành', value: 'completed' },
+        { text: 'Chưa xác nhận', value: 'pending' },
+        { text: 'Đã nhận phòng', value: 'checked_in' },
+        { text: 'Đã trả phòng', value: 'checked_out' },
         { text: 'Đã hủy', value: 'cancelled' },
       ],
       onFilter: (value, record) => record.status === value,
@@ -421,7 +458,7 @@ const BookingManagement = () => {
         <Col span={6}>
           <Card>
             <Statistic
-              title="Hoàn thành"
+              title="Đã nhận/trả phòng"
               value={completedBookings}
               valueStyle={{ color: '#1890ff' }}
               prefix={<CalendarOutlined />}
@@ -460,8 +497,9 @@ const BookingManagement = () => {
           onChange={handleStatusFilterChange}
         >
           <Option value="confirmed">Đã xác nhận</Option>
-          <Option value="pending">Chờ xác nhận</Option>
-          <Option value="completed">Hoàn thành</Option>
+          <Option value="pending">Chưa xác nhận</Option>
+          <Option value="checked_in">Đã nhận phòng</Option>
+          <Option value="checked_out">Đã trả phòng</Option>
           <Option value="cancelled">Đã hủy</Option>
         </Select>
       </div>
@@ -500,11 +538,13 @@ const BookingManagement = () => {
                 <p><strong>Trạng thái:</strong> <Tag color={
                   viewBooking.status === 'confirmed' ? 'green' :
                   viewBooking.status === 'pending' ? 'gold' :
-                  viewBooking.status === 'completed' ? 'blue' : 'red'
+                  viewBooking.status === 'checked_in' ? 'blue' :
+                  viewBooking.status === 'checked_out' ? 'cyan' : 'red'
                 }>
                   {viewBooking.status === 'confirmed' ? 'Đã xác nhận' :
-                   viewBooking.status === 'pending' ? 'Chờ xác nhận' :
-                   viewBooking.status === 'completed' ? 'Hoàn thành' : 'Đã hủy'}
+                   viewBooking.status === 'pending' ? 'Chưa xác nhận' :
+                   viewBooking.status === 'checked_in' ? 'Đã nhận phòng' :
+                   viewBooking.status === 'checked_out' ? 'Đã trả phòng' : 'Đã hủy'}
                 </Tag></p>
               </Col>
               <Col span={12}>

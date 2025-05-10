@@ -128,43 +128,10 @@ export default async function handler(
       });
     } catch (error) {
       console.error('Error fetching rooms:', error);
-
-      // Return empty array with success status to prevent frontend errors
-      return res.status(200).json({
-        success: true,
-        message: 'Không thể lấy danh sách phòng từ máy chủ. Hiển thị dữ liệu mẫu.',
-        data: [
-          {
-            id: '1',
-            maPhong: 1,
-            tenPhong: 'Phòng Standard 101',
-            moTa: 'Wifi, Điều hòa, TV',
-            hinhAnh: '/images/rooms/default-room.jpg',
-            giaTien: 800000,
-            soLuongKhach: 2,
-            trangThai: 1,
-            trangThaiTen: 'Trống',
-            loaiPhong: 'Standard',
-            images: ['/images/rooms/default-room.jpg'],
-            features: ['Wifi', 'Điều hòa', 'TV'],
-            soPhong: '101'
-          },
-          {
-            id: '2',
-            maPhong: 2,
-            tenPhong: 'Phòng Deluxe 102',
-            moTa: 'Wifi, Điều hòa, TV, Minibar',
-            hinhAnh: '/images/rooms/default-room.jpg',
-            giaTien: 1200000,
-            soLuongKhach: 2,
-            trangThai: 1,
-            trangThaiTen: 'Trống',
-            loaiPhong: 'Deluxe',
-            images: ['/images/rooms/default-room.jpg'],
-            features: ['Wifi', 'Điều hòa', 'TV', 'Minibar'],
-            soPhong: '102'
-          }
-        ]
+      return res.status(500).json({
+        success: false,
+        message: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.',
+        data: []
       });
     }
   } else {

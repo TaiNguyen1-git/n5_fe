@@ -24,25 +24,8 @@ export default function Profile() {
     birthYear: '',
     address: ''
   });
-  
-  const [bookingHistory, setBookingHistory] = useState([
-    { 
-      id: 1, 
-      roomNumber: '101', 
-      checkIn: '2025-03-15', 
-      checkOut: '2025-03-18', 
-      totalAmount: 3000000, 
-      status: 'completed' 
-    },
-    { 
-      id: 2, 
-      roomNumber: '202', 
-      checkIn: '2025-04-10', 
-      checkOut: '2025-04-12', 
-      totalAmount: 4000000, 
-      status: 'upcoming' 
-    }
-  ]);
+
+  const [bookingHistory, setBookingHistory] = useState<any[]>([]);
 
   useEffect(() => {
     const user = getCurrentUser();
@@ -60,12 +43,12 @@ export default function Profile() {
     try {
       // Thử lấy thông tin từ API
       const profileData = await getUserProfile();
-      
+
       if (profileData) {
         console.log('Thông tin người dùng từ API (chi tiết):', JSON.stringify(profileData));
-        
+
         const phoneNumber = profileData.phone ? String(profileData.phone) : '';
-        
+
         setFormData({
           username: profileData.tenTK || profileData.username || '',
           fullName: profileData.tenHienThi || profileData.fullName || '',
@@ -78,7 +61,7 @@ export default function Profile() {
           birthYear: '',
           address: profileData.diaChi || profileData.address || ''
         });
-        
+
         // Log để debug giá trị phone
         console.log('Số điện thoại nhận được từ API (kiểu dữ liệu):', typeof profileData.phone, profileData.phone);
         console.log('Số điện thoại sau khi chuyển đổi:', typeof phoneNumber, phoneNumber);
@@ -87,13 +70,13 @@ export default function Profile() {
     } catch (error) {
       console.error('Lỗi khi lấy thông tin từ API:', error);
     }
-    
+
     // Fallback: Nếu không lấy được từ API, dùng dữ liệu từ cookie hoặc localStorage
     try {
       const storedUserData = Cookies.get('user') || localStorage.getItem('user');
       if (storedUserData) {
         const userData = JSON.parse(storedUserData);
-        
+
         setFormData({
           username: userData.username || userData.tenTK || '',
           fullName: userData.fullName || userData.tenHienThi || '',
@@ -156,7 +139,7 @@ export default function Profile() {
         const successMessage = document.createElement('div');
         successMessage.className = styles.successMessage;
         successMessage.textContent = 'Cập nhật thông tin thành công!';
-        
+
         const formContainer = document.querySelector(`.${styles.formContainer}`);
         if (formContainer) {
           formContainer.insertBefore(successMessage, formContainer.firstChild);
@@ -168,7 +151,7 @@ export default function Profile() {
 
         // Đặt lại trạng thái loading
         setLoading(false);
-        
+
         // Tải lại dữ liệu từ API sau khi cập nhật thành công
         await fetchUserProfile();
       } else {
@@ -197,35 +180,35 @@ export default function Profile() {
           <div className={styles.logo}>
             <h1>Hồ Sơ Của Tôi</h1>
           </div>
-          
+
           <div className={styles.tabNavigation}>
-            <button 
+            <button
               className={`${styles.tabButton} ${activeTab === 'profile' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('profile')}
             >
               Thông tin cá nhân
             </button>
-            <button 
+            <button
               className={`${styles.tabButton} ${activeTab === 'bookings' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('bookings')}
             >
               Lịch sử đặt phòng
             </button>
-            <button 
+            <button
               className={`${styles.tabButton} ${activeTab === 'security' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('security')}
             >
               Bảo mật tài khoản
             </button>
           </div>
-          
+
           <div className={styles.formContainer}>
             {activeTab === 'profile' && (
               <>
                 <p className={styles.subtitle}>Quản lý thông tin hồ sơ để bảo mật tài khoản</p>
-                
+
                 {error && <div className={styles.errorMessage}>{error}</div>}
-                
+
                 <form onSubmit={handleSubmit}>
                   <div className={styles.formGroup}>
                     <label htmlFor="username">Tên đăng nhập</label>
@@ -292,8 +275,8 @@ export default function Profile() {
                     />
                   </div>
 
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className={styles.submitButton}
                     disabled={loading}
                   >
@@ -302,11 +285,11 @@ export default function Profile() {
                 </form>
               </>
             )}
-            
+
             {activeTab === 'bookings' && (
               <div className={styles.bookingHistory}>
                 <h2>Lịch sử đặt phòng</h2>
-                
+
                 {bookingHistory.length === 0 ? (
                   <p>Bạn chưa có lịch sử đặt phòng nào.</p>
                 ) : (
@@ -331,7 +314,7 @@ export default function Profile() {
                             <td>{booking.totalAmount.toLocaleString('vi-VN')} VNĐ</td>
                             <td>
                               <span className={`${styles.bookingStatus} ${styles[booking.status]}`}>
-                                {booking.status === 'completed' ? 'Đã hoàn thành' : 
+                                {booking.status === 'completed' ? 'Đã hoàn thành' :
                                  booking.status === 'upcoming' ? 'Sắp tới' : booking.status}
                               </span>
                             </td>
@@ -346,11 +329,11 @@ export default function Profile() {
                 )}
               </div>
             )}
-            
+
             {activeTab === 'security' && (
               <div className={styles.securitySettings}>
                 <h2>Bảo mật tài khoản</h2>
-                
+
                 <div className={styles.securityOption}>
                   <h3>Đổi mật khẩu</h3>
                   <p>Thay đổi mật khẩu định kỳ giúp bảo vệ tài khoản của bạn tốt hơn.</p>
@@ -358,12 +341,12 @@ export default function Profile() {
                     <button className={styles.securityButton}>Đổi mật khẩu</button>
                   </Link>
                 </div>
-                
+
                 <div className={styles.dangerZone}>
                   <h3>Vùng nguy hiểm</h3>
                   <p>Các hành động dưới đây không thể hoàn tác. Hãy cân nhắc kỹ trước khi thực hiện.</p>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={styles.deleteAccountButton}
                     onClick={() => {
                       if (window.confirm('Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác.')) {

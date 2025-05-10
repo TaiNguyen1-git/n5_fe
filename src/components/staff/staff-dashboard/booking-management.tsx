@@ -3,6 +3,7 @@ import { Table, Button, Tag, Space, Modal, DatePicker, Input, Select, Form, Card
 import { EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, CreditCardOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
+import BookingStatusDisplay from '../../../components/BookingStatusDisplay';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -17,6 +18,7 @@ interface Booking {
   checkIn: string;
   checkOut: string;
   status: string;
+  trangThai?: number; // Trạng thái từ API
   totalPrice: number;
   paymentStatus: string;
   createdAt: string;
@@ -30,12 +32,8 @@ interface AvailableRoom {
   price: number;
 }
 
-// Khởi tạo mảng dữ liệu rỗng
-const mockBookings: Booking[] = [];
-const mockAvailableRooms: AvailableRoom[] = [];
-
 const BookingManagement = () => {
-  const [bookings, setBookings] = useState(mockBookings);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [viewBooking, setViewBooking] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
@@ -226,33 +224,7 @@ const BookingManagement = () => {
       title: 'Trạng thái',
       key: 'status',
       dataIndex: 'status',
-      render: (status) => {
-        let color = 'default';
-        let text = '';
-
-        switch(status) {
-          case 'pending':
-            color = 'gold';
-            text = 'Chờ xác nhận';
-            break;
-          case 'confirmed':
-            color = 'green';
-            text = 'Đã xác nhận';
-            break;
-          case 'completed':
-            color = 'blue';
-            text = 'Hoàn thành';
-            break;
-          case 'cancelled':
-            color = 'red';
-            text = 'Đã hủy';
-            break;
-          default:
-            text = status;
-        }
-
-        return <Tag color={color}>{text}</Tag>;
-      },
+      render: (status, record) => <BookingStatusDisplay status={status} trangThai={record.trangThai} bookingId={record.id} />,
     },
     {
       title: 'Thanh toán',
@@ -418,17 +390,7 @@ const BookingManagement = () => {
             <p><strong>Tổng tiền:</strong> {viewBooking.totalPrice.toLocaleString('vi-VN')} VNĐ</p>
             <p>
               <strong>Trạng thái:</strong> {' '}
-              <Tag color={
-                viewBooking.status === 'pending' ? 'gold' :
-                viewBooking.status === 'confirmed' ? 'green' :
-                viewBooking.status === 'completed' ? 'blue' : 'red'
-              }>
-                {
-                  viewBooking.status === 'pending' ? 'Chờ xác nhận' :
-                  viewBooking.status === 'confirmed' ? 'Đã xác nhận' :
-                  viewBooking.status === 'completed' ? 'Hoàn thành' : 'Đã hủy'
-                }
-              </Tag>
+              <BookingStatusDisplay status={viewBooking.status} trangThai={viewBooking.trangThai} bookingId={viewBooking.id} />
             </p>
             <p>
               <strong>Thanh toán:</strong> {' '}

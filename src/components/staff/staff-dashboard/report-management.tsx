@@ -39,15 +39,15 @@ interface TopRoomData {
   revenue: number;
 }
 
-// Khởi tạo mảng dữ liệu rỗng
-const mockRevenueData: RevenueData[] = [];
-const mockRoomStatusData: RoomStatusData[] = [];
-const mockCustomerData: CustomerData[] = [];
-const mockTopRoomsData: TopRoomData[] = [];
+// Khởi tạo state cho dữ liệu
 
 const ReportManagement = () => {
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([dayjs().subtract(7, 'day'), dayjs()]);
   const [reportType, setReportType] = useState<string>('daily');
+  const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
+  const [roomStatusData, setRoomStatusData] = useState<RoomStatusData[]>([]);
+  const [customerData, setCustomerData] = useState<CustomerData[]>([]);
+  const [topRoomsData, setTopRoomsData] = useState<TopRoomData[]>([]);
 
   // Định nghĩa cột cho bảng báo cáo doanh thu
   const revenueColumns: ColumnsType<any> = [
@@ -154,22 +154,22 @@ const ReportManagement = () => {
 
   // Tính tổng doanh thu từ dữ liệu
   const calculateTotalRevenue = () => {
-    return mockRevenueData.reduce((sum, item) => sum + item.totalRevenue, 0);
+    return revenueData.reduce((sum, item) => sum + item.totalRevenue, 0);
   };
 
   // Tính tổng doanh thu phòng từ dữ liệu
   const calculateTotalRoomRevenue = () => {
-    return mockRevenueData.reduce((sum, item) => sum + item.roomRevenue, 0);
+    return revenueData.reduce((sum, item) => sum + item.roomRevenue, 0);
   };
 
   // Tính tổng doanh thu dịch vụ từ dữ liệu
   const calculateTotalServiceRevenue = () => {
-    return mockRevenueData.reduce((sum, item) => sum + item.serviceRevenue, 0);
+    return revenueData.reduce((sum, item) => sum + item.serviceRevenue, 0);
   };
 
   // Tính tổng số khách
   const calculateTotalCustomers = () => {
-    return mockCustomerData.reduce((sum, item) => sum + item.total, 0);
+    return customerData.reduce((sum, item) => sum + item.total, 0);
   };
 
   // Tạo biểu đồ
@@ -287,7 +287,7 @@ const ReportManagement = () => {
 
           <Table
             columns={revenueColumns}
-            dataSource={mockRevenueData}
+            dataSource={revenueData}
             rowKey="id"
             pagination={false}
             summary={() => (
@@ -325,7 +325,7 @@ const ReportManagement = () => {
               <Card title="Chi tiết tình trạng phòng">
                 <Table
                   columns={roomStatusColumns}
-                  dataSource={mockRoomStatusData}
+                  dataSource={roomStatusData}
                   rowKey="status"
                   pagination={false}
                 />
@@ -338,7 +338,7 @@ const ReportManagement = () => {
           <Card title="Top 5 phòng được đặt nhiều nhất">
             <Table
               columns={topRoomsColumns}
-              dataSource={mockTopRoomsData}
+              dataSource={topRoomsData}
               rowKey="id"
               pagination={false}
             />
@@ -352,7 +352,7 @@ const ReportManagement = () => {
           <Card title="Thống kê khách hàng theo tháng">
             <Table
               columns={customerColumns}
-              dataSource={mockCustomerData}
+              dataSource={customerData}
               rowKey="id"
               pagination={false}
               summary={() => (
@@ -362,10 +362,10 @@ const ReportManagement = () => {
                       <strong>Tổng cộng</strong>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={1} align="center">
-                      <strong>{mockCustomerData.reduce((sum, item) => sum + item.domestic, 0)}</strong>
+                      <strong>{customerData.reduce((sum, item) => sum + item.domestic, 0)}</strong>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={2} align="center">
-                      <strong>{mockCustomerData.reduce((sum, item) => sum + item.foreign, 0)}</strong>
+                      <strong>{customerData.reduce((sum, item) => sum + item.foreign, 0)}</strong>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={3} align="center">
                       <strong>{calculateTotalCustomers()}</strong>

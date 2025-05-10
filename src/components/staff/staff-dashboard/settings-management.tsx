@@ -36,8 +36,8 @@ const defaultUserData: UserData = {
   fullName: '',
   email: '',
   phone: '',
-  role: 'staff',
-  department: 'reception',
+  role: '',
+  department: '',
   avatar: null,
 };
 

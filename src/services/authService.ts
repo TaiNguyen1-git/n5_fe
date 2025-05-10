@@ -97,22 +97,7 @@ const axiosInstance = axios.create({
   timeout: 15000, // 15 giây timeout để xử lý mạng chậm
 });
 
-// Mock user storage
-const USERS_STORAGE_KEY = 'registered_users';
-
-// Export hàm getRegisteredUsers để các component khác có thể sử dụng
-export const getRegisteredUsers = (): Record<string, any> => {
-  if (typeof window === 'undefined') return {};
-  const usersStr = localStorage.getItem(USERS_STORAGE_KEY);
-  return usersStr ? JSON.parse(usersStr) : {};
-};
-
-const saveRegisteredUser = (userData: any) => {
-  if (typeof window === 'undefined') return;
-  const users = getRegisteredUsers();
-  users[userData.username] = userData;
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-};
+// Removed mock user storage
 
 // Update User interface to include role and loaiTK
 interface User {
@@ -135,7 +120,7 @@ interface User {
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   try {
     console.log('Login attempt:', credentials.username);
-    
+
     // Xóa dữ liệu cũ trước khi đăng nhập để tránh xung đột
     if (typeof window !== 'undefined') {
       removeAuthCookie(AUTH_TOKEN_KEY);
@@ -143,7 +128,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
       localStorage.removeItem(AUTH_TOKEN_KEY);
       localStorage.removeItem(USER_DATA_KEY);
     }
-    
+
     const response = await fetch(`${BASE_URL}/login-handler`, {
       method: 'POST',
       headers: {
@@ -151,29 +136,29 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
       },
       body: JSON.stringify(credentials),
     });
-    
+
     const data = await response.json();
     console.log('Login response:', data);
-    
+
     if (response.ok && data.success) {
       // Xác định role dựa trên loaiTK chính xác
       let userRole = 'customer';
       let userLoaiTK = data.data.loaiTK;
-      
+
       // Đảm bảo loaiTK là số
       if (typeof userLoaiTK === 'string') {
         userLoaiTK = parseInt(userLoaiTK, 10);
       }
-      
+
       // Ánh xạ loaiTK sang role
       if (userLoaiTK === 1) {
         userRole = 'admin';
       } else if (userLoaiTK === 2) {
         userRole = 'staff';
       }
-      
+
       console.log('Mapped role from loaiTK:', { loaiTK: userLoaiTK, role: userRole });
-      
+
       const user: UserData = {
         id: data.data.user?.id || data.data.user?.maTK || data.data.maTK,
         tenTK: data.data.user?.username || data.data.tenTK,
@@ -186,23 +171,23 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
         role: userRole, // Sử dụng role đã xác định
         loaiTK: userLoaiTK // Đảm bảo loaiTK là số
       };
-      
+
       // Log detailed user information
       console.log('User authenticated successfully');
       console.log('User account type (loaiTK):', user.loaiTK);
       console.log('User role:', user.role);
-      
+
       // Store auth token and user data in cookies
       setAuthCookie(AUTH_TOKEN_KEY, data.data.token);
       setAuthCookie(USER_DATA_KEY, JSON.stringify(user));
-      
+
       // Also store in localStorage as a fallback for older code
       localStorage.setItem(AUTH_TOKEN_KEY, data.data.token);
       localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
-      
+
       // Dispatch login success event
       window.dispatchEvent(new CustomEvent('loginSuccess', { detail: user }));
-      
+
       // Fetch additional profile data
       try {
         // We'll import this dynamically to avoid circular dependencies
@@ -212,16 +197,16 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
             const profileData = await getUserProfile();
             if (profileData) {
               console.log('Login: Đã tải profile đầy đủ từ API:', profileData);
-              
+
               // Kiểm tra và cập nhật lại role nếu cần
               let updatedRole = user.role;
               let updatedLoaiTK = profileData.loaiTK || user.loaiTK;
-              
+
               // Đảm bảo loaiTK là số
               if (typeof updatedLoaiTK === 'string') {
                 updatedLoaiTK = parseInt(updatedLoaiTK, 10);
               }
-              
+
               // Cập nhật lại role dựa trên loaiTK mới
               if (updatedLoaiTK === 1) {
                 updatedRole = 'admin';
@@ -230,7 +215,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
               } else {
                 updatedRole = 'customer';
               }
-              
+
               // Cập nhật lại cookie/localStorage với dữ liệu mới nhất
               const userData = {
                 ...user,
@@ -238,17 +223,17 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
                 role: updatedRole,
                 loaiTK: updatedLoaiTK
               };
-              
+
               console.log('Login: Cập nhật thông tin người dùng với role/loaiTK:', {
                 role: updatedRole,
                 loaiTK: updatedLoaiTK
               });
-              
+
               // Lưu lại vào cả cookie và localStorage
               setAuthCookie(USER_DATA_KEY, JSON.stringify(userData));
               localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
               console.log('Login: Đã cập nhật dữ liệu đầy đủ trong storage');
-              
+
               // Nếu role thay đổi, có thể reload trang để cập nhật quyền
               if (updatedRole !== user.role) {
                 console.log('Login: Phát hiện thay đổi role, sẽ làm mới trang...');
@@ -268,7 +253,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
       } catch (profileError) {
         console.error('Error fetching profile after login:', profileError);
       }
-      
+
       return {
         success: true,
         message: data.message || 'Login successful',
@@ -284,59 +269,14 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
     }
   } catch (error) {
     console.error('Login error:', error);
-    
-    // Attempt local login if there's a connection error
-    console.log('Attempting local login...');
-    return attemptLocalLogin(credentials);
+    return {
+      success: false,
+      message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.',
+    };
   }
 }
 
-// Hàm hỗ trợ để thử đăng nhập với dữ liệu local
-function attemptLocalLogin(credentials: LoginCredentials): AuthResponse {
-  const users = getRegisteredUsers();
-  const user = users[credentials.username];
-  
-  if (user && user.password === credentials.password) {
-    // Tạo token giả
-    const token = 'local-token-' + Math.random().toString(36).substring(2);
-    
-    // Lưu token và thông tin người dùng vào cookie
-    const userData = {
-      id: user.id || user.username,
-      username: user.username,
-      tenTK: user.username,
-      fullName: user.fullName,
-      tenHienThi: user.fullName,
-      email: user.email,
-      role: user.role || 'customer',
-      loaiTK: user.loaiTK || 3
-    };
-    
-    // Lưu vào cả cookie và localStorage
-    setAuthCookie(AUTH_TOKEN_KEY, token);
-    setAuthCookie(USER_DATA_KEY, JSON.stringify(userData));
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
-    localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-    
-    console.log('Login success with local account:', userData);
-    
-    return {
-      success: true,
-      message: 'Đăng nhập thành công',
-      data: { 
-        user: userData,
-        token 
-      }
-    };
-  }
-  
-  // Không tìm thấy tài khoản phù hợp
-  console.log('Login failed: Invalid credentials');
-  return {
-    success: false,
-    message: 'Tên đăng nhập hoặc mật khẩu không chính xác',
-  };
-}
+// Removed local login function
 
 /**
  * Handles user registration
@@ -353,10 +293,10 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
       vaiTro: 'customer',
       loaiTK: 3 // Mặc định là tài khoản khách hàng
     };
-    
+
     // Gọi trực tiếp đến API backend để đăng ký
     console.log('Sending registration data:', requestData);
-    
+
     // Tăng timeout để tránh lỗi mạng
     const response = await axios.post(`${BASE_URL}/Auth/Register`, requestData, {
       timeout: 30000, // Tăng timeout lên 30 giây
@@ -365,9 +305,9 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
         'Accept': 'application/json'
       }
     });
-    
+
     console.log('Registration response:', response.data);
-    
+
     if (response.data) {
       return {
         success: true,
@@ -379,7 +319,7 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
     }
   } catch (error: any) {
     console.error('Registration API error:', error.response?.data || error.message);
-    
+
     // Xử lý cụ thể lỗi mạng
     if (error.message && error.message.includes('Network Error')) {
       return {
@@ -387,14 +327,14 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
         message: 'Lỗi kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn hoặc thử lại sau.'
       };
     }
-    
+
     if (error.response?.status === 400) {
       return {
         success: false,
         message: error.response.data.message || 'Thông tin đăng ký không hợp lệ'
       };
     }
-    
+
     return {
       success: false,
       message: error.message || 'Đăng ký thất bại. Vui lòng thử lại sau.'
@@ -413,14 +353,14 @@ export const updateUserProfile = async (profileData: UpdateProfileData): Promise
       if (!currentUserStr) {
         throw new Error('Không tìm thấy thông tin người dùng');
       }
-      
+
       const currentUser = JSON.parse(currentUserStr);
       const token = localStorage.getItem('auth_token');
-      
+
       if (!token) {
         throw new Error('Phiên đăng nhập hết hạn');
       }
-      
+
       // Chuẩn bị dữ liệu cập nhật
       const requestData = {
         maTK: currentUser.id,
@@ -432,14 +372,14 @@ export const updateUserProfile = async (profileData: UpdateProfileData): Promise
         ngaySinh: profileData.birthDate || currentUser.birthDate,
         diaChi: profileData.address || currentUser.address
       };
-      
+
       // Gọi API
       const response = await axiosInstance.put(`/Auth/UpdateProfile`, requestData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (response.data && response.data.success) {
         // Cập nhật thông tin người dùng trong localStorage
         const updatedUser = {
@@ -452,9 +392,9 @@ export const updateUserProfile = async (profileData: UpdateProfileData): Promise
           birthDate: profileData.birthDate || currentUser.birthDate,
           address: profileData.address || currentUser.address
         };
-        
+
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        
+
         return {
           success: true,
           message: 'Cập nhật thông tin thành công',
@@ -466,48 +406,10 @@ export const updateUserProfile = async (profileData: UpdateProfileData): Promise
         throw new Error(response.data.message || 'Cập nhật thông tin thất bại');
       }
     } catch (apiError) {
-      // Nếu API fail, cập nhật local
-      const currentUserStr = localStorage.getItem('user');
-      if (!currentUserStr) {
-        return {
-          success: false,
-          message: 'Không tìm thấy thông tin người dùng'
-        };
-      }
-      
-      const currentUser = JSON.parse(currentUserStr);
-      
-      // Cập nhật thông tin người dùng
-      const updatedUser = {
-        ...currentUser,
-        username: profileData.username,
-        fullName: profileData.fullName,
-        email: profileData.email,
-        phoneNumber: profileData.phoneNumber || currentUser.phoneNumber,
-        gender: profileData.gender || currentUser.gender,
-        birthDate: profileData.birthDate || currentUser.birthDate,
-        address: profileData.address || currentUser.address
-      };
-      
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
-      // Nếu người dùng được đăng ký cục bộ, cập nhật trong USERS_STORAGE_KEY
-      const users = getRegisteredUsers();
-      if (users[profileData.username]) {
-        users[profileData.username] = {
-          ...users[profileData.username],
-          ...updatedUser,
-          password: users[profileData.username].password // Giữ lại mật khẩu
-        };
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-      }
-      
+      console.error('Error updating profile:', apiError);
       return {
-        success: true,
-        message: 'Cập nhật thông tin thành công',
-        data: {
-          user: updatedUser
-        }
+        success: false,
+        message: 'Không thể cập nhật thông tin. Vui lòng kiểm tra kết nối mạng và thử lại sau.'
       };
     }
   } catch (error) {
@@ -524,11 +426,11 @@ export const updateUserProfile = async (profileData: UpdateProfileData): Promise
  */
 export const isAuthenticated = (): boolean => {
   if (typeof window === 'undefined') return false;
-  
+
   // Kiểm tra token từ cookie
   const token = getAuthCookie(AUTH_TOKEN_KEY);
   if (!token) return false;
-  
+
   // Kiểm tra token có hợp lệ không
   try {
     // Thử phân tích token (có thể thêm logic kiểm tra hết hạn nếu cần)
@@ -537,7 +439,7 @@ export const isAuthenticated = (): boolean => {
       // Admin token đặc biệt - luôn hợp lệ
       return true;
     }
-    
+
     // Kiểm tra token hợp lệ
     return true;
   } catch (e) {
@@ -551,17 +453,17 @@ export const isAuthenticated = (): boolean => {
  */
 export const getCurrentUser = (): User | null => {
   if (typeof window === 'undefined') return null;
-  
+
   // Kiểm tra token trước
   if (!isAuthenticated()) return null;
-  
+
   // Lấy thông tin người dùng từ cookie
   const userStr = getAuthCookie(USER_DATA_KEY);
   if (!userStr) return null;
-  
+
   try {
     const userData = JSON.parse(userStr);
-    
+
     // Xử lý đặc biệt cho tài khoản nhanvien2
     if (userData.username === 'nhanvien2' || userData.tenTK === 'nhanvien2') {
       console.log('AuthService - Đã phát hiện tài khoản nhanvien2, đảm bảo loaiTK=2 và role=staff');
@@ -569,15 +471,15 @@ export const getCurrentUser = (): User | null => {
       userData.vaiTro = 2;
       userData.role = 'staff';
     }
-    
+
     // Đảm bảo loaiTK và vaiTro là số
     if (userData.loaiTK !== undefined && userData.loaiTK !== null) {
       if (typeof userData.loaiTK !== 'number') {
         try {
-          const loaiTKValue = typeof userData.loaiTK === 'string' 
-            ? parseInt(userData.loaiTK, 10) 
+          const loaiTKValue = typeof userData.loaiTK === 'string'
+            ? parseInt(userData.loaiTK, 10)
             : userData.loaiTK;
-          
+
           if (!isNaN(loaiTKValue)) {
             userData.loaiTK = loaiTKValue;
           }
@@ -586,15 +488,15 @@ export const getCurrentUser = (): User | null => {
         }
       }
     }
-    
+
     // Đảm bảo vaiTro là số
     if (userData.vaiTro !== undefined && userData.vaiTro !== null) {
       if (typeof userData.vaiTro !== 'number') {
         try {
-          const vaiTroValue = typeof userData.vaiTro === 'string' 
-            ? parseInt(userData.vaiTro, 10) 
+          const vaiTroValue = typeof userData.vaiTro === 'string'
+            ? parseInt(userData.vaiTro, 10)
             : userData.vaiTro;
-          
+
           if (!isNaN(vaiTroValue)) {
             userData.vaiTro = vaiTroValue;
           }
@@ -603,7 +505,7 @@ export const getCurrentUser = (): User | null => {
         }
       }
     }
-    
+
     // Đảm bảo role luôn khớp với loaiTK
     if (userData.loaiTK === 1) {
       if (userData.role !== 'admin') {
@@ -621,7 +523,7 @@ export const getCurrentUser = (): User | null => {
         userData.role = 'customer';
       }
     }
-    
+
     // Kiểm tra xem cần lưu lại dữ liệu không
     const needSave = userData.loaiTK === 2 && userData.role === 'staff';
     if (needSave) {
@@ -630,7 +532,7 @@ export const getCurrentUser = (): User | null => {
       localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
       console.log('AuthService - Đã lưu lại dữ liệu người dùng với role và loaiTK đồng bộ');
     }
-    
+
     // Chuẩn hóa dữ liệu người dùng để đảm bảo có cả 2 cách đặt tên
     if (userData.username && !userData.tenTK) userData.tenTK = userData.username;
     if (userData.tenTK && !userData.username) userData.username = userData.tenTK;
@@ -642,7 +544,7 @@ export const getCurrentUser = (): User | null => {
     if (userData.gioiTinh && !userData.gender) userData.gender = userData.gioiTinh;
     if (userData.address && !userData.diaChi) userData.diaChi = userData.address;
     if (userData.diaChi && !userData.address) userData.address = userData.diaChi;
-    
+
     return userData;
   } catch (e) {
     console.error('Error parsing user data from cookie', e);
@@ -655,25 +557,25 @@ export const getCurrentUser = (): User | null => {
  */
 export const logout = (): void => {
   if (typeof window === 'undefined') return;
-  
+
   // Xóa tất cả dữ liệu người dùng khỏi cookies
   removeAuthCookie(AUTH_TOKEN_KEY);
   removeAuthCookie(USER_DATA_KEY);
-  
+
   // Xóa cả localStorage để đồng bộ
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(USER_DATA_KEY);
-  
+
   // Xóa các session storage nếu có
   sessionStorage.removeItem(AUTH_TOKEN_KEY);
   sessionStorage.removeItem(USER_DATA_KEY);
-  
+
   console.log('Đã đăng xuất và xóa dữ liệu người dùng');
-  
+
   // Kích hoạt sự kiện để thông báo cho Header
   const logoutEvent = new Event('user-logout');
   window.dispatchEvent(logoutEvent);
-  
+
   // Chuyển hướng đến trang đăng nhập nếu cần
   if (window.location.pathname !== '/login') {
     window.location.href = '/login';
@@ -712,7 +614,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
         message: 'Bạn chưa đăng nhập'
       };
     }
-    
+
     const token = localStorage.getItem('auth_token');
     if (!token) {
       return {
@@ -720,7 +622,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
         message: 'Phiên đăng nhập hết hạn'
       };
     }
-    
+
     try {
       // Gọi API đổi mật khẩu thực tế
       const response = await axiosInstance.post('/Auth/ChangePassword', {
@@ -732,7 +634,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (response.data && response.data.success) {
         return {
           success: true,
@@ -742,24 +644,11 @@ export async function changePassword(currentPassword: string, newPassword: strin
         throw new Error(response.data.message || 'Đổi mật khẩu thất bại');
       }
     } catch (apiError) {
-      // Nếu API không thành công, đổi mật khẩu local
-      const users = getRegisteredUsers();
-      const userRecord = users[currentUser.username];
-      
-      if (userRecord && userRecord.password === currentPassword) {
-        userRecord.password = newPassword;
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-        
-        return {
-          success: true,
-          message: 'Đổi mật khẩu thành công'
-        };
-      } else {
-        return {
-          success: false,
-          message: 'Mật khẩu hiện tại không chính xác'
-        };
-      }
+      console.error('Error changing password:', apiError);
+      return {
+        success: false,
+        message: 'Không thể đổi mật khẩu. Vui lòng kiểm tra kết nối mạng và thử lại sau.'
+      };
     }
   } catch (error) {
     console.error('Change password error:', error);
@@ -782,7 +671,7 @@ export const deleteUser = async (): Promise<AuthResponse> => {
         message: 'Bạn chưa đăng nhập'
       };
     }
-    
+
     const token = localStorage.getItem('auth_token');
     if (!token) {
       return {
@@ -790,7 +679,7 @@ export const deleteUser = async (): Promise<AuthResponse> => {
         message: 'Phiên đăng nhập hết hạn'
       };
     }
-    
+
     try {
       // Gọi API xóa tài khoản thực tế
       const response = await axiosInstance.delete(`/Auth/DeleteAccount?id=${currentUser.id}`, {
@@ -798,7 +687,7 @@ export const deleteUser = async (): Promise<AuthResponse> => {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (response.data && response.data.success) {
         logout();
         return {
@@ -809,25 +698,11 @@ export const deleteUser = async (): Promise<AuthResponse> => {
         throw new Error(response.data.message || 'Xóa tài khoản thất bại');
       }
     } catch (apiError) {
-      // Nếu API không thành công, xóa tài khoản local
-      const users = getRegisteredUsers();
-      
-      if (users[currentUser.username]) {
-        delete users[currentUser.username];
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-        
-        logout();
-        
-        return {
-          success: true,
-          message: 'Xóa tài khoản thành công'
-        };
-      } else {
-        return {
-          success: false,
-          message: 'Không tìm thấy tài khoản'
-        };
-      }
+      console.error('Error deleting account:', apiError);
+      return {
+        success: false,
+        message: 'Không thể xóa tài khoản. Vui lòng kiểm tra kết nối mạng và thử lại sau.'
+      };
     }
   } catch (error) {
     console.error('Delete account error:', error);
@@ -847,7 +722,7 @@ export const forgotPassword = async (email: string): Promise<AuthResponse> => {
     const response = await axios.post('/api/forgotPassword?action=forgot-password', {
       email
     });
-    
+
     if (response.data.success) {
       return {
         success: true,
@@ -875,7 +750,7 @@ export const resetPassword = async (resetToken: string, password: string): Promi
       resetToken,
       password
     });
-    
+
     if (response.data.success) {
       return {
         success: true,

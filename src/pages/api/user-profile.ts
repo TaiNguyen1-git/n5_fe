@@ -60,18 +60,18 @@ export default async function handler(
       let currentUser = null;
       let currentPage = 1;
       let totalPages = 1;
-      
+
       // Hàm tìm user trong danh sách
       const findUserInItems = (items: any[]) => {
-        return items.find((user: any) => 
+        return items.find((user: any) =>
           user.tenTK.toLowerCase() === username.toLowerCase()
         );
       };
-      
+
       // Lặp qua các trang cho đến khi tìm thấy user hoặc đã kiểm tra hết các trang
       do {
         console.log(`API user-profile - Kiểm tra trang ${currentPage}/${totalPages}`);
-        
+
         // Gọi API với số trang hiện tại
         const response = await fetch(`https://ptud-web-1.onrender.com/api/User/GetAll?pageNumber=${currentPage}`, {
           method: 'GET',
@@ -87,20 +87,20 @@ export default async function handler(
 
         // Phân tích dữ liệu từ API
         const users = await response.json();
-        
+
         if (!users || typeof users !== 'object') {
           throw new Error('API trả về dữ liệu không hợp lệ');
         }
-        
+
         // Lấy thông tin pagination từ API response
         if (users.totalPages) {
           totalPages = users.totalPages;
         }
-        
+
         // In ra danh sách username để debug
         if (users.items && Array.isArray(users.items)) {
           console.log(`Danh sách tenTK trong API (trang ${currentPage}):`, users.items.map((u: any) => u.tenTK).join(', '));
-          
+
           // Tìm user trong danh sách
           const foundUser = findUserInItems(users.items);
           if (foundUser) {
@@ -109,11 +109,11 @@ export default async function handler(
             break;
           }
         }
-        
+
         // Tăng số trang để kiểm tra trang tiếp theo
         currentPage++;
       } while (currentPage <= totalPages);
-      
+
       // Nếu tìm thấy user
       if (currentUser) {
         // Tạo đối tượng người dùng tinh gọn
@@ -126,72 +126,30 @@ export default async function handler(
           loaiTK: currentUser.loaiTK || 3,
           role: currentUser.loaiTK === 1 ? 'admin' : (currentUser.loaiTK === 2 ? 'staff' : 'customer')
         };
-        
+
         console.log('API user-profile - Thông tin user tìm thấy:', userProfile);
         console.log('API user-profile - Đã xác định loaiTK:', userProfile.loaiTK, 'role:', userProfile.role);
-        
+
         return res.status(200).json({
           success: true,
           message: 'Lấy thông tin người dùng thành công',
           data: userProfile
         });
       }
-      
-      // Nếu không tìm thấy user, tạo thông tin giả từ JWT token
-      console.log('API user-profile - Không tìm thấy user trong API sau khi kiểm tra tất cả các trang, tạo user giả từ token');
-      
-      // Lấy vai trò từ JWT token
-      let loaiTK = 3; // Mặc định khách hàng
-      if (payload.role === 'Admin' || payload.role === 'QuanTri') {
-        loaiTK = 1;
-      } else if (payload.role === 'NhanVien' || payload.role === 'Staff') {
-        loaiTK = 2;
-      }
-      
-      const fakeUser = {
-        id: 0,
-        username: username,
-        fullName: payload.name || username,
-        email: '',
-        phone: '',
-        loaiTK: loaiTK
-      };
-      
-      console.log('API user-profile - Đã tạo user giả:', fakeUser);
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Lấy thông tin người dùng thành công (dữ liệu mặc định)',
-        data: fakeUser
+
+      // Nếu không tìm thấy user, trả về lỗi
+      console.log('API user-profile - Không tìm thấy user trong API sau khi kiểm tra tất cả các trang');
+
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy thông tin người dùng'
       });
-      
+
     } catch (error) {
       console.error('Lỗi khi gọi API GetAll:', error);
-      
-      // Tạo thông tin giả từ JWT token nếu API lỗi
-      console.log('API user-profile - Lỗi API, tạo user giả từ token');
-      
-      // Lấy vai trò từ JWT token
-      let loaiTK = 3; // Mặc định khách hàng
-      if (payload.role === 'Admin' || payload.role === 'QuanTri') {
-        loaiTK = 1;
-      } else if (payload.role === 'NhanVien' || payload.role === 'Staff') {
-        loaiTK = 2;
-      }
-      
-      const fakeUser = {
-        id: 0,
-        username: username,
-        fullName: payload.name || username,
-        email: '',
-        phone: '',
-        loaiTK: loaiTK
-      };
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Lấy thông tin người dùng thành công (dữ liệu mặc định)',
-        data: fakeUser
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi khi kết nối đến máy chủ'
       });
     }
   } catch (error) {
@@ -201,4 +159,4 @@ export default async function handler(
       message: 'Đã xảy ra lỗi khi lấy thông tin người dùng'
     });
   }
-} 
+}

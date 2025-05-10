@@ -21,9 +21,6 @@ interface Room {
   features: string[];
 }
 
-// Khởi tạo mảng phòng rỗng
-const mockRooms: Room[] = [];
-
 const roomTypes = [
   { value: 'single', label: 'Phòng đơn' },
   { value: 'duo', label: 'Phòng đôi' },
@@ -41,7 +38,7 @@ const roomStatuses = [
 ];
 
 const RoomManagement = () => {
-  const [rooms, setRooms] = useState(mockRooms);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [editingRoom, setEditingRoom] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
