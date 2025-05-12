@@ -42,7 +42,7 @@ export default async function handler(
       const maxRetries = 3;
       let retryCount = 0;
       let lastError;
-      let response;
+      let response: any = null;
 
       while (retryCount < maxRetries) {
         try {
@@ -74,6 +74,11 @@ export default async function handler(
             throw error;
           }
         }
+      }
+
+      // Verify that response exists
+      if (!response) {
+        throw new Error('Failed to get response after multiple retries');
       }
 
       // Log response for debugging
@@ -116,6 +121,10 @@ export default async function handler(
     } catch (error: any) {
       console.error('Error fetching users:', error);
 
+      // Extract query parameters again to avoid TypeScript errors
+      const pageNumber = Number(req.query.pageNumber) || 1;
+      const pageSize = Number(req.query.pageSize) || 10;
+
       // Tạo dữ liệu mẫu khi có lỗi
       const sampleUsers = [
         {
@@ -154,8 +163,8 @@ export default async function handler(
         data: {
           items: sampleUsers,
           totalItems: sampleUsers.length,
-          pageNumber: Number(pageNumber) || 1,
-          pageSize: Number(pageSize) || 10,
+          pageNumber: pageNumber,
+          pageSize: pageSize,
           totalPages: 1
         }
       });
@@ -176,6 +185,11 @@ export default async function handler(
       // Create user through backend API
       console.log('API route: Creating user with data:', userData);
       const response = await axios.post(`${BACKEND_API_URL}/User/Create`, userData);
+      
+      if (!response) {
+        throw new Error('Failed to get response from create user API');
+      }
+      
       console.log('API route: Create user response:', response.data);
 
       return res.status(201).json({

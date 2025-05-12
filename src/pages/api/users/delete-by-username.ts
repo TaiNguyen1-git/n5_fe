@@ -17,7 +17,7 @@ export default async function handler(
   // Thêm CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,DELETE');
   res.setHeader(
     'Access-Control-Allow-Headers',
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
@@ -29,64 +29,114 @@ export default async function handler(
     return;
   }
 
-  if (req.method === 'POST') {
+  // Chỉ cho phép phương thức DELETE
+  if (req.method !== 'DELETE') {
+    res.setHeader('Allow', ['DELETE']);
+    return res.status(405).json({ 
+      success: false, 
+      message: `Phương thức ${req.method} không được hỗ trợ` 
+    });
+  }
+
+  try {
+    // Lấy tham số tenTK hoặc username từ query
+    const tenTK = req.query.tenTK || req.query.username;
+
+    if (!tenTK) {
+      return res.status(400).json({
+        success: false,
+        message: 'Thiếu tham số tenTK hoặc username'
+      });
+    }
+
+    // Đảm bảo tenTK là chuỗi
+    const tenTKString = Array.isArray(tenTK) ? tenTK[0] : String(tenTK);
+
     try {
-      console.log('delete-by-username API route called with body:', req.body);
-      const { username } = req.body;
-
-      console.log('Extracted username:', username, 'Type:', typeof username);
-
-      if (!username) {
-        console.error('Username is missing in request body');
-        return res.status(400).json({
-          success: false,
-          message: 'Tên tài khoản là bắt buộc'
-        });
-      }
-
-      console.log(`API route delete-by-username: Deleting user with username ${username}`);
-
-      // Gọi API xóa người dùng
+      // Cách 1: Sử dụng tham số TenTK
+      const response = await axios.delete(`${BACKEND_API_URL}/User/Delete`, {
+        params: { TenTK: tenTKString },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        timeout: 15000
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Xóa người dùng thành công',
+        data: response.data
+      });
+    } catch (error1: any) {
       try {
-        console.log('Calling backend API with DELETE method');
-        const response = await axios.delete(`${BACKEND_API_URL}/User/Delete`, {
-          params: { TenTK: username }
+        // Cách 2: Sử dụng URL query parameter
+        const response = await axios.delete(`${BACKEND_API_URL}/User/Delete?TenTK=${encodeURIComponent(tenTKString)}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          timeout: 15000
         });
-        
-        console.log('Backend API response:', response.data);
         
         return res.status(200).json({
           success: true,
           message: 'Xóa người dùng thành công',
           data: response.data
         });
-      } catch (error: any) {
-        console.error('Error calling backend API:', error);
-        
-        // Trả về lỗi từ backend nếu có
-        if (error.response) {
-          return res.status(error.response.status).json({
-            success: false,
-            message: error.response.data?.message || 'Lỗi từ backend API',
-            data: error.response.data
+      } catch (error2: any) {
+        try {
+          // Cách 3: Thử endpoint khác và tham số tenTK (lowercase)
+          const response = await axios.delete(`${BACKEND_API_URL}/User/DeleteUser`, {
+            params: { tenTK: tenTKString },
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            timeout: 15000
           });
+          
+          return res.status(200).json({
+            success: true,
+            message: 'Xóa người dùng thành công',
+            data: response.data
+          });
+        } catch (error3: any) {
+          // Phương pháp 4: Thử với phương thức POST với _method=DELETE
+          try {
+            const response = await axios.post(`${BACKEND_API_URL}/User/Delete`, 
+              { TenTK: tenTKString },
+              { 
+                headers: { 
+                  'X-HTTP-Method-Override': 'DELETE',
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
+                timeout: 15000
+              }
+            );
+            
+            return res.status(200).json({
+              success: true,
+              message: 'Xóa người dùng thành công',
+              data: response.data
+            });
+          } catch (error4: any) {
+            // Thất bại với tất cả các phương pháp
+            const errorMessage = error4.response?.data?.message || error4.message;
+            
+            return res.status(500).json({
+              success: false,
+              message: `Không thể xóa người dùng: ${errorMessage}`
+            });
+          }
         }
-        
-        // Trả về lỗi chung nếu không có response
-        return res.status(500).json({
-          success: false,
-          message: error.message || 'Lỗi khi gọi backend API'
-        });
       }
-    } catch (error: any) {
-      console.error('Error in API route:', error);
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Đã xảy ra lỗi khi xóa người dùng'
-      });
     }
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).json({ success: false, message: `Phương thức ${req.method} không được hỗ trợ` });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: 'Đã xảy ra lỗi không mong muốn khi xóa người dùng'
+    });
   }
 }

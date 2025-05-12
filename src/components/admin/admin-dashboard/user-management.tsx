@@ -19,6 +19,10 @@ const UserManagement = () => {
     pageSize: 10,
     total: 0
   });
+  
+  // Thêm state mới để quản lý modal xác nhận xóa
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string>('');
 
   // Fetch danh sách người dùng khi component được mount hoặc khi pagination thay đổi
   useEffect(() => {
@@ -242,91 +246,92 @@ const UserManagement = () => {
   };
 
   // Xử lý xóa người dùng
-  const handleDelete = (tenTK: string) => {
-    console.log('handleDelete called with tenTK:', tenTK);
+  const handleDelete = (tenTK?: string) => {
     if (!tenTK) {
-      console.error('tenTK is undefined or null');
       message.error('Không thể xóa người dùng: Tên tài khoản không hợp lệ');
       return;
     }
-    Modal.confirm({
-      title: 'Xác nhận xóa người dùng',
-      content: 'Bạn có chắc chắn muốn xóa người dùng này?',
-      okText: 'Xóa',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk: async () => {
-        // Hiển thị thông báo đang xử lý
-        const loadingMessage = message.loading('Đang xóa người dùng...', 0);
+    
+    // Tìm người dùng với tenTK này để xem có tồn tại không
+    const userInfo = users.find(u => u.tenTK === tenTK);
+    
+    // Lưu tenTK và hiển thị modal xác nhận
+    setUserToDelete(tenTK);
+    setDeleteModalVisible(true);
+  };
 
-        try {
-          console.log(`Deleting user with tenTK: ${tenTK}`);
+  // Xử lý xác nhận xóa
+  const handleConfirmDelete = async () => {
+    const tenTK = userToDelete;
+    
+    // Hiển thị thông báo đang xử lý
+    const loadingMessage = message.loading('Đang xóa người dùng...', 0);
 
-          // Sử dụng API route mới để tránh CORS
-          console.log('Using new API route with TenTK:', tenTK);
-
-          // Gọi API route với tham số chính xác
-          const response = await fetch(`/api/direct-delete?TenTK=${encodeURIComponent(tenTK)}`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            }
-          });
-
-          console.log('API response status:', response.status);
-
-          // Đọc response body
-          let responseData;
-          try {
-            const text = await response.text();
-            console.log('API response text:', text);
-            responseData = text ? JSON.parse(text) : {};
-          } catch (e) {
-            console.error('Error parsing response:', e);
-            responseData = {};
-          }
-
-          console.log('API response data:', responseData);
-
-          // Kiểm tra phản hồi từ API
-          if (response.status !== 200) {
-            throw new Error(`API trả về lỗi khi xóa người dùng: ${response.status}`);
-          }
-
-          // Hiển thị thông báo thành công
-          message.success('Đã xóa người dùng thành công');
-
-          // Đóng thông báo đang xử lý
-          loadingMessage();
-
-          // Cập nhật UI sau khi xóa thành công
-          setUsers(users.filter(user => user.tenTK !== tenTK));
-
-          // Làm mới danh sách để đảm bảo dữ liệu đồng bộ
-          loadUsers(pagination.current, pagination.pageSize);
-        } catch (error) {
-          // Đóng thông báo đang xử lý
-          loadingMessage();
-
-          console.error('Error deleting user:', error);
-
-          // Kiểm tra loại lỗi để hiển thị thông báo phù hợp
-          if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
-            message.error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
-          } else if (axios.isAxiosError(error) && error.response) {
-            // Lỗi từ server
-            message.error(`Lỗi từ máy chủ: ${error.response.status} - ${error.response.statusText}`);
-          } else {
-            message.error('Không thể xóa người dùng. Vui lòng thử lại sau.');
-          }
-
-          // Mặc dù có lỗi, vẫn cập nhật UI để người dùng thấy phản hồi
-          setUsers(users.filter(user => user.tenTK !== tenTK));
-          message.warning('Đã xóa người dùng khỏi danh sách hiện tại, nhưng có thể chưa được xóa trên máy chủ.');
+    try {
+      // Phương pháp đơn giản: gọi API trực tiếp để xóa
+      const response = await fetch(`/api/direct-delete?TenTK=${encodeURIComponent(tenTK)}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
+      });
+      
+      // Phân tích phản hồi
+      const responseText = await response.text();
+      
+      let result;
+      try {
+        result = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        result = { success: false, message: 'Lỗi khi phân tích dữ liệu JSON' };
       }
-    });
+
+      // Đóng thông báo đang xử lý
+      loadingMessage();
+
+      // Đóng modal xác nhận
+      setDeleteModalVisible(false);
+
+      // Kiểm tra kết quả xóa từ API
+      if (response.ok && result && result.success) {
+        // Xóa thành công, cập nhật UI
+        message.success('Đã xóa người dùng thành công');
+        // Cập nhật UI sau khi xóa thành công
+        setUsers(users.filter(user => user.tenTK !== tenTK));
+        
+        // Làm mới danh sách để đảm bảo dữ liệu đồng bộ
+        loadUsers(pagination.current, pagination.pageSize);
+      } else {
+        // Xóa không thành công
+        throw new Error(result?.message || response.statusText || 'Không thể xóa người dùng');
+      }
+    } catch (error) {
+      // Đóng thông báo đang xử lý
+      loadingMessage();
+
+      // Hiển thị thông báo lỗi chi tiết hơn
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          message.error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+        } else if (error.response) {
+          // Lỗi từ server
+          message.error(`Lỗi từ máy chủ: ${error.response.status} - ${error.response.data?.message || error.response.statusText}`);
+        } else {
+          message.error(`Lỗi kết nối: ${error.message}`);
+        }
+      } else {
+        message.error(`Không thể xóa người dùng: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`);
+      }
+      
+      // Làm mới danh sách để đảm bảo dữ liệu đồng bộ
+      loadUsers(pagination.current, pagination.pageSize);
+    }
+  };
+
+  // Hủy xóa
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false);
   };
 
   // Xử lý thêm người dùng mới
@@ -347,7 +352,7 @@ const UserManagement = () => {
 
         if (editingUser) {
           // Cập nhật người dùng hiện có
-          const userData = {
+          const userData: Partial<User> = {
             maTK: editingUser.maTK,
             tenTK: values.tenTK,
             tenHienThi: values.tenHienThi,
@@ -487,6 +492,19 @@ const UserManagement = () => {
         }}
         onChange={handleTableChange}
       />
+
+      {/* Modal xác nhận xóa người dùng */}
+      <Modal
+        title="Xác nhận xóa người dùng"
+        open={deleteModalVisible}
+        onOk={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        okText="Xóa"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+      >
+        <p>Bạn có chắc chắn muốn xóa người dùng "{userToDelete}" không?</p>
+      </Modal>
 
       <Modal
         title={editingUser ? "Chỉnh sửa người dùng" : "Thêm người dùng mới"}

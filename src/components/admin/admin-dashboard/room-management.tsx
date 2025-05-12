@@ -1,104 +1,332 @@
-import React, { useState } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Select, InputNumber, Card, Tag, message, Typography, Row, Col, Statistic } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, SaveOutlined, CloseOutlined, HomeOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Space, Modal, Form, Input, Select, InputNumber, Card, Tag, message, Typography, Row, Col, Statistic, Spin, Alert } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined, SaveOutlined, CloseOutlined, HomeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import axios from 'axios';
 
 const { Title } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
-// Định nghĩa cấu trúc dữ liệu phòng
+// Backend API URL
+const BACKEND_API_URL = 'https://ptud-web-1.onrender.com/api';
+
+// Add proxy option to handle CORS issues - change this to your actual frontend URL
+const USE_PROXY = true;
+const PROXY_URL = '/api';  // This assumes you've set up a proxy in your Next.js config
+
+// Alternative options if the main API fails
+const DIRECT_API_URLS = [
+  'https://ptud-web-1.onrender.com/api/Phong/GetAll',
+  'https://ptud-web-1.onrender.com/api/phong/getall', // Try lowercase
+  'https://ptud-web-1.onrender.com/api/Phong/Get', // Try alternative endpoint
+];
+
+// Định nghĩa cấu trúc dữ liệu phòng dựa trên API response
 interface Room {
-  id: number;
-  name: string;
-  type: string;
-  price: number;
-  description: string;
-  status: string;
-  maxGuests: number;
-  bedType: string;
-  area: number;
-  features: string[];
+  maPhong: number;
+  datPhongs: null | any[];
+  hinhAnhPhongs: null | any[];
+  soPhong: string;
+  soNguoi: number;
+  moTa: string;
+  xoa: null | boolean;
+  maLoaiPhong: number;
+  tenLoaiPhong: string;
+  loaiPhong: {
+    maLoai: number;
+    tenLoai: string;
+    giaPhong: number;
+    phongs: null | any[];
+  };
+  trangThaiPhong: {
+    maTT: number;
+    tenTT: string;
+    phongs: null | any[];
+  };
 }
 
 const roomTypes = [
-  { value: 'single', label: 'Phòng đơn' },
-  { value: 'duo', label: 'Phòng đôi' },
-  { value: 'triple', label: 'Phòng ba' },
-  { value: 'vip', label: 'Phòng VIP' },
-  { value: 'family', label: 'Phòng gia đình' },
+  { value: 'Single', label: 'Phòng đơn' },
+  { value: 'Duo', label: 'Phòng đôi' },
+  { value: 'Triple', label: 'Phòng ba' },
+  { value: 'VIP', label: 'Phòng VIP' },
+  { value: 'Family', label: 'Phòng gia đình' },
 ];
 
 const roomStatuses = [
-  { value: 'available', label: 'Trống', color: 'green' },
-  { value: 'booked', label: 'Đã đặt', color: 'blue' },
-  { value: 'occupied', label: 'Đang sử dụng', color: 'orange' },
-  { value: 'maintenance', label: 'Đang bảo trì', color: 'red' },
-  { value: 'cleaning', label: 'Đang dọn dẹp', color: 'purple' },
+  { value: 'Available', label: 'Trống', color: 'green' },
+  { value: 'Booked', label: 'Đã đặt', color: 'blue' },
+  { value: 'Occupied', label: 'Đang sử dụng', color: 'orange' },
+  { value: 'Maintenance', label: 'Đang bảo trì', color: 'red' },
+  { value: 'Cleaning', label: 'Đang dọn dẹp', color: 'purple' },
 ];
+
+// Mock data for when API is down completely
+const MOCK_ROOMS: Room[] = [
+  {
+    maPhong: 1,
+    datPhongs: null,
+    hinhAnhPhongs: null,
+    soPhong: "101",
+    soNguoi: 2,
+    moTa: "Phòng đơn tiêu chuẩn, view đẹp",
+    xoa: null,
+    maLoaiPhong: 1,
+    tenLoaiPhong: "Single",
+    loaiPhong: {
+      maLoai: 1,
+      tenLoai: "Single",
+      giaPhong: 500000,
+      phongs: null
+    },
+    trangThaiPhong: {
+      maTT: 1,
+      tenTT: "Available",
+      phongs: null
+    }
+  },
+  {
+    maPhong: 2,
+    datPhongs: null,
+    hinhAnhPhongs: null,
+    soPhong: "102",
+    soNguoi: 3,
+    moTa: "Phòng đôi rộng rãi",
+    xoa: null,
+    maLoaiPhong: 2,
+    tenLoaiPhong: "Duo",
+    loaiPhong: {
+      maLoai: 2,
+      tenLoai: "Duo",
+      giaPhong: 800000,
+      phongs: null
+    },
+    trangThaiPhong: {
+      maTT: 2,
+      tenTT: "Booked",
+      phongs: null
+    }
+  }
+];
+
+// Utility function to make API calls with retry and error handling
+const callApi = async (
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  url: string,
+  data: any = null,
+  retries: number = 2
+): Promise<{ success: boolean; data?: any; status?: number; error?: any; message?: string }> => {
+  let lastError: any = null;
+  
+  // Try with Axios first
+  for (let i = 0; i <= retries; i++) {
+    try {
+      console.log(`API call (attempt ${i+1}/${retries+1}): ${method} ${url}`);
+      
+      let response;
+      if (method === 'GET') {
+        response = await axios.get(url, {
+          timeout: 10000,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } else if (method === 'POST') {
+        response = await axios.post(url, data, {
+          timeout: 10000,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } else if (method === 'PUT') {
+        response = await axios.put(url, data, {
+          timeout: 10000,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } else if (method === 'DELETE') {
+        response = await axios.delete(url, {
+          timeout: 10000,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      if (response) {
+        return { success: true, data: response.data, status: response.status };
+      }
+    } catch (error) {
+      console.error(`API call failed (attempt ${i+1}/${retries+1}):`, error);
+      lastError = error;
+      
+      // Wait before retrying (exponential backoff)
+      if (i < retries) {
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+      }
+    }
+  }
+  
+  // Try with fetch as fallback
+  try {
+    console.log(`Trying with fetch API as fallback: ${method} ${url}`);
+    
+    const options: RequestInit = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: data ? JSON.stringify(data) : undefined
+    };
+    
+    const response = await fetch(url, options);
+    
+    if (response.ok) {
+      const responseData = await response.json();
+      return { success: true, data: responseData, status: response.status };
+    }
+  } catch (error) {
+    console.error('Fetch API fallback failed:', error);
+  }
+  
+  // Return failure if all attempts failed
+  return { 
+    success: false, 
+    error: lastError, 
+    message: lastError?.message || 'Network Error'
+  };
+};
 
 const RoomManagement = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [editingRoom, setEditingRoom] = useState<any>(null);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
-  const [viewRoom, setViewRoom] = useState<any>(null);
+  const [viewRoom, setViewRoom] = useState<Room | null>(null);
   const [form] = Form.useForm();
   const [filterType, setFilterType] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch danh sách phòng từ API
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const fetchRooms = async () => {
+    setLoading(true);
+    setError(null);
+    
+    // Always use mock data in development for testing if API is unreliable
+    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true') {
+      setTimeout(() => {
+        console.log('Using mock data (development mode)');
+        setRooms(MOCK_ROOMS);
+        setLoading(false);
+      }, 1000);
+      return;
+    }
+    
+    // Regular API call with fallbacks
+    try {
+      // First try: Using axios with proxy option if enabled
+      const url = USE_PROXY ? `${PROXY_URL}/Phong/GetAll` : `${BACKEND_API_URL}/Phong/GetAll`;
+      console.log(`Attempting to fetch from: ${url}`);
+      
+      const response = await axios.get(url, {
+        timeout: 15000,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      if (response.data && response.data.items) {
+        console.log('Data fetched successfully');
+        setRooms(response.data.items);
+        setLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error('Primary API request failed:', error);
+    }
+    
+    // Second try: Try alternative URLs directly
+    for (const directUrl of DIRECT_API_URLS) {
+      try {
+        console.log(`Trying alternative URL: ${directUrl}`);
+        const response = await fetch(directUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.items) {
+            console.log('Data fetched successfully from alternative URL');
+            setRooms(data.items);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error(`Failed with URL ${directUrl}:`, error);
+      }
+    }
+    
+    // Use mock data as last resort
+    console.log('All API attempts failed, using mock data');
+    setRooms(MOCK_ROOMS);
+    setError('API không khả dụng - đang hiển thị dữ liệu mẫu');
+    message.warning('API không khả dụng, đang hiển thị dữ liệu mẫu');
+    setLoading(false);
+  };
 
   // Lọc phòng theo loại và trạng thái
   const filteredRooms = rooms.filter(room => {
-    const matchesType = filterType ? room.type === filterType : true;
-    const matchesStatus = filterStatus ? room.status === filterStatus : true;
+    const matchesType = filterType ? room.tenLoaiPhong === filterType : true;
+    const matchesStatus = filterStatus ? room.trangThaiPhong.tenTT === filterStatus : true;
     return matchesType && matchesStatus;
   });
 
   // Thống kê phòng theo trạng thái
   const roomStats = {
     total: rooms.length,
-    available: rooms.filter(room => room.status === 'available').length,
-    booked: rooms.filter(room => room.status === 'booked').length,
-    occupied: rooms.filter(room => room.status === 'occupied').length,
-    maintenance: rooms.filter(room => room.status === 'maintenance').length,
+    available: rooms.filter(room => room.trangThaiPhong.tenTT === 'Available').length,
+    booked: rooms.filter(room => room.trangThaiPhong.tenTT === 'Booked').length,
+    occupied: rooms.filter(room => room.trangThaiPhong.tenTT === 'Occupied').length,
+    maintenance: rooms.filter(room => room.trangThaiPhong.tenTT === 'Maintenance').length,
   };
 
   // Định nghĩa columns cho bảng
-  const columns: ColumnsType<any> = [
+  const columns: ColumnsType<Room> = [
     {
-      title: 'Số phòng',
-      dataIndex: 'id',
-      key: 'id',
+      title: 'Mã phòng',
+      dataIndex: 'maPhong',
+      key: 'maPhong',
       render: (id) => <strong>{id}</strong>,
     },
     {
-      title: 'Tên phòng',
-      dataIndex: 'name',
-      key: 'name',
+      title: 'Số phòng',
+      dataIndex: 'soPhong',
+      key: 'soPhong',
     },
     {
       title: 'Loại phòng',
-      dataIndex: 'type',
-      key: 'type',
-      render: (type) => {
-        const roomType = roomTypes.find(t => t.value === type);
-        return roomType ? roomType.label : type;
-      },
+      dataIndex: 'tenLoaiPhong',
+      key: 'tenLoaiPhong',
       filters: roomTypes.map(type => ({ text: type.label, value: type.value })),
-      onFilter: (value, record) => record.type === value,
+      onFilter: (value, record) => record.tenLoaiPhong === value,
     },
     {
       title: 'Giá phòng',
-      dataIndex: 'price',
-      key: 'price',
-      render: (price) => `${price.toLocaleString('vi-VN')} VNĐ`,
-      sorter: (a, b) => a.price - b.price,
+      key: 'giaPhong',
+      render: (_, record) => `${record.loaiPhong.giaPhong.toLocaleString('vi-VN')} VNĐ`,
+      sorter: (a, b) => a.loaiPhong.giaPhong - b.loaiPhong.giaPhong,
     },
     {
       title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
+      key: 'trangThai',
+      render: (_, record) => {
+        const status = record.trangThaiPhong.tenTT;
         const roomStatus = roomStatuses.find(s => s.value === status);
         return (
           <Tag color={roomStatus?.color || 'default'}>
@@ -107,12 +335,12 @@ const RoomManagement = () => {
         );
       },
       filters: roomStatuses.map(status => ({ text: status.label, value: status.value })),
-      onFilter: (value, record) => record.status === value,
+      onFilter: (value, record) => record.trangThaiPhong.tenTT === value,
     },
     {
       title: 'Số khách tối đa',
-      dataIndex: 'maxGuests',
-      key: 'maxGuests',
+      dataIndex: 'soNguoi',
+      key: 'soNguoi',
       align: 'center',
     },
     {
@@ -139,7 +367,7 @@ const RoomManagement = () => {
           <Button
             danger
             icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
+            onClick={() => handleDelete(record.maPhong)}
             size="small"
           >
             Xóa
@@ -150,40 +378,64 @@ const RoomManagement = () => {
   ];
 
   // Xử lý xem chi tiết phòng
-  const handleView = (room: any) => {
+  const handleView = (room: Room) => {
     setViewRoom(room);
     setIsViewModalVisible(true);
   };
 
   // Xử lý chỉnh sửa phòng
-  const handleEdit = (room: any) => {
+  const handleEdit = (room: Room) => {
     setEditingRoom(room);
     form.setFieldsValue({
-      name: room.name,
-      type: room.type,
-      price: room.price,
-      description: room.description,
-      status: room.status,
-      maxGuests: room.maxGuests,
-      bedType: room.bedType,
-      area: room.area,
-      features: room.features.join(', '),
+      soPhong: room.soPhong,
+      tenLoaiPhong: room.tenLoaiPhong,
+      giaPhong: room.loaiPhong.giaPhong,
+      moTa: room.moTa,
+      trangThai: room.trangThaiPhong.tenTT,
+      soNguoi: room.soNguoi
     });
     setIsModalVisible(true);
   };
 
+  // Xử lý xóa phòng với API mới
+  const deleteStats = async (maPhong: number) => {
+    try {
+      // Using the exact format from the screenshot: /api/Phong/Delete/{id}
+      const url = USE_PROXY 
+        ? `${PROXY_URL}/Phong/Delete/${maPhong}` 
+        : `${BACKEND_API_URL}/Phong/Delete/${maPhong}`;
+        
+      const result = await callApi('DELETE', url);
+      
+      if (result.success) {
+        console.log('Deletion successful');
+        setRooms(rooms.filter(room => room.maPhong !== maPhong));
+        message.success('Đã xóa phòng thành công');
+      } else {
+        console.error('All delete attempts failed');
+        message.error(`Lỗi khi xóa phòng: ${result.message}`);
+        
+        // Optimistic UI update even if server call failed
+        if (window.confirm('Máy chủ không phản hồi. Bạn có muốn cập nhật giao diện không?')) {
+          setRooms(rooms.filter(room => room.maPhong !== maPhong));
+          message.warning('Đã cập nhật giao diện nhưng thay đổi có thể không được lưu trên máy chủ');
+        }
+      }
+    } catch (error) {
+      console.error('Error in delete function:', error);
+      message.error('Lỗi khi xóa phòng');
+    }
+  };
+  
   // Xử lý xóa phòng
-  const handleDelete = (id: number) => {
+  const handleDelete = (maPhong: number) => {
     Modal.confirm({
       title: 'Xác nhận xóa phòng',
       content: 'Bạn có chắc chắn muốn xóa phòng này?',
       okText: 'Xóa',
       okType: 'danger',
       cancelText: 'Hủy',
-      onOk: () => {
-        setRooms(rooms.filter(room => room.id !== id));
-        message.success('Đã xóa phòng thành công');
-      }
+      onOk: () => deleteStats(maPhong)
     });
   };
 
@@ -194,45 +446,106 @@ const RoomManagement = () => {
     setIsModalVisible(true);
   };
 
-  // Xử lý lưu thông tin phòng
-  const handleSave = () => {
-    form.validateFields().then(values => {
-      const features = values.features.split(',').map((feature: string) => feature.trim());
-
+  // Xử lý lưu thông tin phòng với API mới
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
+      
       if (editingRoom) {
         // Cập nhật phòng hiện có
-        setRooms(rooms.map(room =>
-          room.id === editingRoom.id
-            ? { ...room, ...values, features }
-            : room
-        ));
-        message.success('Cập nhật phòng thành công');
+        const updatedRoom = {
+          maPhong: editingRoom.maPhong,
+          soPhong: values.soPhong,
+          soNguoi: values.soNguoi,
+          moTa: values.moTa,
+          maLoaiPhong: values.maLoaiPhong || editingRoom.maLoaiPhong,
+          maTT: values.maTT || editingRoom.trangThaiPhong.maTT
+        };
+        
+        // Using the exact format from the screenshot: /api/Phong/Update/{SoPhong}
+        const updateUrl = USE_PROXY 
+          ? `${PROXY_URL}/Phong/Update/${updatedRoom.soPhong}` 
+          : `${BACKEND_API_URL}/Phong/Update/${updatedRoom.soPhong}`;
+          
+        const result = await callApi('PUT', updateUrl, updatedRoom);
+        
+        if (result.success) {
+          message.success('Cập nhật phòng thành công');
+          fetchRooms(); // Tải lại danh sách phòng
+          setIsModalVisible(false);
+        } else {
+          message.error(`Không thể cập nhật phòng: ${result.message || 'Unknown error'}`);
+        }
       } else {
         // Thêm phòng mới
         const newRoom = {
-          id: Math.max(...rooms.map(r => r.id)) + 1,
-          ...values,
-          features,
+          soPhong: values.soPhong,
+          soNguoi: values.soNguoi,
+          moTa: values.moTa,
+          maLoaiPhong: values.maLoaiPhong,
+          maTT: values.maTT || 1 // Mặc định là Available
         };
-        setRooms([...rooms, newRoom]);
-        message.success('Thêm phòng mới thành công');
+        
+        // Using the exact format from the screenshot: /api/Phong/Create
+        const createUrl = USE_PROXY 
+          ? `${PROXY_URL}/Phong/Create` 
+          : `${BACKEND_API_URL}/Phong/Create`;
+          
+        const result = await callApi('POST', createUrl, newRoom);
+        
+        if (result.success) {
+          message.success('Thêm phòng mới thành công');
+          fetchRooms(); // Tải lại danh sách phòng
+          setIsModalVisible(false);
+        } else {
+          message.error(`Không thể thêm phòng mới: ${result.message || 'Unknown error'}`);
+        }
       }
-      setIsModalVisible(false);
-    });
+    } catch (error) {
+      console.error('Form validation failed:', error);
+    }
   };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={4}>Quản lý phòng</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAdd}
-        >
-          Thêm phòng
-        </Button>
+        <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchRooms}
+            loading={loading}
+          >
+            Làm mới
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+            disabled={loading}
+          >
+            Thêm phòng
+          </Button>
+        </Space>
       </div>
+
+      {error && !loading && rooms.length === 0 && (
+        <Alert
+          message="Lỗi kết nối"
+          description={
+            <div>
+              <p>{error}</p>
+              <p>Vui lòng kiểm tra kết nối mạng của bạn và thử lại.</p>
+              <Button type="primary" onClick={fetchRooms} style={{ marginTop: 8 }}>
+                Thử lại
+              </Button>
+            </div>
+          }
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={4}>
@@ -305,13 +618,15 @@ const RoomManagement = () => {
         </Select>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={filteredRooms}
-        rowKey="id"
-        bordered
-        pagination={{ pageSize: 10 }}
-      />
+      <Spin spinning={loading} tip="Đang tải dữ liệu...">
+        <Table
+          columns={columns}
+          dataSource={filteredRooms}
+          rowKey="maPhong"
+          bordered
+          pagination={{ pageSize: 10 }}
+        />
+      </Spin>
 
       {/* Modal xem chi tiết phòng */}
       <Modal
@@ -330,44 +645,30 @@ const RoomManagement = () => {
             <Row gutter={[16, 16]}>
               <Col span={12}>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Số phòng:</strong> {viewRoom.id}
+                  <strong>Mã phòng:</strong> {viewRoom.maPhong}
                 </div>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Tên phòng:</strong> {viewRoom.name}
+                  <strong>Số phòng:</strong> {viewRoom.soPhong}
                 </div>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Loại phòng:</strong> {roomTypes.find(t => t.value === viewRoom.type)?.label || viewRoom.type}
+                  <strong>Loại phòng:</strong> {viewRoom.tenLoaiPhong}
                 </div>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Giá phòng:</strong> {viewRoom.price.toLocaleString('vi-VN')} VNĐ
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <strong>Trạng thái:</strong> <Tag color={roomStatuses.find(s => s.value === viewRoom.status)?.color}>{roomStatuses.find(s => s.value === viewRoom.status)?.label}</Tag>
+                  <strong>Giá phòng:</strong> {viewRoom.loaiPhong.giaPhong.toLocaleString('vi-VN')} VNĐ
                 </div>
               </Col>
               <Col span={12}>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Số khách tối đa:</strong> {viewRoom.maxGuests} người
+                  <strong>Trạng thái:</strong> <Tag color={roomStatuses.find(s => s.value === viewRoom.trangThaiPhong.tenTT)?.color}>{roomStatuses.find(s => s.value === viewRoom.trangThaiPhong.tenTT)?.label || viewRoom.trangThaiPhong.tenTT}</Tag>
                 </div>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Loại giường:</strong> {viewRoom.bedType}
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <strong>Diện tích:</strong> {viewRoom.area} m²
+                  <strong>Số khách tối đa:</strong> {viewRoom.soNguoi} người
                 </div>
               </Col>
             </Row>
             <div style={{ marginTop: 16 }}>
               <strong>Mô tả:</strong>
-              <p>{viewRoom.description}</p>
-            </div>
-            <div style={{ marginTop: 16 }}>
-              <strong>Tiện nghi:</strong>
-              <ul>
-                {viewRoom.features.map((feature: string, index: number) => (
-                  <li key={index}>{feature}</li>
-                ))}
-              </ul>
+              <p>{viewRoom.moTa}</p>
             </div>
           </div>
         )}
@@ -395,23 +696,23 @@ const RoomManagement = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="name"
-                label="Tên phòng"
-                rules={[{ required: true, message: 'Vui lòng nhập tên phòng' }]}
+                name="soPhong"
+                label="Số phòng"
+                rules={[{ required: true, message: 'Vui lòng nhập số phòng' }]}
               >
-                <Input placeholder="Nhập tên phòng" />
+                <Input placeholder="Nhập số phòng" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                name="type"
+                name="maLoaiPhong"
                 label="Loại phòng"
                 rules={[{ required: true, message: 'Vui lòng chọn loại phòng' }]}
               >
                 <Select placeholder="Chọn loại phòng">
-                  {roomTypes.map(type => (
-                    <Option key={type.value} value={type.value}>{type.label}</Option>
-                  ))}
+                  <Option value={1}>Phòng đơn</Option>
+                  <Option value={2}>Phòng đôi</Option>
+                  <Option value={3}>Phòng VIP</Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -420,77 +721,35 @@ const RoomManagement = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="price"
-                label="Giá phòng"
-                rules={[{ required: true, message: 'Vui lòng nhập giá phòng' }]}
-              >
-                <InputNumber
-                  style={{ width: '100%' }}
-                  formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
-                  placeholder="Nhập giá phòng"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="status"
+                name="maTT"
                 label="Trạng thái"
                 rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
               >
                 <Select placeholder="Chọn trạng thái">
-                  {roomStatuses.map(status => (
-                    <Option key={status.value} value={status.value}>{status.label}</Option>
-                  ))}
+                  <Option value={1}>Trống</Option>
+                  <Option value={2}>Đã đặt</Option>
+                  <Option value={3}>Đang sử dụng</Option>
+                  <Option value={4}>Đang bảo trì</Option>
                 </Select>
               </Form.Item>
             </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item
-                name="maxGuests"
+                name="soNguoi"
                 label="Số khách tối đa"
                 rules={[{ required: true, message: 'Vui lòng nhập số khách tối đa' }]}
               >
                 <InputNumber min={1} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item
-                name="bedType"
-                label="Loại giường"
-                rules={[{ required: true, message: 'Vui lòng nhập loại giường' }]}
-              >
-                <Input placeholder="Ví dụ: Giường đôi, 2 Giường đơn" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="area"
-                label="Diện tích (m²)"
-                rules={[{ required: true, message: 'Vui lòng nhập diện tích' }]}
-              >
-                <InputNumber min={1} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
           </Row>
 
           <Form.Item
-            name="description"
+            name="moTa"
             label="Mô tả"
             rules={[{ required: true, message: 'Vui lòng nhập mô tả phòng' }]}
           >
             <TextArea rows={4} placeholder="Nhập mô tả phòng" />
-          </Form.Item>
-
-          <Form.Item
-            name="features"
-            label="Tiện nghi (phân cách bằng dấu phẩy)"
-            rules={[{ required: true, message: 'Vui lòng nhập tiện nghi phòng' }]}
-          >
-            <TextArea rows={3} placeholder="Ví dụ: Wi-Fi miễn phí, Điều hòa, TV màn hình phẳng" />
           </Form.Item>
         </Form>
       </Modal>
