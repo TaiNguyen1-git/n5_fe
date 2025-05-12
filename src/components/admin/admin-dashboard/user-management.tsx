@@ -1,77 +1,204 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Select, Tag, message, Typography, Avatar } from 'antd';
-import { EditOutlined, DeleteOutlined, UserOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Modal, Form, Input, Select, message, Typography, Avatar, Card, Row, Col, Statistic } from 'antd';
+import { EditOutlined, DeleteOutlined, UserOutlined, MailOutlined, PhoneOutlined, CheckCircleOutlined, CloseCircleOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import axios from 'axios';
+import userService, { User, PaginatedResponse } from '@/services/userService';
 
 const { Title } = Typography;
 const { Option } = Select;
 
 const UserManagement = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [editingUser, setEditingUser] = useState<any>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [form] = Form.useForm();
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
 
-  // Fetch danh sách người dùng khi component được mount
+  // Fetch danh sách người dùng khi component được mount hoặc khi pagination thay đổi
   useEffect(() => {
-    loadUsers();
-  }, []);
+    loadUsers(pagination.current, pagination.pageSize);
+  }, [pagination.current, pagination.pageSize]);
 
-  // Hàm load danh sách người dùng từ API
-  const loadUsers = async () => {
+  // Hàm load danh sách người dùng từ API với phân trang
+  const loadUsers = async (page: number = 1, pageSize: number = 10) => {
     try {
-      // Trong thực tế, bạn sẽ gọi API để lấy danh sách người dùng
-      const response = await fetch('/api/users');
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data.users || []);
-      } else {
-        message.error('Không thể tải danh sách người dùng');
+      setLoading(true);
+      console.log(`Loading users with page=${page}, pageSize=${pageSize}`);
+
+      // Hiển thị thông báo đang tải
+      const loadingMessage = message.loading('Đang tải danh sách người dùng...', 0);
+
+      // Tạo dữ liệu mẫu trong trường hợp API không hoạt động
+      const sampleUsers: User[] = [
+        {
+          maTK: 1,
+          tenTK: 'admin',
+          tenHienThi: 'Administrator',
+          email: 'admin@example.com',
+          phone: '0123456789',
+          isVerified: true,
+          createAt: new Date().toISOString()
+        },
+        {
+          maTK: 2,
+          tenTK: 'user1',
+          tenHienThi: 'Người dùng 1',
+          email: 'user1@example.com',
+          phone: '0987654321',
+          isVerified: true,
+          createAt: new Date().toISOString()
+        },
+        {
+          maTK: 3,
+          tenTK: 'user2',
+          tenHienThi: 'Người dùng 2',
+          email: 'user2@example.com',
+          phone: '0123498765',
+          isVerified: false,
+          createAt: new Date().toISOString()
+        }
+      ];
+
+      try {
+        // Sử dụng fetch thay vì axios để thử một cách tiếp cận khác
+        const fetchResponse = await fetch(`/api/users?pageNumber=${page}&pageSize=${pageSize}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!fetchResponse.ok) {
+          throw new Error(`HTTP error! status: ${fetchResponse.status}`);
+        }
+
+        const response = await fetchResponse.json();
+        console.log('API response:', response);
+
+        // Đóng thông báo đang tải
+        loadingMessage();
+
+        if (response && response.data && response.data.items && response.data.items.length > 0) {
+          setUsers(response.data.items);
+          setPagination({
+            ...pagination,
+            current: response.data.pageNumber,
+            total: response.data.totalItems
+          });
+          message.success('Tải danh sách người dùng thành công');
+        } else {
+          console.warn('API returned empty data, using sample data');
+          message.warning('API trả về dữ liệu trống, sử dụng dữ liệu mẫu');
+          setUsers(sampleUsers);
+          setPagination({
+            ...pagination,
+            current: 1,
+            total: sampleUsers.length
+          });
+        }
+      } catch (error) {
+        // Đóng thông báo đang tải
+        loadingMessage();
+
+        console.error('Error loading users:', error);
+        message.error('Không thể kết nối đến máy chủ. Hiển thị dữ liệu mẫu.');
+
+        // Sử dụng dữ liệu mẫu khi có lỗi
+        setUsers(sampleUsers);
+        setPagination({
+          ...pagination,
+          current: 1,
+          total: sampleUsers.length
+        });
       }
     } catch (error) {
-      console.error('Error loading users:', error);
-      message.error('Đã xảy ra lỗi khi tải danh sách người dùng');
-      // Khởi tạo mảng rỗng nếu có lỗi
+      console.error('Unexpected error in loadUsers:', error);
+      message.error('Đã xảy ra lỗi không mong muốn khi tải dữ liệu');
       setUsers([]);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Xử lý thay đổi phân trang
+  const handleTableChange = (pagination: any) => {
+    setPagination({
+      ...pagination,
+      current: pagination.current
+    });
+  };
+
+  // Tính toán thống kê
+  const totalUsers = users.length;
+  const verifiedUsers = users.filter(user => user.isVerified).length;
+  const unverifiedUsers = totalUsers - verifiedUsers;
+
   // Định nghĩa columns cho bảng
-  const columns: ColumnsType<any> = [
+  const columns: ColumnsType<User> = [
     {
       title: 'Người dùng',
       key: 'user',
       render: (_, record) => (
         <Space>
-          <Avatar icon={<UserOutlined />} />
-          <span>{record.name}</span>
+          <Avatar
+            src={record.imgAvt}
+            icon={!record.imgAvt && <UserOutlined />}
+          />
+          <span>{record.tenHienThi || 'Không có tên'}</span>
         </Space>
       ),
     },
     {
-      title: 'Tên đăng nhập',
-      dataIndex: 'username',
-      key: 'username',
+      title: 'Tên tài khoản',
+      dataIndex: 'tenTK',
+      key: 'tenTK',
+      sorter: (a, b) => (a.tenTK || '').localeCompare(b.tenTK || ''),
+      render: (text) => text || 'Không có tên tài khoản',
     },
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
+      render: (text) => text || 'Không có email',
     },
     {
       title: 'Số điện thoại',
       dataIndex: 'phone',
       key: 'phone',
+      render: (text) => text || 'Không có số điện thoại',
     },
     {
       title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status === 'active' ? 'Hoạt động' : 'Không hoạt động'}
-        </Tag>
+      dataIndex: 'isVerified',
+      key: 'isVerified',
+      render: (isVerified) => (
+        <span style={{ color: isVerified ? 'green' : 'red' }}>
+          {isVerified ? 'Đã xác thực' : 'Chưa xác thực'}
+        </span>
       ),
+      filters: [
+        { text: 'Đã xác thực', value: true },
+        { text: 'Chưa xác thực', value: false },
+      ],
+      onFilter: (value, record) => record.isVerified === value,
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'createAt',
+      key: 'createAt',
+      render: (text) => text ? new Date(text).toLocaleDateString('vi-VN') : 'Không có dữ liệu',
+      sorter: (a, b) => {
+        if (!a.createAt) return -1;
+        if (!b.createAt) return 1;
+        return new Date(a.createAt).getTime() - new Date(b.createAt).getTime();
+      },
     },
     {
       title: 'Hành động',
@@ -89,7 +216,7 @@ const UserManagement = () => {
           <Button
             danger
             icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
+            onClick={() => handleDelete(record.tenTK)}
             size="small"
           >
             Xóa
@@ -100,19 +227,28 @@ const UserManagement = () => {
   ];
 
   // Xử lý chỉnh sửa người dùng
-  const handleEdit = (user: any) => {
+  const handleEdit = (user: User) => {
+    console.log('Editing user:', user);
     setEditingUser(user);
     form.setFieldsValue({
-      name: user.name,
+      tenTK: user.tenTK,
+      tenHienThi: user.tenHienThi,
       email: user.email,
       phone: user.phone,
-      status: user.status
+      matKhau: '', // Không hiển thị mật khẩu cũ
+      isVerified: user.isVerified
     });
     setIsModalVisible(true);
   };
 
   // Xử lý xóa người dùng
-  const handleDelete = (id: string) => {
+  const handleDelete = (tenTK: string) => {
+    console.log('handleDelete called with tenTK:', tenTK);
+    if (!tenTK) {
+      console.error('tenTK is undefined or null');
+      message.error('Không thể xóa người dùng: Tên tài khoản không hợp lệ');
+      return;
+    }
     Modal.confirm({
       title: 'Xác nhận xóa người dùng',
       content: 'Bạn có chắc chắn muốn xóa người dùng này?',
@@ -120,81 +256,240 @@ const UserManagement = () => {
       okType: 'danger',
       cancelText: 'Hủy',
       onOk: async () => {
+        // Hiển thị thông báo đang xử lý
+        const loadingMessage = message.loading('Đang xóa người dùng...', 0);
+
         try {
-          // Trong thực tế, bạn sẽ gọi API để xóa người dùng
-          const response = await fetch(`/api/users/${id}`, {
+          console.log(`Deleting user with tenTK: ${tenTK}`);
+
+          // Sử dụng API route mới để tránh CORS
+          console.log('Using new API route with TenTK:', tenTK);
+
+          // Gọi API route với tham số chính xác
+          const response = await fetch(`/api/direct-delete?TenTK=${encodeURIComponent(tenTK)}`, {
             method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
           });
 
-          if (response.ok) {
-            // Xóa người dùng khỏi state
-            setUsers(users.filter(user => user.id !== id));
-            message.success('Đã xóa người dùng thành công');
-          } else {
-            message.error('Không thể xóa người dùng');
+          console.log('API response status:', response.status);
+
+          // Đọc response body
+          let responseData;
+          try {
+            const text = await response.text();
+            console.log('API response text:', text);
+            responseData = text ? JSON.parse(text) : {};
+          } catch (e) {
+            console.error('Error parsing response:', e);
+            responseData = {};
           }
+
+          console.log('API response data:', responseData);
+
+          // Kiểm tra phản hồi từ API
+          if (response.status !== 200) {
+            throw new Error(`API trả về lỗi khi xóa người dùng: ${response.status}`);
+          }
+
+          // Hiển thị thông báo thành công
+          message.success('Đã xóa người dùng thành công');
+
+          // Đóng thông báo đang xử lý
+          loadingMessage();
+
+          // Cập nhật UI sau khi xóa thành công
+          setUsers(users.filter(user => user.tenTK !== tenTK));
+
+          // Làm mới danh sách để đảm bảo dữ liệu đồng bộ
+          loadUsers(pagination.current, pagination.pageSize);
         } catch (error) {
+          // Đóng thông báo đang xử lý
+          loadingMessage();
+
           console.error('Error deleting user:', error);
-          message.error('Đã xảy ra lỗi khi xóa người dùng');
+
+          // Kiểm tra loại lỗi để hiển thị thông báo phù hợp
+          if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+            message.error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+          } else if (axios.isAxiosError(error) && error.response) {
+            // Lỗi từ server
+            message.error(`Lỗi từ máy chủ: ${error.response.status} - ${error.response.statusText}`);
+          } else {
+            message.error('Không thể xóa người dùng. Vui lòng thử lại sau.');
+          }
+
+          // Mặc dù có lỗi, vẫn cập nhật UI để người dùng thấy phản hồi
+          setUsers(users.filter(user => user.tenTK !== tenTK));
+          message.warning('Đã xóa người dùng khỏi danh sách hiện tại, nhưng có thể chưa được xóa trên máy chủ.');
         }
       }
     });
+  };
+
+  // Xử lý thêm người dùng mới
+  const handleAdd = () => {
+    setEditingUser(null);
+    form.resetFields();
+    form.setFieldsValue({
+      isVerified: true // Mặc định là đã xác thực
+    });
+    setIsModalVisible(true);
   };
 
   // Xử lý lưu thông tin người dùng
   const handleSave = () => {
     form.validateFields().then(async values => {
       try {
-        // Trong thực tế, bạn sẽ gọi API để cập nhật thông tin người dùng
-        const response = await fetch(`/api/users/${editingUser.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: values.name,
+        console.log('Form values:', values);
+
+        if (editingUser) {
+          // Cập nhật người dùng hiện có
+          const userData = {
+            maTK: editingUser.maTK,
+            tenTK: values.tenTK,
+            tenHienThi: values.tenHienThi,
             email: values.email,
             phone: values.phone,
-            status: values.status
-          }),
-        });
+            isVerified: values.isVerified
+          };
 
-        if (response.ok) {
-          // Cập nhật trên UI
+          // Chỉ thêm mật khẩu nếu người dùng nhập mật khẩu mới
+          if (values.matKhau) {
+            userData.matKhau = values.matKhau;
+          }
+
+          console.log('Updating user with data:', userData);
+
+          // Gọi API cập nhật người dùng
+          await userService.updateUser(editingUser.maTK!, userData);
+
+          // Cập nhật UI
           setUsers(users.map(user =>
-            user.id === editingUser.id
-              ? { ...user, ...values }
+            user.maTK === editingUser.maTK
+              ? { ...user, ...userData }
               : user
           ));
 
-          setIsModalVisible(false);
           message.success('Cập nhật người dùng thành công');
         } else {
-          message.error('Không thể cập nhật thông tin người dùng');
+          // Tạo người dùng mới
+          const userData = {
+            tenTK: values.tenTK,
+            tenHienThi: values.tenHienThi,
+            matKhau: values.matKhau,
+            email: values.email,
+            phone: values.phone,
+            isVerified: values.isVerified
+          };
+
+          console.log('Creating new user with data:', userData);
+
+          // Gọi API tạo người dùng mới
+          const response = await userService.createUser(userData);
+          console.log('API response after create:', response);
+
+          // Thêm người dùng mới vào danh sách
+          if (response && response.success) {
+            const newUser = {
+              ...userData,
+              maTK: response.data?.maTK || Date.now(),
+              createAt: new Date().toISOString()
+            };
+
+            setUsers([...users, newUser]);
+            message.success('Thêm người dùng mới thành công');
+          } else {
+            message.error(response?.message || 'Không thể tạo người dùng mới');
+          }
         }
+
+        // Đóng modal và làm mới danh sách
+        setIsModalVisible(false);
+        loadUsers(pagination.current, pagination.pageSize);
       } catch (error) {
-        console.error('Error updating user:', error);
-        message.error('Đã xảy ra lỗi khi cập nhật thông tin người dùng');
+        console.error('Error saving user:', error);
+        message.error('Không thể lưu thông tin người dùng. Vui lòng thử lại sau.');
       }
     });
   };
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={4}>Quản lý người dùng</Title>
-        <Button onClick={loadUsers} type="primary">Làm mới</Button>
+      <div style={{ marginBottom: 24 }}>
+        <h2>Quản lý người dùng</h2>
+        <p>Xem và quản lý tất cả người dùng trong hệ thống</p>
+      </div>
+
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Col span={8}>
+          <Card>
+            <Statistic
+              title="Tổng người dùng"
+              value={totalUsers}
+              prefix={<TeamOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={8}>
+          <Card>
+            <Statistic
+              title="Đã xác thực"
+              value={verifiedUsers}
+              valueStyle={{ color: '#3f8600' }}
+              prefix={<CheckCircleOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={8}>
+          <Card>
+            <Statistic
+              title="Chưa xác thực"
+              value={unverifiedUsers}
+              valueStyle={{ color: '#cf1322' }}
+              prefix={<CloseCircleOutlined />}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Title level={4}>Danh sách người dùng</Title>
+        <Space>
+          <Button onClick={() => loadUsers(pagination.current, pagination.pageSize)} type="default">
+            Làm mới
+          </Button>
+          <Button
+            type="primary"
+            icon={<UserOutlined />}
+            onClick={handleAdd}
+          >
+            Thêm người dùng
+          </Button>
+        </Space>
       </div>
 
       <Table
         columns={columns}
         dataSource={users}
-        rowKey="id"
+        rowKey={(record) => record.maTK?.toString() || Math.random().toString()}
+        loading={loading}
         bordered
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total) => `Tổng ${total} người dùng`
+        }}
+        onChange={handleTableChange}
       />
 
       <Modal
-        title="Chỉnh sửa người dùng"
+        title={editingUser ? "Chỉnh sửa người dùng" : "Thêm người dùng mới"}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={[
@@ -202,7 +497,7 @@ const UserManagement = () => {
             Hủy
           </Button>,
           <Button key="save" type="primary" onClick={handleSave}>
-            Cập nhật
+            {editingUser ? "Cập nhật" : "Thêm"}
           </Button>
         ]}
       >
@@ -211,11 +506,22 @@ const UserManagement = () => {
           layout="vertical"
         >
           <Form.Item
-            name="name"
-            label="Họ tên"
-            rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+            name="tenTK"
+            label="Tên tài khoản"
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên tài khoản' },
+              { min: 3, message: 'Tên tài khoản phải có ít nhất 3 ký tự' }
+            ]}
           >
-            <Input prefix={<UserOutlined />} placeholder="Nhập họ tên" />
+            <Input prefix={<UserOutlined />} placeholder="Nhập tên tài khoản" />
+          </Form.Item>
+
+          <Form.Item
+            name="tenHienThi"
+            label="Tên hiển thị"
+            rules={[{ required: true, message: 'Vui lòng nhập tên hiển thị' }]}
+          >
+            <Input placeholder="Nhập tên hiển thị" />
           </Form.Item>
 
           <Form.Item
@@ -238,13 +544,32 @@ const UserManagement = () => {
           </Form.Item>
 
           <Form.Item
-            name="status"
-            label="Trạng thái"
-            rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
+            name="matKhau"
+            label="Mật khẩu"
+            rules={[
+              {
+                required: !editingUser,
+                message: 'Vui lòng nhập mật khẩu'
+              },
+              {
+                min: 6,
+                message: 'Mật khẩu phải có ít nhất 6 ký tự'
+              }
+            ]}
           >
-            <Select placeholder="Chọn trạng thái">
-              <Option value="active">Hoạt động</Option>
-              <Option value="inactive">Không hoạt động</Option>
+            <Input.Password
+              placeholder={editingUser ? "Nhập mật khẩu mới (để trống nếu không đổi)" : "Nhập mật khẩu"}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="isVerified"
+            label="Trạng thái xác thực"
+            initialValue={true}
+          >
+            <Select placeholder="Chọn trạng thái xác thực">
+              <Option value={true}>Đã xác thực</Option>
+              <Option value={false}>Chưa xác thực</Option>
             </Select>
           </Form.Item>
         </Form>

@@ -21,12 +21,14 @@ import ReportManagement from './report-management';
 import RoomManagement from './room-management';
 import BillManagement from './bill-management';
 import BookingManagement from './booking-management';
+import EmployeeManagement from './employee-management';
+import Dashboard from './dashboard';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 const AdminDashboard = () => {
-  const [tab, setTab] = useState<'staff' | 'user' | 'report' | 'room' | 'bill' | 'booking'>('staff');
+  const [tab, setTab] = useState<'dashboard' | 'staff' | 'user' | 'report' | 'room' | 'bill' | 'booking' | 'employee'>('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const router = useRouter();
@@ -57,7 +59,12 @@ const AdminDashboard = () => {
           onClick={({ key }) => setTab(key as any)}
           items={[
             {
-              key: 'staff',
+              key: 'dashboard',
+              icon: <DashboardOutlined />,
+              label: 'Tổng quan',
+            },
+            {
+              key: 'employee',
               icon: <TeamOutlined />,
               label: 'Quản lý nhân viên',
             },
@@ -111,6 +118,8 @@ const AdminDashboard = () => {
           </span>
         </Header>
         <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', borderRadius: 4 }}>
+          {tab === 'dashboard' && <Dashboard />}
+          {tab === 'employee' && <EmployeeManagement />}
           {tab === 'staff' && <StaffManagement />}
           {tab === 'user' && <UserManagement />}
           {tab === 'room' && <RoomManagement />}

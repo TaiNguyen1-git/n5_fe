@@ -1,7 +1,33 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const BASE_URL = 'https://ptud-web-1.onrender.com/api';
+// Sử dụng proxy đã cấu hình trong next.config.js để tránh vấn đề CORS
+const BASE_URL = '/api';
+
+// Cấu hình axios
+axios.defaults.withCredentials = true; // Cho phép gửi cookies trong các request cross-origin
+axios.defaults.headers.common['Accept'] = 'application/json';
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+// Thêm interceptor để xử lý lỗi
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.code === 'ECONNABORTED') {
+      console.error('Request timeout:', error);
+    } else if (error.response) {
+      // Lỗi từ server
+      console.error('Server error:', error.response.status, error.response.statusText);
+    } else if (error.request) {
+      // Không nhận được phản hồi
+      console.error('No response received:', error.request);
+    } else {
+      // Lỗi khác
+      console.error('Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 const AUTH_TOKEN_KEY = 'auth_token';
 const USER_DATA_KEY = 'user';
 
@@ -22,14 +48,27 @@ const setAuthCookie = (name: string, value: string) => {
   Cookies.set(name, value, COOKIE_OPTIONS);
 };
 
-// Định nghĩa interface cho dữ liệu người dùng
+// Định nghĩa interface cho dữ liệu người dùng theo cấu trúc API mới
 export interface User {
   maTK?: number | string;
-  tenDangNhap: string;
-  hoTen: string;
-  email: string;
+  tenTK?: string;
+  matKhau?: string;
+  tenHienThi?: string;
+  sinhNhat?: string | null;
+  diaChi?: string | null;
+  phone?: string;
+  email?: string;
+  isVerified?: boolean;
+  createAt?: string;
+  imgAvt?: string | null;
+  lastRef?: string | null;
+  idOTP?: string | null;
+  role?: string;
+
+  // Các trường tương thích ngược với code cũ
+  tenDangNhap?: string;
+  hoTen?: string;
   soDienThoai?: string;
-  diaChi?: string;
   gioiTinh?: string;
   ngaySinh?: string;
   vaiTro?: string;
@@ -82,17 +121,17 @@ export async function getUserProfile(): Promise<any> {
     if (response.ok) {
       const responseData = await response.json();
       console.log('getUserProfile - API response:', responseData);
-      
+
       if (responseData.data) {
         // Log để debug
         console.log('getUserProfile - Số điện thoại:', responseData.data.phone);
         console.log('getUserProfile - Kiểu dữ liệu số điện thoại:', typeof responseData.data.phone);
-        
+
         try {
           // Đọc dữ liệu hiện tại từ cookie hoặc localStorage
           const currentUserStr = getAuthCookie(USER_DATA_KEY) || localStorage.getItem(USER_DATA_KEY);
           let currentUser: any = {};
-          
+
           if (currentUserStr) {
             try {
               currentUser = JSON.parse(currentUserStr);
@@ -100,7 +139,7 @@ export async function getUserProfile(): Promise<any> {
               console.error('Error parsing user data:', parseError);
             }
           }
-          
+
           // Xây dựng đối tượng người dùng đầy đủ
           const updatedUserData = {
             ...currentUser,
@@ -115,12 +154,12 @@ export async function getUserProfile(): Promise<any> {
             phone: responseData.data.phone || responseData.data.phoneNumber || currentUser.phone,
             phoneNumber: responseData.data.phoneNumber || responseData.data.phone || currentUser.phoneNumber
           };
-          
+
           // Đảm bảo loaiTK là số
           if (typeof updatedUserData.loaiTK === 'string') {
             updatedUserData.loaiTK = parseInt(updatedUserData.loaiTK, 10);
           }
-          
+
           // Đảm bảo role được đồng bộ với loaiTK
           if (updatedUserData.loaiTK === 1) {
             updatedUserData.role = 'admin';
@@ -129,27 +168,27 @@ export async function getUserProfile(): Promise<any> {
           } else {
             updatedUserData.role = 'customer';
           }
-          
+
           console.log('getUserProfile - Đồng bộ role từ loaiTK:', {
             loaiTK: updatedUserData.loaiTK,
             role: updatedUserData.role
           });
-          
+
           // Lưu dữ liệu mới vào cả cookie và localStorage
           setAuthCookie(USER_DATA_KEY, JSON.stringify(updatedUserData));
           localStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUserData));
           console.log('getUserProfile - Đã cập nhật dữ liệu người dùng:', updatedUserData);
-          
+
           return updatedUserData;
         } catch (storageError) {
           console.error('getUserProfile - Lỗi khi cập nhật dữ liệu người dùng:', storageError);
           return responseData.data;
         }
       }
-      
+
       return responseData.data;
     }
-    
+
     return null;
   } catch (error) {
     console.error('Lỗi khi lấy thông tin người dùng:', error);
@@ -194,7 +233,7 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<Updat
     });
 
     const result = await response.json();
-    
+
     if (result.success) {
       // Cập nhật thông tin người dùng trong cookie và localStorage
       const currentUserStr = getAuthCookie(USER_DATA_KEY) || localStorage.getItem(USER_DATA_KEY);
@@ -211,12 +250,12 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<Updat
             username: userData.tenTK || currentUser.username || currentUser.tenTK,
             tenTK: userData.tenTK || currentUser.tenTK || currentUser.username
           };
-          
+
           // Lưu dữ liệu vào cả cookie và localStorage
           setAuthCookie(USER_DATA_KEY, JSON.stringify(updatedUser));
           localStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUser));
           console.log('userService: Đã cập nhật dữ liệu người dùng trong storage:', updatedUser);
-          
+
           // Ngay sau khi cập nhật dữ liệu trong cookie/localStorage, chúng ta gọi API
           // để lấy dữ liệu mới nhất từ server và cập nhật lại
           try {
@@ -232,7 +271,7 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<Updat
           console.error('Lỗi khi cập nhật thông tin người dùng:', err);
         }
       }
-      
+
       return {
         success: true,
         message: result.message || 'Cập nhật thông tin thành công',
@@ -254,66 +293,244 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<Updat
   }
 }
 
+// Định nghĩa interface cho phản hồi phân trang
+export interface PaginatedResponse<T> {
+  items: T[];
+  totalItems: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 // API services cho người dùng
 export const userService = {
-  // Lấy tất cả người dùng
-  getAllUsers: async (): Promise<User[]> => {
-    try {
-      const response = await axios.get(`${BASE_URL}/User/GetAll`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      throw error;
+  // Lấy tất cả người dùng với phân trang
+  getAllUsers: async (pageNumber: number = 1, pageSize: number = 10): Promise<PaginatedResponse<User>> => {
+    // Số lần thử lại tối đa
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError;
+
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Fetching users with pageNumber=${pageNumber}, pageSize=${pageSize} (attempt ${retryCount + 1}/${maxRetries})`);
+
+        // Sử dụng API route của Next.js thay vì gọi trực tiếp đến backend
+        const response = await axios.get(`/api/users`, {
+          params: {
+            pageNumber,
+            pageSize
+          },
+          timeout: 15000 // 15 giây
+        });
+
+        console.log('API response structure:', Object.keys(response.data));
+
+        // Kiểm tra cấu trúc phản hồi
+        if (response.data && response.data.items && Array.isArray(response.data.items)) {
+          // Phản hồi đã có cấu trúc phân trang
+          return response.data;
+        } else if (Array.isArray(response.data)) {
+          // Phản hồi là mảng trực tiếp, chuyển đổi sang cấu trúc phân trang
+          return {
+            items: response.data,
+            totalItems: response.data.length,
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            totalPages: Math.ceil(response.data.length / pageSize)
+          };
+        } else {
+          // Trường hợp không xác định, trả về cấu trúc mặc định
+          console.warn('Unexpected API response format:', response.data);
+          return {
+            items: [],
+            totalItems: 0,
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            totalPages: 0
+          };
+        }
+      } catch (error) {
+        lastError = error;
+        console.error(`Error fetching users (attempt ${retryCount + 1}/${maxRetries}):`, error);
+
+        // Tăng số lần thử
+        retryCount++;
+
+        if (retryCount < maxRetries) {
+          // Chờ trước khi thử lại (1s, 2s, 4s...)
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
     }
+
+    // Nếu tất cả các lần thử đều thất bại, trả về dữ liệu mặc định
+    console.error('All retry attempts failed. Returning empty data.');
+    return {
+      items: [],
+      totalItems: 0,
+      pageNumber: pageNumber,
+      pageSize: pageSize,
+      totalPages: 0
+    };
   },
-  
+
   // Lấy người dùng theo ID
   getUserById: async (id: number | string): Promise<User> => {
     try {
-      const response = await axios.get(`${BASE_URL}/User/GetById?id=${id}`);
-      return response.data;
+      // Sử dụng API route của Next.js
+      const response = await axios.get(`/api/users/${id}`, {
+        timeout: 15000 // 15 giây
+      });
+      return response.data.data;
     } catch (error) {
       console.error(`Error fetching user with id ${id}:`, error);
       throw error;
     }
   },
 
+  // Tạo người dùng mới
+  createUser: async (userData: Partial<User>): Promise<any> => {
+    // Số lần thử lại tối đa
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError;
+
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Creating user (attempt ${retryCount + 1}/${maxRetries}):`, userData);
+        // Sử dụng API endpoint chính xác cho tạo mới
+        console.log(`Calling API: POST ${BASE_URL}/User/Create with data:`, userData);
+        const response = await axios.post(`${BASE_URL}/User/Create`, userData, {
+          timeout: 15000 // 15 giây
+        });
+        console.log('Create API response:', response.data);
+        return response.data;
+      } catch (error) {
+        lastError = error;
+        console.error(`Error creating user (attempt ${retryCount + 1}/${maxRetries}):`, error);
+
+        // Tăng số lần thử
+        retryCount++;
+
+        if (retryCount < maxRetries) {
+          // Chờ trước khi thử lại (1s, 2s, 4s...)
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    // Nếu tất cả các lần thử đều thất bại
+    console.error('All retry attempts failed for createUser.');
+    throw lastError;
+  },
+
   // Cập nhật người dùng
   updateUser: async (id: number | string, userData: Partial<User>): Promise<any> => {
-    try {
-      const response = await axios.put(`${BASE_URL}/User/Update?id=${id}`, userData);
-      return response.data;
-    } catch (error) {
-      console.error(`Error updating user with id ${id}:`, error);
-      throw error;
+    // Số lần thử lại tối đa
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError;
+
+    while (retryCount < maxRetries) {
+      try {
+        // Đảm bảo maTK được bao gồm trong dữ liệu
+        const updatedData = {
+          ...userData,
+          maTK: id
+        };
+
+        console.log(`Updating user with id ${id}, data (attempt ${retryCount + 1}/${maxRetries}):`, updatedData);
+
+        // Sử dụng API endpoint chính xác cho cập nhật
+        console.log('Calling API: PUT ${BASE_URL}/User/Update with data:', updatedData);
+        const response = await axios.put(`${BASE_URL}/User/Update`, updatedData, {
+          timeout: 15000 // 15 giây
+        });
+        console.log('Update API response:', response.data);
+        return response.data;
+      } catch (error) {
+        lastError = error;
+        console.error(`Error updating user with id ${id} (attempt ${retryCount + 1}/${maxRetries}):`, error);
+
+        // Tăng số lần thử
+        retryCount++;
+
+        if (retryCount < maxRetries) {
+          // Chờ trước khi thử lại (1s, 2s, 4s...)
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
     }
+
+    // Nếu tất cả các lần thử đều thất bại
+    console.error('All retry attempts failed for updateUser.');
+    throw lastError;
   },
-  
+
   // Xóa người dùng
-  deleteUser: async (id: number | string): Promise<any> => {
-    try {
-      const response = await axios.delete(`${BASE_URL}/User/Delete?id=${id}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error deleting user with id ${id}:`, error);
-      throw error;
+  deleteUser: async (tenTK: string): Promise<any> => {
+    // Số lần thử lại tối đa
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError;
+
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Deleting user with tenTK ${tenTK} (attempt ${retryCount + 1}/${maxRetries})`);
+        // Sử dụng API endpoint chính xác với tham số TenTK
+        console.log(`Calling API: DELETE ${BASE_URL}/User/Delete with TenTK=${tenTK}`);
+        const response = await axios.delete(`${BASE_URL}/User/Delete`, {
+          params: { TenTK: tenTK },
+          timeout: 15000 // 15 giây
+        });
+        console.log('Delete API response:', response.data);
+        return response.data;
+      } catch (error) {
+        lastError = error;
+        console.error(`Error deleting user with tenTK ${tenTK} (attempt ${retryCount + 1}/${maxRetries}):`, error);
+
+        // Tăng số lần thử
+        retryCount++;
+
+        if (retryCount < maxRetries) {
+          // Chờ trước khi thử lại (1s, 2s, 4s...)
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
     }
+
+    // Nếu tất cả các lần thử đều thất bại
+    console.error('All retry attempts failed for deleteUser.');
+    throw lastError;
   },
-  
+
   // Kiểm tra xem người dùng đã tồn tại
   checkUserExists: async (username: string): Promise<boolean> => {
     try {
-      const response = await axios.get(`${BASE_URL}/User/CheckExists?username=${username}`);
-      return response.data;
+      // Sử dụng API route của Next.js
+      const response = await axios.get(`/api/users/check-exists`, {
+        params: { username },
+        timeout: 15000 // 15 giây
+      });
+      return response.data.exists;
     } catch (error) {
       console.error(`Error checking if user exists: ${username}`, error);
       return false;
     }
   },
-  
+
   // Export các hàm riêng lẻ
   getUserProfile,
   updateUserProfile
 };
 
-export default userService; 
+export default userService;
