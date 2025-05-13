@@ -309,7 +309,6 @@ export const userService = {
     // Số lần thử lại tối đa
     const maxRetries = 3;
     let retryCount = 0;
-    let lastError;
 
     while (retryCount < maxRetries) {
       try {
@@ -351,7 +350,6 @@ export const userService = {
           };
         }
       } catch (error) {
-        lastError = error;
         console.error(`Error fetching users (attempt ${retryCount + 1}/${maxRetries}):`, error);
 
         // Tăng số lần thử
@@ -507,7 +505,7 @@ export const userService = {
           });
 
           console.log(`[DELETE API] Phương pháp 1: Nhận response với status: ${response.status}`);
-          
+
           if (!response.ok) {
             console.error(`[DELETE API] Phương pháp 1 thất bại với status: ${response.status}`);
             const errorText = await response.text();
@@ -518,7 +516,7 @@ export const userService = {
           // Phân tích phản hồi
           const responseText = await response.text();
           console.log(`[DELETE API] Phương pháp 1: Response text:`, responseText);
-          
+
           let responseData;
           try {
             responseData = responseText ? JSON.parse(responseText) : {};
@@ -526,13 +524,13 @@ export const userService = {
             console.error(`[DELETE API] Lỗi khi parse JSON:`, parseError);
             responseData = { success: false, message: 'Lỗi khi xử lý dữ liệu từ máy chủ' };
           }
-          
+
           console.log('[DELETE API] Phương pháp 1 thành công:', responseData);
           console.log(`[DELETE API] =========== KẾT THÚC XÓA NGƯỜI DÙNG (THÀNH CÔNG) ===========`);
           return responseData;
         } catch (method1Error) {
           console.error('[DELETE API] Phương pháp 1 lỗi:', method1Error);
-          
+
           // Phương pháp 2: Sử dụng direct-delete API
           try {
             console.log(`[DELETE API] Phương pháp 2: Gọi direct-delete API với TenTK=${tenTK}`);
@@ -544,18 +542,15 @@ export const userService = {
             console.log(`[DELETE API] =========== KẾT THÚC XÓA NGƯỜI DÙNG (THÀNH CÔNG) ===========`);
             return axiosResponse.data;
           } catch (method2Error) {
-            console.error('[DELETE API] Phương pháp 2 lỗi:', method2Error.message);
-            if (method2Error.response) {
-              console.error('[DELETE API] Phương pháp 2 response error:', method2Error.response.status, method2Error.response.data);
-            }
-            
+            console.error('[DELETE API] Phương pháp 2 lỗi:', method2Error instanceof Error ? method2Error.message : 'Unknown error');
+
             // Phương pháp 3: Gọi trực tiếp đến backend
             try {
               console.log(`[DELETE API] Phương pháp 3: Gọi API backend trực tiếp với TenTK=${tenTK}`);
               // Đảm bảo tham số đúng format
               const backendUrl = 'https://ptud-web-1.onrender.com/api';
               console.log(`[DELETE API] Phương pháp 3: URL đầy đủ: ${backendUrl}/User/Delete, params: { TenTK: ${tenTK} }`);
-              
+
               const directResponse = await axios.delete(`${backendUrl}/User/Delete`, {
                 params: { TenTK: tenTK },
                 timeout: 20000, // 20 giây
@@ -564,7 +559,7 @@ export const userService = {
                   'Accept': 'application/json'
                 }
               });
-              
+
               console.log('[DELETE API] Phương pháp 3 thành công:', directResponse.status, directResponse.data);
               console.log(`[DELETE API] =========== KẾT THÚC XÓA NGƯỜI DÙNG (THÀNH CÔNG) ===========`);
               return {
@@ -573,21 +568,18 @@ export const userService = {
                 data: directResponse.data
               };
             } catch (method3Error) {
-              console.error('[DELETE API] Phương pháp 3 lỗi:', method3Error.message);
-              if (method3Error.response) {
-                console.error('[DELETE API] Phương pháp 3 response error:', method3Error.response.status, method3Error.response.data);
-              }
-              
+              console.error('[DELETE API] Phương pháp 3 lỗi:', method3Error instanceof Error ? method3Error.message : 'Unknown error');
+
               // Phương pháp 4: Thử với các biến thể tên tham số khác
               try {
                 console.log(`[DELETE API] Phương pháp 4: Thử các biến thể tham số khác`);
                 const backendUrl = 'https://ptud-web-1.onrender.com/api';
                 console.log(`[DELETE API] Phương pháp 4: URL đầy đủ: ${backendUrl}/User/Delete?tenTK=${tenTK}`);
-                
+
                 const response4 = await axios.delete(`${backendUrl}/User/Delete?tenTK=${encodeURIComponent(tenTK)}`, {
                   timeout: 20000 // 20 giây
                 });
-                
+
                 console.log('[DELETE API] Phương pháp 4 thành công:', response4.status, response4.data);
                 console.log(`[DELETE API] =========== KẾT THÚC XÓA NGƯỜI DÙNG (THÀNH CÔNG) ===========`);
                 return {
@@ -596,10 +588,7 @@ export const userService = {
                   data: response4.data
                 };
               } catch (method4Error) {
-                console.error('[DELETE API] Phương pháp 4 lỗi:', method4Error.message);
-                if (method4Error.response) {
-                  console.error('[DELETE API] Phương pháp 4 response error:', method4Error.response.status, method4Error.response.data);
-                }
+                console.error('[DELETE API] Phương pháp 4 lỗi:', method4Error instanceof Error ? method4Error.message : 'Unknown error');
                 throw method4Error; // Ném lỗi để thử lại
               }
             }
@@ -607,7 +596,7 @@ export const userService = {
         }
       } catch (error) {
         lastError = error;
-        console.error(`[DELETE API] Tất cả các phương pháp đều thất bại ở lần thử ${retryCount + 1}/${maxRetries}:`, error.message);
+        console.error(`[DELETE API] Tất cả các phương pháp đều thất bại ở lần thử ${retryCount + 1}/${maxRetries}:`, error instanceof Error ? error.message : 'Unknown error');
 
         // Tăng số lần thử
         retryCount++;
@@ -624,17 +613,13 @@ export const userService = {
     // Nếu tất cả các lần thử đều thất bại
     console.error('[DELETE API] Tất cả các lần thử đều thất bại');
     console.log(`[DELETE API] =========== KẾT THÚC XÓA NGƯỜI DÙNG (THẤT BẠI) ===========`);
-    
+
     // Trả về lỗi có định dạng để UI có thể xử lý
     let errorMessage = 'Không thể xóa người dùng sau nhiều lần thử';
-    if (lastError) {
-      if (lastError.response && lastError.response.data) {
-        errorMessage = lastError.response.data.message || lastError.response.statusText || errorMessage;
-      } else if (lastError instanceof Error) {
-        errorMessage = lastError.message;
-      }
+    if (lastError && lastError instanceof Error) {
+      errorMessage = lastError.message;
     }
-    
+
     return {
       success: false,
       message: errorMessage,
