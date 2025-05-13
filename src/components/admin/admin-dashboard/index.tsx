@@ -3,7 +3,7 @@ import { Layout, Menu, Typography, Button, Avatar, Card, Row, Col, Table, Tag, S
 import {
   UserOutlined,
   TeamOutlined,
-  BarChartOutlined,
+  ScheduleOutlined,
   LogoutOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
@@ -17,7 +17,7 @@ import { useRouter } from 'next/router';
 import { logout, getCurrentUser } from '../../../services/authService';
 import StaffManagement from './staff-management';
 import UserManagement from './user-management';
-import ReportManagement from './report-management';
+import WorkShiftManagement from './work-shift-management';
 import RoomManagement from './room-management';
 import BillManagement from './bill-management';
 import BookingManagement from './booking-management';
@@ -28,7 +28,7 @@ const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 const AdminDashboard = () => {
-  const [tab, setTab] = useState<'dashboard' | 'staff' | 'user' | 'report' | 'room' | 'bill' | 'booking' | 'employee'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'staff' | 'user' | 'workshift' | 'room' | 'bill' | 'booking' | 'employee'>('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const router = useRouter();
@@ -89,9 +89,9 @@ const AdminDashboard = () => {
               label: 'Quản lý hóa đơn',
             },
             {
-              key: 'report',
-              icon: <BarChartOutlined />,
-              label: 'Báo cáo & Thống kê',
+              key: 'workshift',
+              icon: <ScheduleOutlined />,
+              label: 'Quản lý ca làm',
             },
             {
               key: 'logout',
@@ -125,7 +125,7 @@ const AdminDashboard = () => {
           {tab === 'room' && <RoomManagement />}
           {tab === 'booking' && <BookingManagement />}
           {tab === 'bill' && <BillManagement />}
-          {tab === 'report' && <ReportManagement />}
+          {tab === 'workshift' && <WorkShiftManagement />}
         </Content>
       </Layout>
     </Layout>

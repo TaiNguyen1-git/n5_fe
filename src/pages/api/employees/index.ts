@@ -39,7 +39,26 @@ export default async function handler(
       // Log processed employees
       console.log(`Processed ${employees.length} employees`);
 
-      return res.status(200).json(employees);
+      // Đảm bảo dữ liệu nhân viên có các trường cần thiết
+      const formattedEmployees = employees.map((employee: any) => ({
+        id: employee.maNV || employee.id || employee.maNV_,
+        maNV: employee.maNV || employee.id || employee.maNV_,
+        hoTen: employee.hoTen || employee.hoTen_,
+        hoTen_: employee.hoTen_ || employee.hoTen,
+        chucVu: employee.chucVu || employee.chucVu_,
+        chucVu_: employee.chucVu_ || employee.chucVu,
+        taiKhoan: employee.taiKhoan || employee.taiKhoan_,
+        taiKhoan_: employee.taiKhoan_ || employee.taiKhoan,
+        luongCoBan: employee.luongCoBan || employee.luong || 0,
+        trangThai: employee.trangThai !== undefined ? employee.trangThai : true
+      }));
+
+      console.log('Formatted employees sample:', formattedEmployees.length > 0 ? formattedEmployees[0] : 'No employees');
+
+      return res.status(200).json({
+        success: true,
+        data: formattedEmployees
+      });
     } catch (error: any) {
       console.error('Error fetching employees:', error);
       return res.status(500).json({

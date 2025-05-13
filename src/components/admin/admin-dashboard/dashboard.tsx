@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Statistic, Table, Tag, Typography, Button } from 'antd';
-import { 
-  UserOutlined, 
-  TeamOutlined, 
-  HomeOutlined, 
+import { Card, Row, Col, Statistic, Table, Tag, Typography, Button, message, Spin } from 'antd';
+import {
+  UserOutlined,
+  TeamOutlined,
+  HomeOutlined,
   CalendarOutlined,
-  DollarOutlined
+  DollarOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
 import dayjs from 'dayjs';
+import { dashboardService, DashboardStats, RecentBooking } from '../../../services/dashboardService';
 
 const { Title } = Typography;
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [stats, setStats] = useState<DashboardStats>({
     totalRooms: 0,
     availableRooms: 0,
     occupiedRooms: 0,
@@ -23,7 +26,7 @@ const Dashboard = () => {
     totalEmployees: 0,
     totalRevenue: 0
   });
-  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -31,68 +34,37 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     setLoading(true);
+    await Promise.all([fetchStats(), fetchRecentBookings()]);
+    setLoading(false);
+  };
+
+  // Fetch dashboard statistics
+  const fetchStats = async () => {
+    setStatsLoading(true);
     try {
-      // Fetch statistics data
-      // In a real application, you would fetch this data from your API
-      // For now, we'll use mock data
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Set mock statistics
-      setStats({
-        totalRooms: 30,
-        availableRooms: 15,
-        occupiedRooms: 12,
-        totalBookings: 45,
-        totalCustomers: 120,
-        totalEmployees: 25,
-        totalRevenue: 45000000
-      });
-      
-      // Set mock recent bookings
-      setRecentBookings([
-        {
-          id: 1,
-          roomNumber: '101',
-          customerName: 'Nguyễn Văn A',
-          checkIn: dayjs().format('YYYY-MM-DD'),
-          checkOut: dayjs().add(2, 'day').format('YYYY-MM-DD'),
-          status: 'confirmed',
-          totalPrice: 1800000
-        },
-        {
-          id: 2,
-          roomNumber: '205',
-          customerName: 'Trần Thị B',
-          checkIn: dayjs().add(1, 'day').format('YYYY-MM-DD'),
-          checkOut: dayjs().add(3, 'day').format('YYYY-MM-DD'),
-          status: 'pending',
-          totalPrice: 2400000
-        },
-        {
-          id: 3,
-          roomNumber: '310',
-          customerName: 'Lê Văn C',
-          checkIn: dayjs().subtract(1, 'day').format('YYYY-MM-DD'),
-          checkOut: dayjs().add(1, 'day').format('YYYY-MM-DD'),
-          status: 'checked_in',
-          totalPrice: 1600000
-        },
-        {
-          id: 4,
-          roomNumber: '402',
-          customerName: 'Phạm Thị D',
-          checkIn: dayjs().subtract(2, 'day').format('YYYY-MM-DD'),
-          checkOut: dayjs().format('YYYY-MM-DD'),
-          status: 'checked_out',
-          totalPrice: 1200000
-        }
-      ]);
+      const data = await dashboardService.getDashboardStats();
+      console.log('Dashboard stats:', data);
+      setStats(data);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Error fetching dashboard stats:', error);
+      message.error('Không thể tải dữ liệu thống kê. Vui lòng thử lại sau.');
     } finally {
-      setLoading(false);
+      setStatsLoading(false);
+    }
+  };
+
+  // Fetch recent bookings
+  const fetchRecentBookings = async () => {
+    setBookingsLoading(true);
+    try {
+      const data = await dashboardService.getRecentBookings();
+      console.log('Recent bookings:', data);
+      setRecentBookings(data);
+    } catch (error) {
+      console.error('Error fetching recent bookings:', error);
+      message.error('Không thể tải dữ liệu đặt phòng gần đây. Vui lòng thử lại sau.');
+    } finally {
+      setBookingsLoading(false);
     }
   };
 
@@ -171,83 +143,92 @@ const Dashboard = () => {
         <p>Thông tin tổng quan về hoạt động của khách sạn</p>
       </div>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Tổng số phòng"
-              value={stats.totalRooms}
-              prefix={<HomeOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Phòng trống"
-              value={stats.availableRooms}
-              valueStyle={{ color: '#3f8600' }}
-              prefix={<HomeOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Phòng đang sử dụng"
-              value={stats.occupiedRooms}
-              valueStyle={{ color: '#cf1322' }}
-              prefix={<HomeOutlined />}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <Spin spinning={statsLoading}>
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col span={8}>
+            <Card>
+              <Statistic
+                title="Tổng số phòng"
+                value={stats.totalRooms}
+                prefix={<HomeOutlined />}
+                loading={statsLoading}
+              />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card>
+              <Statistic
+                title="Phòng trống"
+                value={stats.availableRooms}
+                valueStyle={{ color: '#3f8600' }}
+                prefix={<HomeOutlined />}
+                loading={statsLoading}
+              />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card>
+              <Statistic
+                title="Phòng đang sử dụng"
+                value={stats.occupiedRooms}
+                valueStyle={{ color: '#cf1322' }}
+                prefix={<HomeOutlined />}
+                loading={statsLoading}
+              />
+            </Card>
+          </Col>
+        </Row>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Tổng đặt phòng"
-              value={stats.totalBookings}
-              prefix={<CalendarOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Tổng khách hàng"
-              value={stats.totalCustomers}
-              prefix={<UserOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Tổng nhân viên"
-              value={stats.totalEmployees}
-              prefix={<TeamOutlined />}
-            />
-          </Card>
-        </Col>
-      </Row>
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col span={8}>
+            <Card>
+              <Statistic
+                title="Tổng đặt phòng"
+                value={stats.totalBookings}
+                prefix={<CalendarOutlined />}
+                loading={statsLoading}
+              />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card>
+              <Statistic
+                title="Tổng khách hàng"
+                value={stats.totalCustomers}
+                prefix={<UserOutlined />}
+                loading={statsLoading}
+              />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card>
+              <Statistic
+                title="Tổng nhân viên"
+                value={stats.totalEmployees}
+                prefix={<TeamOutlined />}
+                loading={statsLoading}
+              />
+            </Card>
+          </Col>
+        </Row>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col span={24}>
-          <Card>
-            <Statistic
-              title="Tổng doanh thu"
-              value={stats.totalRevenue}
-              precision={0}
-              valueStyle={{ color: '#3f8600' }}
-              prefix={<DollarOutlined />}
-              suffix="VNĐ"
-              formatter={(value) => `${value?.toLocaleString('vi-VN')}`}
-            />
-          </Card>
-        </Col>
-      </Row>
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col span={24}>
+            <Card>
+              <Statistic
+                title="Tổng doanh thu"
+                value={stats.totalRevenue}
+                precision={0}
+                valueStyle={{ color: '#3f8600' }}
+                prefix={<DollarOutlined />}
+                suffix="VNĐ"
+                formatter={(value) => `${value?.toLocaleString('vi-VN')}`}
+                loading={statsLoading}
+              />
+            </Card>
+          </Col>
+        </Row>
+      </Spin>
 
       <div style={{ marginTop: 32 }}>
         <Title level={4}>Đặt phòng gần đây</Title>
@@ -255,13 +236,19 @@ const Dashboard = () => {
           columns={columns}
           dataSource={recentBookings}
           rowKey="id"
-          loading={loading}
+          loading={bookingsLoading}
           pagination={false}
+          locale={{ emptyText: 'Không có dữ liệu đặt phòng' }}
         />
       </div>
 
       <div style={{ marginTop: 24, textAlign: 'center' }}>
-        <Button type="primary" onClick={fetchDashboardData}>
+        <Button
+          type="primary"
+          icon={<ReloadOutlined />}
+          onClick={fetchDashboardData}
+          loading={loading}
+        >
           Làm mới dữ liệu
         </Button>
       </div>

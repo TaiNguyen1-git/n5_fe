@@ -25,31 +25,48 @@ export const employeeService = {
   // Get all employees
   getAllEmployees: async (): Promise<Employee[]> => {
     try {
+      console.log('Fetching employees from API...');
       const response = await axios.get(`${BASE_URL}/employees`, {
         timeout: 15000 // 15 second timeout
       });
 
       // Kiểm tra cấu trúc dữ liệu trả về
-      console.log('API response:', response.data);
+      console.log('API response structure:', {
+        isArray: Array.isArray(response.data),
+        hasData: response.data && response.data.data,
+        hasSuccess: response.data && response.data.success,
+        hasItems: response.data && response.data.items,
+        type: typeof response.data
+      });
 
       if (response.data) {
         // Nếu dữ liệu có cấu trúc items
         if (response.data.items && Array.isArray(response.data.items)) {
+          console.log('Using items array, length:', response.data.items.length);
           return response.data.items;
         }
         // Nếu dữ liệu có cấu trúc data
         else if (response.data.data && Array.isArray(response.data.data)) {
+          console.log('Using data array, length:', response.data.data.length);
           return response.data.data;
         }
         // Nếu dữ liệu là mảng trực tiếp
         else if (Array.isArray(response.data)) {
+          console.log('Using direct array, length:', response.data.length);
           return response.data;
         }
         // Nếu dữ liệu có cấu trúc success và data
-        else if (response.data.success && Array.isArray(response.data.data)) {
-          return response.data.data;
+        else if (response.data.success && response.data.data) {
+          if (Array.isArray(response.data.data)) {
+            console.log('Using success.data array, length:', response.data.data.length);
+            return response.data.data;
+          } else {
+            console.log('Data is not an array:', typeof response.data.data);
+          }
         }
       }
+
+      console.warn('No valid employee data structure found, returning empty array');
       return [];
     } catch (error) {
       console.error('Error fetching employees:', error);
