@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, Card, Tabs, Switch, Select, TimePicker, Divider, Row, Col, Upload, message, Avatar, Space, notification } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, Button, Card, Tabs, Switch, Select, TimePicker, Divider, Row, Col, Upload, message, Avatar, Space, notification, Spin } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined, UploadOutlined, SaveOutlined, BellOutlined, SettingOutlined, GlobalOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import dayjs from 'dayjs';
+import { getUserProfile, updateUserProfile } from '../../../services/userService';
+import { getCurrentUser } from '../../../services/authService';
 
 const { TabPane } = Tabs;
 const { Option } = Select;
@@ -60,17 +62,115 @@ const SettingsManagement = () => {
   const [userData, setUserData] = useState(defaultUserData);
   const [systemSettings, setSystemSettings] = useState(defaultSystemSettings);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  // Lấy thông tin người dùng khi component được tải
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setInitialLoading(true);
+
+        // Thử lấy thông tin từ getCurrentUser trước
+        const currentUser = getCurrentUser();
+        console.log('Settings - Current user from auth service:', currentUser);
+
+        if (currentUser) {
+          // Cập nhật form với dữ liệu cơ bản
+          const basicUserData = {
+            username: currentUser.username || '',
+            fullName: currentUser.fullName || '',
+            email: currentUser.email || '',
+            phone: currentUser.phone || '',
+            role: currentUser.role || 'staff',
+            department: 'reception', // Giá trị mặc định
+          };
+
+          setUserData(prev => ({ ...prev, ...basicUserData }));
+          userForm.setFieldsValue(basicUserData);
+        }
+
+        // Lấy thông tin đầy đủ từ API
+        const profileData = await getUserProfile();
+        console.log('Settings - User profile from API:', profileData);
+
+        if (profileData) {
+          const updatedUserData = {
+            username: profileData.username || profileData.tenTK || '',
+            fullName: profileData.fullName || profileData.tenHienThi || '',
+            email: profileData.email || '',
+            phone: profileData.phone || '',
+            role: profileData.role || 'staff',
+            department: 'reception', // Giá trị mặc định, có thể cập nhật nếu API trả về
+          };
+
+          setUserData(prev => ({ ...prev, ...updatedUserData }));
+          userForm.setFieldsValue(updatedUserData);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        message.error('Không thể tải thông tin người dùng. Vui lòng thử lại sau.');
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   // Xử lý cập nhật thông tin cá nhân
-  const handleUpdateProfile = (values: any) => {
+  const handleUpdateProfile = async (values: any) => {
     setLoading(true);
 
-    // Giả lập API call
-    setTimeout(() => {
-      setUserData({ ...userData, ...values });
+    try {
+      // Lấy thông tin người dùng hiện tại
+      const currentUser = getCurrentUser();
+
+      if (!currentUser || !currentUser.username) {
+        throw new Error('Không tìm thấy thông tin người dùng');
+      }
+
+      // Lấy tên tài khoản từ thông tin người dùng hiện tại
+      const username = currentUser.username || currentUser.tenTK;
+
+      // Chuẩn bị dữ liệu cập nhật theo đúng cấu trúc API
+      const updateData = {
+        tenHienThi: values.fullName,
+        phone: values.phone,
+        email: values.email
+      };
+
+      console.log('Settings - Updating user profile with data:', updateData);
+      console.log('Settings - Username for update:', username);
+
+      // Gọi API cập nhật thông tin với tham số TenTK
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/User/Update?TenTK=${encodeURIComponent(username)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      if (response.ok) {
+        // Cập nhật state và form
+        setUserData({ ...userData, ...values });
+        message.success('Cập nhật thông tin thành công!');
+
+        // Làm mới thông tin người dùng
+        const updatedProfile = await getUserProfile();
+        console.log('Settings - Updated profile:', updatedProfile);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        message.error(errorData.message || 'Cập nhật thông tin thất bại');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      message.error('Có lỗi xảy ra khi cập nhật thông tin. Vui lòng thử lại sau.');
+    } finally {
       setLoading(false);
-      message.success('Cập nhật thông tin thành công!');
-    }, 1000);
+    }
   };
 
   // Xử lý đổi mật khẩu
@@ -140,11 +240,16 @@ const SettingsManagement = () => {
     <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
       <h2 style={{ marginBottom: 24 }}>Cài đặt</h2>
 
-      <Tabs defaultActiveKey="1">
-        <TabPane
-          tab={<span><UserOutlined />Thông tin cá nhân</span>}
-          key="1"
-        >
+      {initialLoading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+          <Spin size="large" tip="Đang tải thông tin..." />
+        </div>
+      ) : (
+        <Tabs defaultActiveKey="1">
+          <TabPane
+            tab={<span><UserOutlined />Thông tin cá nhân</span>}
+            key="1"
+          >
           <Row gutter={24}>
             <Col span={8}>
               <Card title="Ảnh đại diện" style={{ marginBottom: 16 }}>
@@ -437,6 +542,7 @@ const SettingsManagement = () => {
           </Card>
         </TabPane>
       </Tabs>
+      )}
     </div>
   );
 };

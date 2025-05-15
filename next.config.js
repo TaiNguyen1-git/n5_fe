@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Cấu hình thư mục pages
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+
+  // Cấu hình đường dẫn
   async rewrites() {
     return [
       {
@@ -9,6 +13,8 @@ const nextConfig = {
       }
     ]
   },
+
+  // Cấu hình hình ảnh
   images: {
     domains: [
       'images.unsplash.com',
@@ -23,6 +29,7 @@ const nextConfig = {
       },
     ],
   },
+
   // Tăng timeout cho API requests
   api: {
     responseLimit: false,
@@ -31,9 +38,11 @@ const nextConfig = {
     },
     externalResolver: true,
   },
+
   // Add production settings
   swcMinify: true,
   reactStrictMode: false,
+
   // Add environment variables that can be accessed client-side
   publicRuntimeConfig: {
     apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://ptud-web-1.onrender.com/api',
@@ -42,4 +51,4 @@ const nextConfig = {
   }
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig

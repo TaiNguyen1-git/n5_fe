@@ -11,7 +11,7 @@ const COOKIE_EXPIRES = 7; // 7 days
 const COOKIE_OPTIONS = {
   expires: COOKIE_EXPIRES,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  sameSite: 'lax' as const, // Changed from 'strict' to 'lax' to allow cookies to persist across browser sessions
   path: '/'
 };
 
@@ -25,7 +25,12 @@ const getAuthCookie = (name: string): string | undefined => {
 };
 
 const removeAuthCookie = (name: string) => {
-  Cookies.remove(name, { path: '/' });
+  // Make sure to remove with the same path and domain settings
+  Cookies.remove(name, {
+    path: '/',
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production'
+  });
 };
 
 type LoginCredentials = {
@@ -429,17 +434,56 @@ export const isAuthenticated = (): boolean => {
 
   // Kiểm tra token từ cookie
   const token = getAuthCookie(AUTH_TOKEN_KEY);
-  if (!token) return false;
+  console.log('isAuthenticated - Token from cookie:', token ? 'Found' : 'Not found');
+
+  // Kiểm tra token từ localStorage (fallback)
+  const localToken = localStorage.getItem(AUTH_TOKEN_KEY);
+  console.log('isAuthenticated - Token from localStorage:', localToken ? 'Found' : 'Not found');
+
+  // Kiểm tra user data từ localStorage
+  const localUser = localStorage.getItem(USER_DATA_KEY);
+  console.log('isAuthenticated - User data from localStorage:', localUser ? 'Found' : 'Not found');
+
+  // Nếu không có token trong cookie nhưng có trong localStorage, khôi phục vào cookie
+  if (!token && localToken) {
+    console.log('isAuthenticated - Restoring token from localStorage to cookie');
+    setAuthCookie(AUTH_TOKEN_KEY, localToken);
+
+    // Cũng khôi phục dữ liệu người dùng
+    if (localUser) {
+      setAuthCookie(USER_DATA_KEY, localUser);
+      console.log('isAuthenticated - Restored user data from localStorage to cookie');
+    }
+
+    // Sử dụng token từ localStorage
+    return true;
+  }
+
+  if (!token && !localToken && !localUser) {
+    console.log('isAuthenticated - No token or user data found in cookie or localStorage');
+    return false;
+  }
+
+  // Sử dụng token từ cookie hoặc localStorage
+  const activeToken = token || localToken;
 
   // Kiểm tra token có hợp lệ không
   try {
     // Thử phân tích token (có thể thêm logic kiểm tra hết hạn nếu cần)
     // JWT thường có 3 phần cách nhau bởi dấu chấm
-    if (token.includes('admin-token-')) {
+    if (activeToken && activeToken.includes('admin-token-')) {
+      console.log('isAuthenticated - Admin token detected');
       // Admin token đặc biệt - luôn hợp lệ
       return true;
     }
 
+    if (activeToken && activeToken.includes('mock-token-')) {
+      console.log('isAuthenticated - Mock token detected');
+      // Mock token đặc biệt - luôn hợp lệ
+      return true;
+    }
+
+    console.log('isAuthenticated - Valid token found');
     // Kiểm tra token hợp lệ
     return true;
   } catch (e) {
@@ -454,12 +498,26 @@ export const isAuthenticated = (): boolean => {
 export const getCurrentUser = (): User | null => {
   if (typeof window === 'undefined') return null;
 
-  // Kiểm tra token trước
-  if (!isAuthenticated()) return null;
-
   // Lấy thông tin người dùng từ cookie
-  const userStr = getAuthCookie(USER_DATA_KEY);
-  if (!userStr) return null;
+  let userStr = getAuthCookie(USER_DATA_KEY);
+
+  // Nếu không có trong cookie, thử lấy từ localStorage
+  if (!userStr) {
+    console.log('getCurrentUser - User data not found in cookie, trying localStorage');
+    const localUserStr = localStorage.getItem(USER_DATA_KEY);
+
+    // Nếu tìm thấy trong localStorage, khôi phục vào cookie
+    if (localUserStr) {
+      console.log('getCurrentUser - Restoring user data from localStorage to cookie');
+      setAuthCookie(USER_DATA_KEY, localUserStr);
+      userStr = localUserStr;
+    }
+  }
+
+  if (!userStr) {
+    console.log('getCurrentUser - No user data found in cookie or localStorage');
+    return null;
+  }
 
   try {
     const userData = JSON.parse(userStr);
@@ -467,6 +525,14 @@ export const getCurrentUser = (): User | null => {
     // Xử lý đặc biệt cho tài khoản nhanvien2
     if (userData.username === 'nhanvien2' || userData.tenTK === 'nhanvien2') {
       console.log('AuthService - Đã phát hiện tài khoản nhanvien2, đảm bảo loaiTK=2 và role=staff');
+      userData.loaiTK = 2;
+      userData.vaiTro = 2;
+      userData.role = 'staff';
+    }
+
+    // Xử lý đặc biệt cho tài khoản demo
+    if (userData.username === 'staff_demo' || userData.tenTK === 'staff_demo') {
+      console.log('AuthService - Đã phát hiện tài khoản demo, đảm bảo loaiTK=2 và role=staff');
       userData.loaiTK = 2;
       userData.vaiTro = 2;
       userData.role = 'staff';
@@ -558,27 +624,48 @@ export const getCurrentUser = (): User | null => {
 export const logout = (): void => {
   if (typeof window === 'undefined') return;
 
-  // Xóa tất cả dữ liệu người dùng khỏi cookies
-  removeAuthCookie(AUTH_TOKEN_KEY);
-  removeAuthCookie(USER_DATA_KEY);
+  try {
+    console.log('Logging out user...');
 
-  // Xóa cả localStorage để đồng bộ
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-  localStorage.removeItem(USER_DATA_KEY);
+    // Xóa tất cả dữ liệu người dùng khỏi cookies
+    removeAuthCookie(AUTH_TOKEN_KEY);
+    removeAuthCookie(USER_DATA_KEY);
 
-  // Xóa các session storage nếu có
-  sessionStorage.removeItem(AUTH_TOKEN_KEY);
-  sessionStorage.removeItem(USER_DATA_KEY);
+    // Xóa cả localStorage để đồng bộ
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(USER_DATA_KEY);
 
-  console.log('Đã đăng xuất và xóa dữ liệu người dùng');
+    // Xóa các session storage nếu có
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    sessionStorage.removeItem(USER_DATA_KEY);
 
-  // Kích hoạt sự kiện để thông báo cho Header
-  const logoutEvent = new Event('user-logout');
-  window.dispatchEvent(logoutEvent);
+    console.log('Đã đăng xuất và xóa dữ liệu người dùng');
 
-  // Chuyển hướng đến trang đăng nhập nếu cần
-  if (window.location.pathname !== '/login') {
-    window.location.href = '/login';
+    // Kích hoạt sự kiện để thông báo cho Header
+    try {
+      const logoutEvent = new Event('user-logout');
+      window.dispatchEvent(logoutEvent);
+    } catch (eventError) {
+      console.error('Error dispatching logout event:', eventError);
+    }
+
+    // Show an alert to confirm logout
+    if (typeof window !== 'undefined') {
+      window.alert('Đã đăng xuất thành công! Đang chuyển hướng đến trang đăng nhập.');
+    }
+
+    // Redirect to login page
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 500);
+  } catch (error) {
+    console.error('Error during logout:', error);
+
+    // Force redirect to login as a last resort
+    if (typeof window !== 'undefined') {
+      window.alert('Đã xảy ra lỗi khi đăng xuất. Đang chuyển hướng đến trang đăng nhập.');
+      window.location.href = '/login';
+    }
   }
 };
 
@@ -588,6 +675,7 @@ export const logout = (): void => {
 export const redirectToLoginIfNotAuthenticated = (redirectPath?: string): boolean => {
   if (!isAuthenticated() && typeof window !== 'undefined') {
     const path = redirectPath ? `/login?redirect=${encodeURIComponent(redirectPath)}` : '/login';
+    console.log('User not authenticated, redirecting to login page:', path);
     window.location.href = path;
     return true;
   }

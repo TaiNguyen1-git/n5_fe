@@ -1,0 +1,174 @@
+.roomsContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.roomsHeader {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.roomsHeader h1 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.roomsHeader p {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.filterSection {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.priceFilter {
+  width: 100%;
+}
+
+.roomsResults {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.roomsResults p {
+  font-size: 1rem;
+  color: #666;
+}
+
+.loadingContainer, .errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 0;
+  text-align: center;
+}
+
+.loadingContainer p, .errorContainer p {
+  margin-top: 20px;
+  color: #666;
+}
+
+.roomCard {
+  height: 100%;
+  transition: transform 0.3s;
+  overflow: hidden;
+}
+
+.roomCard:hover {
+  transform: translateY(-5px);
+}
+
+.roomImageContainer {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.roomImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+
+.roomCard:hover .roomImage {
+  transform: scale(1.05);
+}
+
+.roomStatus {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.roomCardContent {
+  padding: 10px 0;
+}
+
+.roomCardContent h3 {
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.roomType {
+  color: #0078c2;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.roomFeatures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.roomPrice {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.roomPrice small {
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: #666;
+}
+
+.pagination {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .roomsHeader h1 {
+    font-size: 2rem;
+  }
+  
+  .roomsHeader p {
+    font-size: 1rem;
+  }
+  
+  .filterSection {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 576px) {
+  .roomsContainer {
+    padding: 20px 15px;
+  }
+  
+  .roomsHeader {
+    margin-bottom: 20px;
+  }
+  
+  .roomsHeader h1 {
+    font-size: 1.8rem;
+  }
+  
+  .pagination {
+    margin-top: 20px;
+  }
+}

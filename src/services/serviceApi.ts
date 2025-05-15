@@ -33,7 +33,7 @@ export const serviceApi = {
       return response.data.items || [];
     } catch (error: any) {
       console.error('Error fetching services:', error);
-      
+
       if (error.code === 'ECONNABORTED') {
         throw new Error('Kết nối tới máy chủ quá thời gian. Vui lòng thử lại sau.');
       } else if (error.response) {
@@ -74,8 +74,59 @@ export const serviceApi = {
   // Cập nhật dịch vụ
   updateService: async (id: number, service: DichVu): Promise<any> => {
     try {
-      const response = await axios.put(`${BASE_URL}/DichVu/Update?id=${id}`, service);
-      return response.data;
+      // Chuẩn bị dữ liệu theo đúng cấu trúc API yêu cầu
+      const serviceData = {
+        maDichVu: id,
+        suDungDichVus: null,
+        chiTietHoaDonDVs: null,
+        ten: service.ten,
+        hinhAnh: service.hinhAnh,
+        moTa: service.moTa,
+        gia: service.gia,
+        trangThai: service.trangThai
+      };
+
+      console.log('Updating service with ID:', id);
+      console.log('Service data:', serviceData);
+
+      // Thử nhiều cách gọi API
+      const apiEndpoints = [
+        // 1. Thông qua Next.js API route
+        { url: `${BASE_URL}/services/${id}`, method: 'put' },
+        // 2. Thông qua proxy chung với tham số query id
+        { url: `${BASE_URL}/DichVu/Update?id=${id}`, method: 'put' },
+        // 3. Trực tiếp đến backend với tham số query id
+        { url: `https://ptud-web-1.onrender.com/api/DichVu/Update?id=${id}`, method: 'put' }
+      ];
+
+      let lastError = null;
+
+      // Thử từng endpoint cho đến khi thành công
+      for (const endpoint of apiEndpoints) {
+        try {
+          console.log(`Trying API endpoint: ${endpoint.url}`);
+          const response = await axios({
+            method: endpoint.method,
+            url: endpoint.url,
+            data: serviceData,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            timeout: 10000 // 10 giây timeout
+          });
+
+          console.log('API response:', response);
+          return response.data;
+        } catch (apiError: any) {
+          console.error(`Error with endpoint ${endpoint.url}:`, apiError.response?.data || apiError.message);
+          lastError = apiError;
+          // Tiếp tục thử endpoint tiếp theo
+        }
+      }
+
+      // Nếu tất cả các endpoint đều thất bại
+      throw lastError || new Error('Không thể cập nhật dịch vụ sau khi thử tất cả các endpoint');
     } catch (error) {
       console.error(`Error updating service with id ${id}:`, error);
       throw error;
@@ -92,7 +143,7 @@ export const serviceApi = {
       throw error;
     }
   },
-  
+
   // Đặt dịch vụ
   bookService: async (dichVuDat: {
     maDV: number;
@@ -110,7 +161,7 @@ export const serviceApi = {
       throw error;
     }
   },
-  
+
   // Lấy dịch vụ đã đặt theo người dùng
   getBookedServicesByUser: async (userId: number | string): Promise<any[]> => {
     try {
@@ -121,7 +172,7 @@ export const serviceApi = {
       throw error;
     }
   },
-  
+
   // Hủy dịch vụ đã đặt
   cancelBookedService: async (id: number): Promise<any> => {
     try {
@@ -134,4 +185,4 @@ export const serviceApi = {
   }
 };
 
-export default serviceApi; 
+export default serviceApi;

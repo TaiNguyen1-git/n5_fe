@@ -11,7 +11,8 @@ import {
   SettingOutlined,
   HomeOutlined,
   FileTextOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  BellOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import { logout, getCurrentUser } from '../../../services/authService';
@@ -22,13 +23,14 @@ import RoomManagement from './room-management';
 import BillManagement from './bill-management';
 import BookingManagement from './booking-management';
 import EmployeeManagement from './employee-management';
+import ServiceManagement from './service-management';
 import Dashboard from './dashboard';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 const AdminDashboard = () => {
-  const [tab, setTab] = useState<'dashboard' | 'staff' | 'user' | 'workshift' | 'room' | 'bill' | 'booking' | 'employee'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'staff' | 'user' | 'workshift' | 'room' | 'bill' | 'booking' | 'employee' | 'service'>('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const router = useRouter();
@@ -94,6 +96,11 @@ const AdminDashboard = () => {
               label: 'Quản lý ca làm',
             },
             {
+              key: 'service',
+              icon: <BellOutlined />,
+              label: 'Quản lý dịch vụ',
+            },
+            {
               key: 'logout',
               icon: <LogoutOutlined />,
               label: 'Đăng xuất',
@@ -126,6 +133,7 @@ const AdminDashboard = () => {
           {tab === 'booking' && <BookingManagement />}
           {tab === 'bill' && <BillManagement />}
           {tab === 'workshift' && <WorkShiftManagement />}
+          {tab === 'service' && <ServiceManagement />}
         </Content>
       </Layout>
     </Layout>

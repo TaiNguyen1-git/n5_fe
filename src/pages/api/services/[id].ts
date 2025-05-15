@@ -28,14 +28,14 @@ export default async function handler(
     try {
       // Get specific service from backend API
       const response = await axios.get(`${BACKEND_API_URL}/DichVu/GetById?id=${id}`);
-      
+
       if (!response.data) {
         return res.status(404).json({
           success: false,
           message: 'Không tìm thấy dịch vụ'
         });
       }
-      
+
       // Transform data for frontend
       const service = {
         id: response.data.maDichVu,
@@ -46,7 +46,7 @@ export default async function handler(
         gia: response.data.gia,
         trangThai: response.data.trangThai
       };
-      
+
       return res.status(200).json({
         success: true,
         data: service
@@ -62,14 +62,14 @@ export default async function handler(
     try {
       // Check for required fields
       const { ten, moTa, hinhAnh, gia, trangThai } = req.body;
-      
+
       if (!ten || !moTa || !gia) {
         return res.status(400).json({
           success: false,
           message: 'Vui lòng cung cấp đầy đủ thông tin dịch vụ'
         });
       }
-      
+
       // Prepare service data
       const serviceData = {
         maDichVu: id,
@@ -79,10 +79,22 @@ export default async function handler(
         gia: Number(gia),
         trangThai: trangThai !== undefined ? Number(trangThai) : 1
       };
-      
+
+      // Log dữ liệu trước khi gọi API
+      console.log('API route: Updating service with ID:', id);
+      console.log('API route: Service data:', serviceData);
+      console.log('API route: Calling backend API:', `${BACKEND_API_URL}/DichVu/Update`);
+
       // Update service through backend API
-      const response = await axios.put(`${BACKEND_API_URL}/DichVu/Update`, serviceData);
-      
+      const response = await axios.put(`${BACKEND_API_URL}/DichVu/Update`, serviceData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      console.log('API route: Backend API response:', response.data);
+
       return res.status(200).json({
         success: true,
         message: 'Cập nhật dịch vụ thành công',
@@ -99,7 +111,7 @@ export default async function handler(
     try {
       // Delete service through backend API
       await axios.delete(`${BACKEND_API_URL}/DichVu/Delete?id=${id}`);
-      
+
       return res.status(200).json({
         success: true,
         message: 'Xóa dịch vụ thành công'
@@ -118,4 +130,4 @@ export default async function handler(
       message: `Phương thức ${req.method} không được hỗ trợ`
     });
   }
-} 
+}

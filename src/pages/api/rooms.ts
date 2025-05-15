@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
-import dayjs from 'dayjs';
 
 // Define response type
 type ResponseData = {
@@ -29,7 +28,7 @@ export default async function handler(
   if (req.method === 'GET') {
     try {
       // Forward the request to the actual API
-      const response = await axios.get(`${API_URL}/DatPhong/GetAll`, {
+      const response = await axios.get(`${API_URL}/Phong/GetAll`, {
         headers: {
           'Accept': '*/*',
           'Content-Type': 'application/json'
@@ -42,41 +41,80 @@ export default async function handler(
     } catch (error: any) {
       console.error('API proxy error:', error.message);
       console.log('Using mock data as fallback');
-
+      
       // Generate mock data as fallback
-      const today = dayjs();
-      const mockBookings = [
+      const mockRooms = [
         {
-          maDatPhong: 1,
           maPhong: 101,
-          tenKH: 'Nguyễn Văn A',
-          ngayBatDau: today.format('YYYY-MM-DD'),
-          ngayKetThuc: today.add(2, 'day').format('YYYY-MM-DD'),
-          trangThai: 1
+          soPhong: '101',
+          soNguoi: 2,
+          moTa: 'Phòng đôi tiêu chuẩn',
+          trangThai: 1,
+          trangThaiPhong: {
+            maTT: 1,
+            tenTT: 'Trống'
+          },
+          loaiPhong: {
+            maLoai: 1,
+            tenLoai: 'Standard',
+            giaPhong: 500000
+          }
         },
         {
-          maDatPhong: 2,
           maPhong: 102,
-          tenKH: 'Trần Thị B',
-          ngayBatDau: today.subtract(2, 'day').format('YYYY-MM-DD'),
-          ngayKetThuc: today.format('YYYY-MM-DD'),
-          trangThai: 1
+          soPhong: '102',
+          soNguoi: 2,
+          moTa: 'Phòng đôi tiêu chuẩn',
+          trangThai: 2,
+          trangThaiPhong: {
+            maTT: 2,
+            tenTT: 'Đang sử dụng'
+          },
+          loaiPhong: {
+            maLoai: 1,
+            tenLoai: 'Standard',
+            giaPhong: 500000
+          }
         },
         {
-          maDatPhong: 3,
-          maPhong: 103,
-          tenKH: 'Lê Văn C',
-          ngayBatDau: today.add(1, 'day').format('YYYY-MM-DD'),
-          ngayKetThuc: today.add(3, 'day').format('YYYY-MM-DD'),
-          trangThai: 1
+          maPhong: 201,
+          soPhong: '201',
+          soNguoi: 4,
+          moTa: 'Phòng gia đình cao cấp',
+          trangThai: 1,
+          trangThaiPhong: {
+            maTT: 1,
+            tenTT: 'Trống'
+          },
+          loaiPhong: {
+            maLoai: 2,
+            tenLoai: 'Deluxe',
+            giaPhong: 800000
+          }
+        },
+        {
+          maPhong: 301,
+          soPhong: '301',
+          soNguoi: 2,
+          moTa: 'Phòng đôi hạng sang',
+          trangThai: 1,
+          trangThaiPhong: {
+            maTT: 1,
+            tenTT: 'Trống'
+          },
+          loaiPhong: {
+            maLoai: 3,
+            tenLoai: 'Suite',
+            giaPhong: 1200000
+          }
         }
       ];
-
+      
       // Return mock data in the same format as the API would
       return res.status(200).json({
         success: true,
         message: 'Using mock data as fallback',
-        items: mockBookings
+        items: mockRooms
       });
     }
   } else {

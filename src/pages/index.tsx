@@ -48,20 +48,29 @@ export default function Home() {
   const router = useRouter();
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
-  
+
   // Guest count state
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [rooms, setRooms] = useState(1);
-  
+
   // Rooms state
   const [hotelRooms, setHotelRooms] = useState<FormattedRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Kiểm tra nếu người dùng là nhân viên, chuyển hướng đến trang staff
+
+  // Thêm trạng thái kiểm tra xác thực
+  const [authChecking, setAuthChecking] = useState(true);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  // Kiểm tra nếu người dùng là admin hoặc nhân viên, chuyển hướng đến trang tương ứng
   useEffect(() => {
-    const checkUserRole = () => {
+    const checkUserRole = async () => {
+      setAuthChecking(true);
+
+      // Thêm độ trễ nhỏ để đảm bảo cookies được đọc đúng
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       if (isAuthenticated()) {
         const user = getCurrentUser();
         if (user) {
@@ -71,37 +80,49 @@ export default function Home() {
             router.push('/staff');
             return;
           }
-          
+
           // Kiểm tra loaiTK hoặc role
           const loaiTK = typeof user.loaiTK === 'string' ? parseInt(user.loaiTK, 10) : user.loaiTK;
+          const isAdmin = user.role === 'admin' || loaiTK === 1;
           const isStaff = user.role === 'staff' || loaiTK === 2;
-          
+
           console.log('Home page - Kiểm tra quyền người dùng:', {
             username: user.username,
             role: user.role,
             loaiTK: loaiTK,
+            isAdmin: isAdmin,
             isStaff: isStaff
           });
-          
-          if (isStaff) {
+
+          // Kiểm tra admin trước, sau đó mới kiểm tra staff
+          if (isAdmin) {
+            console.log('Home page - Phát hiện tài khoản admin, chuyển hướng đến /admin');
+            router.push('/admin');
+            return; // Không render trang home
+          } else if (isStaff) {
             console.log('Home page - Phát hiện tài khoản nhân viên, chuyển hướng đến /staff');
             router.push('/staff');
+            return; // Không render trang home
           }
         }
       }
+
+      // Nếu không phải admin hoặc staff, cho phép hiển thị trang home
+      setAuthChecking(false);
+      setShouldRender(true);
     };
-    
+
     checkUserRole();
   }, [router]);
-  
+
   useEffect(() => {
     fetchRooms();
   }, []);
-  
+
   const fetchRooms = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       // Sử dụng API proxy của Next.js thay vì gọi trực tiếp
       const response = await axios.get('/api/proxy-rooms', {
@@ -110,7 +131,7 @@ export default function Home() {
           'Accept': '*/*'
         }
       });
-      
+
       // Kiểm tra response có data không
       if (response.data && Array.isArray(response.data.items)) {
         // Format dữ liệu phòng theo đúng cấu trúc hiện tại
@@ -126,9 +147,9 @@ export default function Home() {
           loaiPhong: room.loaiPhong?.tenLoai || 'Standard',
           features: room.moTa ? room.moTa.split(',').map((item: string) => item.trim()) : ['Wi-Fi miễn phí', 'Điều hòa', 'TV']
         }));
-        
+
         setHotelRooms(formattedRooms);
-        
+
         // Cache dữ liệu
         try {
           localStorage.setItem('cached_rooms', JSON.stringify(formattedRooms));
@@ -141,7 +162,7 @@ export default function Home() {
       }
     } catch (err) {
       console.error('Error fetching rooms:', err);
-      
+
       // Thử lấy dữ liệu từ cache nếu có lỗi
       try {
         const cachedRoomsStr = localStorage.getItem('cached_rooms');
@@ -152,9 +173,9 @@ export default function Home() {
         } else {
           // Kiểm tra lỗi timeout
           if (err instanceof Error) {
-            if (err.message.includes('timeout') || 
-                err.message.includes('network error') || 
-                (err as any).code === 'ECONNABORTED' || 
+            if (err.message.includes('timeout') ||
+                err.message.includes('network error') ||
+                (err as any).code === 'ECONNABORTED' ||
                 (err as any).code === 'ERR_NETWORK') {
               setError('Máy chủ đang phản hồi chậm. Vui lòng thử lại sau hoặc kiểm tra kết nối internet của bạn.');
             } else {
@@ -176,25 +197,69 @@ export default function Home() {
   // Handle search submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!checkInDate || !checkOutDate) {
       alert('Vui lòng chọn ngày nhận phòng và trả phòng');
       return;
     }
-    
+
     // Get total guest count
     const totalGuests = adults + children;
-    
+
     // Filter rooms based on guest count
     const filteredRooms = hotelRooms.filter(room => room.soLuongKhach >= totalGuests);
     setHotelRooms(filteredRooms.length > 0 ? filteredRooms : hotelRooms);
-    
+
     // Scroll to the rooms section
     const roomsSection = document.getElementById('popular-rooms');
     if (roomsSection) {
       roomsSection.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  // Hiển thị màn hình loading khi đang kiểm tra xác thực
+  if (authChecking) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        width: '100%',
+        backgroundColor: '#f5f5f5'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          padding: '20px',
+          borderRadius: '8px',
+          backgroundColor: 'white',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+        }}>
+          <h2 style={{ marginBottom: '20px', color: '#333' }}>Đang tải...</h2>
+          <div style={{
+            display: 'inline-block',
+            width: '50px',
+            height: '50px',
+            border: '5px solid #f3f3f3',
+            borderTop: '5px solid #3498db',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          <style jsx>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // Chỉ render trang chính khi đã kiểm tra xong và xác định đây là trang cần hiển thị
+  if (!shouldRender) {
+    return null; // Không hiển thị gì nếu đang chuyển hướng
+  }
 
   return (
     <Layout>
@@ -203,42 +268,42 @@ export default function Home() {
         <section className={styles.hero}>
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Chào mừng đến với Khách sạn Nhóm 5</h1>
-            
+
             <div className={styles.searchBox}>
               <div className={styles.searchTabs}>
                 <div className={styles.searchTab}>Đặt phòng</div>
                 <div className={styles.searchTab}>Đặt tour</div>
               </div>
-              
+
               <form onSubmit={handleSearch}>
                 <div className={styles.searchFields}>
                   <div className={styles.fieldGroup}>
                     <label>Nhận phòng</label>
                     <div className={styles.dateInput}>
-                      <input 
-                        type="date" 
+                      <input
+                        type="date"
                         value={checkInDate}
                         onChange={(e) => setCheckInDate(e.target.value)}
                         min={new Date().toISOString().split('T')[0]}
                       />
                     </div>
                   </div>
-                  
+
                   <div className={styles.fieldGroup}>
                     <label>Trả phòng</label>
                     <div className={styles.dateInput}>
-                      <input 
-                        type="date" 
+                      <input
+                        type="date"
                         value={checkOutDate}
                         onChange={(e) => setCheckOutDate(e.target.value)}
                         min={checkInDate || new Date().toISOString().split('T')[0]}
                       />
                     </div>
                   </div>
-                  
+
                   <div className={styles.fieldGroup}>
                     <label>Số người</label>
-                    <select 
+                    <select
                       value={adults}
                       onChange={(e) => setAdults(parseInt(e.target.value))}
                     >
@@ -247,10 +312,10 @@ export default function Home() {
                       ))}
                     </select>
                   </div>
-                  
+
                   <div className={styles.fieldGroup}>
                     <label>Trẻ em</label>
-                    <select 
+                    <select
                       value={children}
                       onChange={(e) => setChildren(parseInt(e.target.value))}
                     >
@@ -259,7 +324,7 @@ export default function Home() {
                       ))}
                     </select>
                   </div>
-                  
+
                   <div className={styles.searchButtonContainer}>
                     <button type="submit" className={styles.searchButton}>Tìm phòng</button>
                   </div>
@@ -268,12 +333,12 @@ export default function Home() {
             </div>
           </div>
         </section>
-        
+
         {/* Popular rooms section */}
         <section className={styles.popularRooms} id="popular-rooms">
           <div className={styles.sectionContent}>
             <h2 className={styles.sectionTitle}>Phòng phổ biến</h2>
-            
+
             {loading ? (
               <div className={styles.loading}>Đang tải phòng...</div>
             ) : error ? (
@@ -285,9 +350,9 @@ export default function Home() {
               <div className={styles.roomGrid}>
                 {hotelRooms.map(room => (
                   <Link href={`/room/${room.id}`} key={room.id} className={styles.roomCard}>
-                    <img 
-                      src={room.hinhAnh} 
-                      alt={room.tenPhong} 
+                    <img
+                      src={room.hinhAnh}
+                      alt={room.tenPhong}
                       className={styles.roomImage}
                       onError={(e) => {
                         // Fallback if image fails to load
