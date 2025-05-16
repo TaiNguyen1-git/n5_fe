@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
     responseLimit: '4mb',
     externalResolver: true,
   },
+  transpilePackages: [
+    'rc-util',
+    'rc-picker',
+    'rc-pagination',
+    '@ant-design/icons-svg'
+  ],
   async rewrites() {
     return [
       // API cơ bản

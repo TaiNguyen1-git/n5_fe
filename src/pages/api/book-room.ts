@@ -10,9 +10,9 @@ export default async function handler(
 ) {
   // Chỉ chấp nhận phương thức POST
   if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      success: false, 
-      message: 'Method Not Allowed' 
+    return res.status(405).json({
+      success: false,
+      message: 'Method Not Allowed'
     });
   }
 
@@ -21,14 +21,32 @@ export default async function handler(
     const bookingData = req.body;
 
     // Kiểm tra dữ liệu cần thiết
-    if (!bookingData.maPhong || !bookingData.tenKH || !bookingData.email ||
-        !bookingData.ngayBatDau || !bookingData.ngayKetThuc || !bookingData.soLuongKhach) {
+    if (!bookingData.maPhong || !bookingData.ngayBatDau || !bookingData.ngayKetThuc || !bookingData.soLuongKhach) {
       return res.status(400).json({
         success: false,
         message: 'Thiếu thông tin đặt phòng cần thiết'
       });
     }
-    
+
+    // Đảm bảo các trường thông tin cá nhân không bị null hoặc undefined
+    bookingData.tenKH = bookingData.tenKH || 'Khách hàng';
+    bookingData.email = bookingData.email || 'guest@example.com';
+    bookingData.soDienThoai = bookingData.soDienThoai || '';
+
+    // Log thông tin đặt phòng để debug
+    console.log('Booking data:', {
+      maPhong: bookingData.maPhong,
+      maKH: bookingData.maKH,
+      tenKH: bookingData.tenKH,
+      email: bookingData.email,
+      soDienThoai: bookingData.soDienThoai,
+      ngayBatDau: bookingData.ngayBatDau,
+      ngayKetThuc: bookingData.ngayKetThuc,
+      soLuongKhach: bookingData.soLuongKhach,
+      tongTien: bookingData.tongTien,
+      trangThai: bookingData.trangThai || 1
+    });
+
     // Gọi API backend để đặt phòng
     const response = await axios.post(`${BACKEND_API_URL}/DatPhong/Create`, bookingData, {
       timeout: 20000, // 20s timeout
@@ -46,7 +64,7 @@ export default async function handler(
     });
   } catch (error: any) {
     console.error('Error booking room:', error);
-    
+
     // Xử lý lỗi cụ thể
     if (axios.isAxiosError(error)) {
       if (error.response) {
@@ -63,10 +81,10 @@ export default async function handler(
         });
       }
     }
-    
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Không thể đặt phòng. Vui lòng thử lại sau.' 
+
+    return res.status(500).json({
+      success: false,
+      message: 'Không thể đặt phòng. Vui lòng thử lại sau.'
     });
   }
-} 
+}

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { 
+import {
   UserOutlined,
   DownOutlined,
   LogoutOutlined,
@@ -9,7 +9,6 @@ import {
   PhoneOutlined,
   HomeOutlined,
   CalendarOutlined,
-  StarOutlined,
   InfoCircleOutlined,
   MailOutlined,
   MenuOutlined,
@@ -108,11 +107,7 @@ const Header: React.FC = () => {
     setShowMobileMenu(false);
   };
 
-  const handleReviewsClick = () => {
-    router.push('/reviews');
-    setShowDropdown(false);
-    setShowMobileMenu(false);
-  };
+
 
   return (
     <header className={styles.header}>
@@ -122,9 +117,9 @@ const Header: React.FC = () => {
             <span>Nhóm 5</span>
           </Link>
         </div>
-        
-        <button 
-          className={styles.mobileMenuButton} 
+
+        <button
+          className={styles.mobileMenuButton}
           onClick={toggleMobileMenu}
           aria-label={showMobileMenu ? "Đóng menu" : "Mở menu"}
         >
@@ -141,7 +136,7 @@ const Header: React.FC = () => {
             </li>
             <li className={styles.navItem}>
               <div className={styles.navLink} ref={roomsServicesDropdownRef}>
-                <div 
+                <div
                   onClick={() => setShowRoomsServicesDropdown(!showRoomsServicesDropdown)}
                   className={styles.dropdownTrigger}
                 >
@@ -149,7 +144,7 @@ const Header: React.FC = () => {
                   <span>Phòng & Dịch vụ</span>
                   <DownOutlined className={`${styles.dropdownArrow} ${showRoomsServicesDropdown ? styles.dropdownArrowOpen : ''}`} />
                 </div>
-                
+
                 {showRoomsServicesDropdown && (
                   <div className={styles.dropdown}>
                     <button onClick={handleRoomsClick} className={styles.dropdownItem}>
@@ -170,12 +165,7 @@ const Header: React.FC = () => {
                 <span>Đặt phòng</span>
               </Link>
             </li>
-            <li className={`${styles.navItem} ${router.pathname === '/reviews' || router.pathname.startsWith('/reviews/') ? styles.active : ''}`}>
-              <Link href="/reviews" className={styles.navLink}>
-                <StarOutlined className={styles.navIcon} />
-                <span>Đánh giá</span>
-              </Link>
-            </li>
+
             <li className={`${styles.navItem} ${router.pathname === '/about' ? styles.active : ''}`}>
               <Link href="/about" className={styles.navLink}>
                 <InfoCircleOutlined className={styles.navIcon} />
@@ -199,10 +189,10 @@ const Header: React.FC = () => {
               <span>+84 123 456 789</span>
             </div>
           </div>
-          
+
           {user ? (
             <div className={styles.userMenu} ref={dropdownRef}>
-              <button 
+              <button
                 className={styles.userButton}
                 onClick={() => setShowDropdown(!showDropdown)}
                 aria-label="User menu"
@@ -216,7 +206,7 @@ const Header: React.FC = () => {
                   <DownOutlined className={`${styles.dropdownArrow} ${showDropdown ? styles.dropdownArrowOpen : ''}`} />
                 </div>
               </button>
-              
+
               {showDropdown && (
                 <div className={styles.dropdown}>
                   <button onClick={handleProfileClick} className={styles.dropdownItem}>
@@ -227,10 +217,7 @@ const Header: React.FC = () => {
                     <CalendarOutlined className={styles.dropdownIcon} />
                     <span>Lịch sử đặt phòng</span>
                   </button>
-                  <button onClick={handleReviewsClick} className={styles.dropdownItem}>
-                    <StarOutlined className={styles.dropdownIcon} />
-                    <span>Đánh giá & Nhận xét</span>
-                  </button>
+
                   <div className={styles.dropdownDivider}></div>
                   <button onClick={handleLogout} className={styles.dropdownItem}>
                     <LogoutOutlined className={styles.dropdownIcon} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Tag, Space, Modal, Input, Card, Row, Col, message, Form, InputNumber, Upload, Select } from 'antd';
+import { Table, Button, Tag, Space, Modal, Input, Card, Row, Col, message, Form, InputNumber, Upload, Select, Statistic } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import axios from 'axios';
@@ -203,7 +203,7 @@ const ServiceManagement: React.FC = () => {
       setUploadLoading(true);
       return;
     }
-    
+
     if (info.file.status === 'done') {
       // Lấy URL từ response
       const imageUrl = info.file.response?.url || '';
@@ -238,7 +238,7 @@ const ServiceManagement: React.FC = () => {
         await serviceApi.createService(serviceData);
         message.success('Thêm dịch vụ mới thành công');
       }
-      
+
       setIsModalVisible(false);
       fetchServices();
     } catch (error) {
@@ -273,14 +273,14 @@ const ServiceManagement: React.FC = () => {
           </Select>
         </Space>
         <Space>
-          <Button 
+          <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAdd}
           >
             Thêm dịch vụ
           </Button>
-          <Button 
+          <Button
             type="default"
             icon={<ReloadOutlined />}
             onClick={handleRefresh}
@@ -358,7 +358,7 @@ const ServiceManagement: React.FC = () => {
             label="Giá dịch vụ (VNĐ)"
             rules={[{ required: true, message: 'Vui lòng nhập giá dịch vụ' }]}
           >
-            <InputNumber 
+            <InputNumber
               placeholder="Nhập giá dịch vụ"
               style={{ width: '100%' }}
               formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Table, Tag, Button, Space, Modal, Rate, Input, Tabs, Card, Statistic, Row, Col, Select, DatePicker, Empty } from 'antd';
-import { EyeOutlined, CloseOutlined, CheckOutlined, StarOutlined, HistoryOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Table, Tag, Button, Space, Modal, Input, Tabs, Card, Statistic, Row, Col, Select, DatePicker, Empty } from 'antd';
+import { EyeOutlined, CloseOutlined, CheckOutlined, HistoryOutlined, CalendarOutlined } from '@ant-design/icons';
 import styles from '../../styles/Bookings.module.css';
 import { isAuthenticated, redirectToLoginIfNotAuthenticated, getCurrentUser } from '../../services/authService';
 import { getUserBookings, cancelBooking } from '../../services/roomService';
@@ -15,7 +15,6 @@ const { RangePicker } = DatePicker;
 
 // Backend API endpoints
 const BASE_URL = 'https://ptud-web-1.onrender.com/api';
-const REVIEWS_API = `${BASE_URL}/DanhGia`;
 
 interface ApiBooking {
   maHD: number;
@@ -50,7 +49,6 @@ interface Booking {
   createdAt: string;
   ngayTao?: string;
   trangThai: number;
-  hasReview: boolean;
 }
 
 export default function BookingHistory() {
@@ -59,12 +57,7 @@ export default function BookingHistory() {
   const [loading, setLoading] = useState(true);
   const [viewBooking, setViewBooking] = useState<Booking | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
-  const [reviewData, setReviewData] = useState({
-    rating: 5,
-    comment: '',
-    bookingId: 0
-  });
+
   const [activeTab, setActiveTab] = useState('all');
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [error, setError] = useState('');
@@ -83,17 +76,17 @@ export default function BookingHistory() {
   const fetchBookings = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       const user = getCurrentUser();
       if (!user) {
         setLoading(false);
         return;
       }
-      
+
       // Fetch user's bookings
       const response = await getUserBookings(user.id.toString());
-      
+
       if (response.success && response.data) {
         // Get room details for each booking to get room name and type
         const bookingData = response.data as ApiBooking[];
@@ -104,21 +97,11 @@ export default function BookingHistory() {
               const roomResponse = await axios.get(`${BASE_URL}/Phong/GetById?id=${booking.maPhong}`, {
                 timeout: 5000
               });
-              
+
               const room = roomResponse.data;
-              
-              // Check if this booking has a review
-              let hasReview = false;
-              try {
-                const reviewsResponse = await axios.get(
-                  `${REVIEWS_API}/GetByBooking?bookingId=${booking.maHD}`, 
-                  { timeout: 3000 }
-                );
-                hasReview = Array.isArray(reviewsResponse.data) && reviewsResponse.data.length > 0;
-              } catch (reviewErr) {
-                console.warn(`Error checking reviews for booking ${booking.maHD}:`, reviewErr);
-              }
-              
+
+
+
               // Map API response to our interface
               return {
                 id: booking.maHD,
@@ -137,12 +120,11 @@ export default function BookingHistory() {
                 paymentStatus: booking.trangThai === 2 ? 'refunded' : 'paid',
                 createdAt: booking.ngayTao || new Date().toISOString(),
                 ngayTao: booking.ngayTao,
-                trangThai: booking.trangThai,
-                hasReview
+                trangThai: booking.trangThai
               };
             } catch (roomErr) {
               console.warn(`Error fetching room data for booking ${booking.maHD}:`, roomErr);
-              
+
               // Return basic booking data even if we couldn't get room details
               return {
                 id: booking.maHD,
@@ -161,13 +143,12 @@ export default function BookingHistory() {
                 paymentStatus: booking.trangThai === 2 ? 'refunded' : 'paid',
                 createdAt: booking.ngayTao || new Date().toISOString(),
                 ngayTao: booking.ngayTao,
-                trangThai: booking.trangThai,
-                hasReview: false
+                trangThai: booking.trangThai
               };
             }
           })
         );
-        
+
         setBookings(enrichedBookings as Booking[]);
       } else {
         setError(response.message || 'Không thể tải dữ liệu đặt phòng');
@@ -181,19 +162,19 @@ export default function BookingHistory() {
       setLoading(false);
     }
   };
-  
+
   // Helper function to determine booking status
   const getBookingStatus = (checkInDate: string, checkOutDate: string, trangThai?: number): 'upcoming' | 'active' | 'completed' | 'cancelled' => {
     if (trangThai === 0) return 'cancelled';
-    
+
     const now = dayjs();
     const checkIn = dayjs(checkInDate);
     const checkOut = dayjs(checkOutDate);
-    
+
     if (now.isBefore(checkIn)) return 'upcoming';
     if (now.isAfter(checkOut)) return 'completed';
     if (now.isAfter(checkIn) && now.isBefore(checkOut)) return 'active';
-    
+
     return 'completed';
   };
 
@@ -214,15 +195,15 @@ export default function BookingHistory() {
           const response = await cancelBooking(id);
           if (response.success) {
             // Update booking status locally
-            setBookings(bookings.map(booking => 
+            setBookings(bookings.map(booking =>
               booking.id === id ? {
-                ...booking, 
-                status: 'cancelled', 
+                ...booking,
+                status: 'cancelled',
                 paymentStatus: 'refunded',
                 trangThai: 0
               } : booking
             ));
-            
+
             Modal.success({
               title: 'Hủy đặt phòng thành công',
               content: 'Đã hủy đặt phòng thành công. Tiền hoàn lại sẽ được xử lý trong vòng 7 ngày làm việc.'
@@ -244,51 +225,7 @@ export default function BookingHistory() {
     });
   };
 
-  const handleOpenReviewModal = (booking: Booking) => {
-    setReviewData({
-      rating: 5,
-      comment: '',
-      bookingId: booking.id
-    });
-    setIsReviewModalVisible(true);
-  };
 
-  const handleSubmitReview = async () => {
-    try {
-      // Submit review to API
-      const response = await axios.post(`${REVIEWS_API}/Create`, {
-        maHD: reviewData.bookingId,
-        soSao: reviewData.rating,
-        noiDung: reviewData.comment,
-        trangThai: 0 // Pending approval
-      });
-      
-      if (response.status === 201 || response.status === 200) {
-        // Update UI
-        setBookings(bookings.map(booking => 
-          booking.id === reviewData.bookingId ? {...booking, hasReview: true} : booking
-        ));
-        
-        Modal.success({
-          title: 'Đánh giá thành công',
-          content: 'Cảm ơn bạn đã gửi đánh giá. Đánh giá của bạn sẽ được hiển thị sau khi được duyệt.'
-        });
-      } else {
-        Modal.error({
-          title: 'Lỗi',
-          content: 'Không thể gửi đánh giá. Vui lòng thử lại sau.'
-        });
-      }
-    } catch (err) {
-      console.error('Error submitting review:', err);
-      Modal.error({
-        title: 'Lỗi',
-        content: 'Không thể gửi đánh giá. Vui lòng thử lại sau.'
-      });
-    } finally {
-      setIsReviewModalVisible(false);
-    }
-  };
 
   const filteredBookings = bookings.filter(booking => {
     // Filter by tab
@@ -386,17 +323,17 @@ export default function BookingHistory() {
       key: 'action',
       render: (text: string, record: Booking) => (
         <Space size="small">
-          <Button 
-            icon={<EyeOutlined />} 
+          <Button
+            icon={<EyeOutlined />}
             onClick={() => handleViewBooking(record)}
             size="small"
           >
             Chi tiết
           </Button>
-          
+
           {record.status === 'upcoming' && (
-            <Button 
-              icon={<CloseOutlined />} 
+            <Button
+              icon={<CloseOutlined />}
               onClick={() => handleCancelBooking(record.id)}
               size="small"
               danger
@@ -404,17 +341,8 @@ export default function BookingHistory() {
               Hủy đặt phòng
             </Button>
           )}
-          
-          {record.status === 'completed' && !record.hasReview && (
-            <Button 
-              icon={<StarOutlined />} 
-              onClick={() => handleOpenReviewModal(record)}
-              size="small"
-              type="primary"
-            >
-              Đánh giá
-            </Button>
-          )}
+
+
         </Space>
       ),
     },
@@ -433,9 +361,9 @@ export default function BookingHistory() {
       <div className={styles.container}>
         <div className={styles.content}>
           <h1 className={styles.title}>Lịch sử đặt phòng</h1>
-          
+
           {error && <div className={styles.error}>{error}</div>}
-          
+
           {/* Dashboard Stats */}
           <div className={styles.bookingStats}>
             <Row gutter={[16, 16]}>
@@ -502,7 +430,7 @@ export default function BookingHistory() {
               </Col>
             </Row>
           </div>
-          
+
           {/* Filters */}
           <div className={styles.filters}>
             <Tabs activeKey={activeTab} onChange={setActiveTab}>
@@ -512,23 +440,23 @@ export default function BookingHistory() {
               <TabPane tab="Hoàn thành" key="completed" />
               <TabPane tab="Đã hủy" key="cancelled" />
             </Tabs>
-            
+
             <div className={styles.dateFilter}>
               <span className={styles.filterLabel}>Lọc theo ngày:</span>
-              <RangePicker 
+              <RangePicker
                 onChange={(dates) => setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
                 format="DD/MM/YYYY"
               />
             </div>
           </div>
-          
+
           {/* Bookings Table */}
           {loading ? (
             <div className={styles.loading}>Đang tải dữ liệu...</div>
           ) : bookings.length === 0 ? (
             <Empty description="Bạn chưa có đặt phòng nào" />
           ) : (
-            <Table 
+            <Table
               columns={columns}
               dataSource={filteredBookings}
               rowKey="id"
@@ -537,7 +465,7 @@ export default function BookingHistory() {
             />
           )}
         </div>
-        
+
         {/* Booking Detail Modal */}
         <Modal
           title="Chi tiết đặt phòng"
@@ -559,7 +487,7 @@ export default function BookingHistory() {
                   {getPaymentStatusTag(viewBooking.paymentStatus)}
                 </div>
               </div>
-              
+
               <div className={styles.detailContent}>
                 <Row gutter={16}>
                   <Col span={12}>
@@ -597,23 +525,15 @@ export default function BookingHistory() {
                       <span className={styles.label}>Ngày đặt:</span>
                       <span className={styles.value}>{dayjs(viewBooking.createdAt).format('DD/MM/YYYY')}</span>
                     </div>
-                    <div className={styles.detailItem}>
-                      <span className={styles.label}>Trạng thái đánh giá:</span>
-                      <span className={styles.value}>
-                        {viewBooking.hasReview ? 
-                          <Tag color="green">Đã đánh giá</Tag> : 
-                          <Tag color="orange">Chưa đánh giá</Tag>
-                        }
-                      </span>
-                    </div>
+
                   </Col>
                 </Row>
-                
+
                 <div className={styles.bookingActions}>
                   {viewBooking.status === 'upcoming' && (
-                    <Button 
-                      type="primary" 
-                      danger 
+                    <Button
+                      type="primary"
+                      danger
                       onClick={() => {
                         setIsModalVisible(false);
                         handleCancelBooking(viewBooking.id);
@@ -622,10 +542,10 @@ export default function BookingHistory() {
                       Hủy đặt phòng này
                     </Button>
                   )}
-                  
+
                   {viewBooking.status === 'completed' && !viewBooking.hasReview && (
-                    <Button 
-                      type="primary" 
+                    <Button
+                      type="primary"
                       onClick={() => {
                         setIsModalVisible(false);
                         handleOpenReviewModal(viewBooking);
@@ -639,36 +559,8 @@ export default function BookingHistory() {
             </div>
           )}
         </Modal>
-        
-        {/* Review Modal */}
-        <Modal
-          title="Đánh giá phòng"
-          open={isReviewModalVisible}
-          onOk={handleSubmitReview}
-          onCancel={() => setIsReviewModalVisible(false)}
-          okText="Gửi đánh giá"
-          cancelText="Hủy"
-        >
-          <div className={styles.reviewForm}>
-            <div className={styles.ratingField}>
-              <div className={styles.fieldLabel}>Đánh giá của bạn:</div>
-              <Rate
-                value={reviewData.rating}
-                onChange={value => setReviewData({...reviewData, rating: value})}
-              />
-            </div>
-            
-            <div className={styles.commentField}>
-              <div className={styles.fieldLabel}>Nhận xét:</div>
-              <TextArea
-                rows={4}
-                value={reviewData.comment}
-                onChange={e => setReviewData({...reviewData, comment: e.target.value})}
-                placeholder="Hãy chia sẻ trải nghiệm của bạn về phòng này..."
-              />
-            </div>
-          </div>
-        </Modal>
+
+
       </div>
     </Layout>
   );

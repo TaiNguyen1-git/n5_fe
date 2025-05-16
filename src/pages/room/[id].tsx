@@ -31,16 +31,16 @@ interface BookingFormState {
 export default function RoomDetail() {
   const router = useRouter();
   const { id } = router.query;
-  
+
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [activeImage, setActiveImage] = useState(0);
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
   const [guests, setGuests] = useState(1);
-  
+
   const [bookingForm, setBookingForm] = useState<BookingFormState>({
     guestName: '',
     guestEmail: '',
@@ -49,53 +49,68 @@ export default function RoomDetail() {
     checkOutDate: '',
     totalPrice: 0,
   });
-  
+
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
-  
+
   const userStore = useUserStore();
   const [requireLogin, setRequireLogin] = useState(false);
   const [pendingBooking, setPendingBooking] = useState<any>(null);
   const [bookingMessage, setBookingMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   useEffect(() => {
     // Fetch room data when ID is available
     if (id) {
       fetchRoomData();
     }
   }, [id]);
-  
+
+  // Tự động điền thông tin người dùng đã đăng nhập
+  useEffect(() => {
+    // Kiểm tra người dùng đã đăng nhập chưa
+    const user = userStore.user;
+    if (user && user.token) {
+      // Điền thông tin người dùng vào form
+      setBookingForm(prev => ({
+        ...prev,
+        guestName: user.fullName || user.tenHienThi || '',
+        guestEmail: user.email || '',
+        guestPhone: user.phone || user.phoneNumber || ''
+      }));
+    }
+  }, [userStore.user]);
+
   const fetchRoomData = useCallback(async () => {
     if (!id) return;
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
       const roomId = Array.isArray(id) ? id[0] : id;
       const roomData = await getRoomById(roomId);
-      
+
       if (roomData.success && roomData.data) {
         setRoom(roomData.data);
         // Set document title
         document.title = `${roomData.data.tenPhong} - Khách sạn Nhóm 5`;
-        
+
         // If there's a warning message (like data from cache), show it
         if (roomData.message && roomData.message.includes('bộ nhớ đệm')) {
           setError(roomData.message);
         }
-        
+
         // Thiết lập thời gian nhận/trả phòng mặc định
         const today = new Date();
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        
+
         // Thiết lập giá trị mặc định
         const nextDay = new Date(tomorrow);
         nextDay.setDate(nextDay.getDate() + 1);
-        
+
         setBookingForm(prev => ({
           ...prev,
           checkInDate: formatDateForInput(tomorrow),
@@ -110,9 +125,9 @@ export default function RoomDetail() {
       if (err instanceof Error) {
         // Hiển thị thông báo lỗi thân thiện với người dùng
         if ('isAxiosError' in err) {
-          if ((err as any).code === 'ECONNABORTED' || 
-              (err as any).code === 'ERR_NETWORK' || 
-              err.message.includes('timeout') || 
+          if ((err as any).code === 'ECONNABORTED' ||
+              (err as any).code === 'ERR_NETWORK' ||
+              err.message.includes('timeout') ||
               err.message.includes('Network Error')) {
             setError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet và thử lại sau.');
           } else {
@@ -128,24 +143,24 @@ export default function RoomDetail() {
       setLoading(false);
     }
   }, [id]);
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setBookingForm(prev => ({ ...prev, [name]: value }));
   };
-  
+
   const calculateTotalPrice = useCallback(() => {
     if (!room || !checkInDate || !checkOutDate) return room?.giaTien || 0;
-    
+
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
-    
+
     // Calculate number of nights
     const nights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
-    
+
     return room.giaTien * nights;
   }, [room, checkInDate, checkOutDate]);
-  
+
   const handleBooking = async (bookingData: any) => {
     setIsSubmitting(true);
     setBookingMessage('');
@@ -178,9 +193,9 @@ export default function RoomDetail() {
       const response = await bookRoom({
         maPhong: parseInt(room.id || '0'),
         maKH: user.id ? user.id.toString() : '',
-        tenKH: bookingData.guestName,
-        email: bookingData.email,
-        soDienThoai: bookingData.phoneNumber,
+        tenKH: bookingData.guestName || user.fullName || user.tenHienThi || '',
+        email: bookingData.email || user.email || '',
+        soDienThoai: bookingData.phoneNumber || user.phone || user.phoneNumber || '',
         ngayBatDau: format(new Date(bookingData.checkInDate), 'yyyy-MM-dd'),
         ngayKetThuc: format(new Date(bookingData.checkOutDate), 'yyyy-MM-dd'),
         soLuongKhach: bookingData.guestCount,
@@ -229,19 +244,19 @@ export default function RoomDetail() {
       setIsSubmitting(false);
     }
   };
-  
+
   // Thêm hàm kiểm tra ngày
   const isDateRangeValid = (checkInDate: string, checkOutDate: string): boolean => {
     if (!checkInDate || !checkOutDate) return false;
-    
+
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
-    
+
     // Kiểm tra nếu ngày checkout sau ngày checkin ít nhất 1 ngày
-    return checkOut.getTime() > checkIn.getTime() && 
+    return checkOut.getTime() > checkIn.getTime() &&
            Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)) >= 1;
   };
-  
+
   if (loading) {
     return (
       <div className={styles.container}>
@@ -252,7 +267,7 @@ export default function RoomDetail() {
       </div>
     );
   }
-  
+
   if (error || !room) {
     return (
       <div className={styles.container}>
@@ -266,7 +281,7 @@ export default function RoomDetail() {
       </div>
     );
   }
-  
+
   return (
     <Layout>
       <div className={styles.container}>
@@ -279,8 +294,8 @@ export default function RoomDetail() {
               </div>
               <div className={styles.thumbnails}>
                 {(room.images || [room.hinhAnh]).map((image, index) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className={`${styles.thumbnail} ${index === activeImage ? styles.active : ''}`}
                     onClick={() => setActiveImage(index)}
                   >
@@ -289,17 +304,17 @@ export default function RoomDetail() {
                 ))}
               </div>
             </div>
-            
+
             {/* Room information */}
             <div className={styles.roomInfo}>
               <h1 className={styles.roomName}>{room.tenPhong}</h1>
               <p className={styles.roomPrice}>{room.giaTien?.toLocaleString()} đ / đêm</p>
-              
+
               <div className={styles.roomDescription}>
                 <h2>Mô tả</h2>
                 <p>{room.moTa}</p>
               </div>
-              
+
               <div className={styles.roomFeatures}>
                 <h2>Tiện nghi</h2>
                 <ul className={styles.featureList}>
@@ -308,7 +323,7 @@ export default function RoomDetail() {
                   ))}
                 </ul>
               </div>
-              
+
               <div className={styles.roomDetails}>
                 <h2>Chi tiết</h2>
                 <div className={styles.detailsGrid}>
@@ -317,7 +332,7 @@ export default function RoomDetail() {
                     <span className={styles.detailLabel}>Số khách:</span>
                     <span className={styles.detailValue}>{room.soLuongKhach} người</span>
                 </div>
-                  
+
                 <div className={styles.detailItem}>
                     <span className={styles.detailIcon}>🛏️</span>
                     <span className={styles.detailLabel}>Giường:</span>
@@ -330,16 +345,16 @@ export default function RoomDetail() {
                 </div>
               </div>
             </div>
-            
+
             {/* Booking form */}
             <div className={styles.bookingForm}>
               <h2>Đặt phòng</h2>
-              
+
               {bookingSuccess ? (
                 <div className={styles.bookingSuccess}>
                   <h3>Đặt phòng thành công!</h3>
                   <p>{bookingMessage}</p>
-                  <button 
+                  <button
                     onClick={() => setBookingSuccess(false)}
                     className={styles.newBookingButton}
                   >
@@ -364,35 +379,35 @@ export default function RoomDetail() {
                       {bookingError}
                     </div>
                   )}
-                  
+
                   <div className={styles.formGroup}>
                     <label htmlFor="checkIn">Ngày nhận phòng</label>
-                    <input 
-                      type="date" 
-                      id="checkIn" 
+                    <input
+                      type="date"
+                      id="checkIn"
                       value={checkInDate}
                       onChange={(e) => setCheckInDate(e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
                       required
                     />
                   </div>
-                  
+
                   <div className={styles.formGroup}>
                     <label htmlFor="checkOut">Ngày trả phòng</label>
-                    <input 
-                      type="date" 
-                      id="checkOut" 
+                    <input
+                      type="date"
+                      id="checkOut"
                       value={checkOutDate}
                       onChange={(e) => setCheckOutDate(e.target.value)}
                       min={checkInDate || new Date().toISOString().split('T')[0]}
                       required
                     />
                   </div>
-                  
+
                   <div className={styles.formGroup}>
                     <label htmlFor="guests">Số lượng khách</label>
-                    <select 
-                      id="guests" 
+                    <select
+                      id="guests"
                       value={guests}
                       onChange={(e) => setGuests(parseInt(e.target.value))}
                     >
@@ -401,49 +416,49 @@ export default function RoomDetail() {
                       ))}
                     </select>
                   </div>
-                  
+
                   <div className={styles.formGroup}>
                     <label htmlFor="guestName">Họ tên</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       id="guestName"
-                      name="guestName" 
+                      name="guestName"
                       value={bookingForm.guestName}
                       onChange={handleInputChange}
                       required
                     />
                   </div>
-                  
+
                   <div className={styles.formGroup}>
                     <label htmlFor="guestEmail">Email</label>
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       id="guestEmail"
-                      name="guestEmail" 
+                      name="guestEmail"
                       value={bookingForm.guestEmail}
                       onChange={handleInputChange}
                       required
                     />
                   </div>
-                  
+
                   <div className={styles.formGroup}>
                     <label htmlFor="guestPhone">Số điện thoại</label>
-                    <input 
-                      type="tel" 
+                    <input
+                      type="tel"
                       id="guestPhone"
-                      name="guestPhone" 
+                      name="guestPhone"
                       value={bookingForm.guestPhone}
                       onChange={handleInputChange}
                     />
                   </div>
-                  
+
                   <div className={styles.totalPrice}>
                     <span>Tổng tiền</span>
                     <span className={styles.price}>{calculateTotalPrice().toLocaleString()} đ</span>
                   </div>
-                  
-                  <button 
-                    type="submit" 
+
+                  <button
+                    type="submit"
                     className={styles.bookButton}
                     disabled={bookingLoading || isSubmitting}
                   >
@@ -457,4 +472,4 @@ export default function RoomDetail() {
       </div>
     </Layout>
   );
-} 
+}

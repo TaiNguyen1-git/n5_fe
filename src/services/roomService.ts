@@ -269,8 +269,8 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
     const serverData = {
       maPhong: bookingData.maPhong,
       maKH: bookingData.maKH || null,
-      tenKH: bookingData.tenKH,
-      email: bookingData.email,
+      tenKH: bookingData.tenKH || 'Khách hàng',
+      email: bookingData.email || 'guest@example.com',
       soDienThoai: bookingData.soDienThoai || '',
       ngayBatDau: bookingData.ngayBatDau,
       ngayKetThuc: bookingData.ngayKetThuc,
@@ -278,6 +278,9 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
       tongTien: bookingData.tongTien,
       trangThai: bookingData.trangThai || 1 // Mặc định là 1 (Đang xử lý)
     };
+
+    // Log thông tin đặt phòng để debug
+    console.log('Sending booking data to API:', serverData);
 
     // Gọi API proxy thay vì gọi trực tiếp
     const response = await axios.post('/api/book-room', serverData, {
@@ -323,39 +326,38 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
 
 /**
  * Get user bookings
- * API lấy danh sách đặt phòng của người dùng: GET https://ptud-web-1.onrender.com/api/DatPhong/GetByUser?id={userId}
+ * API lấy danh sách đặt phòng của người dùng: GET /api/booking?userId={userId}
  */
 export const getUserBookings = async (userId: string): Promise<ApiResponse<Booking[]>> => {
   try {
-    // Gọi trực tiếp API lấy danh sách đặt phòng
-    const response = await axios.get(`${BASE_URL}/DatPhong/GetByUser?id=${userId}`, {
-      timeout: 15000, // 15 giây timeout
+    console.log(`Fetching bookings for user ID: ${userId}`);
+
+    // Sử dụng API handler của Next.js thay vì gọi trực tiếp
+    const response = await axios.get(`/api/booking`, {
+      params: { userId },
+      timeout: 20000, // Tăng timeout lên 20 giây
       headers: {
-        'Accept': '*/*'
+        'Accept': '*/*',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     });
 
-    if (Array.isArray(response.data)) {
-      const formattedData = response.data.map((booking: any) => ({
-        maHD: booking.maHD,
-        maPhong: booking.maPhong,
-        maKH: booking.maKH,
-        tenKH: booking.tenKH,
-        email: booking.email,
-        soDienThoai: booking.soDienThoai,
-        ngayBatDau: booking.ngayBatDau,
-        ngayKetThuc: booking.ngayKetThuc,
-        soLuongKhach: booking.soLuongKhach,
-        tongTien: booking.tongTien,
-        trangThai: booking.trangThai,
-        ngayTao: booking.ngayTao
-      }));
+    console.log('Booking API response:', response.status);
 
+    // Kiểm tra dữ liệu trả về
+    if (response.data && response.data.success && Array.isArray(response.data.data)) {
       return {
         success: true,
-        data: formattedData
+        data: response.data.data
+      };
+    } else if (response.data && response.data.success && response.data.data && Array.isArray(response.data.data)) {
+      return {
+        success: true,
+        data: response.data.data
       };
     } else {
+      console.warn('Unexpected API response format:', response.data);
       return {
         success: false,
         message: 'Định dạng dữ liệu không hợp lệ',
@@ -365,8 +367,27 @@ export const getUserBookings = async (userId: string): Promise<ApiResponse<Booki
   } catch (error) {
     console.error('Error fetching user bookings:', error);
 
-    // Xử lý lỗi cụ thể
+    // Xử lý lỗi chi tiết
     if (axios.isAxiosError(error)) {
+      // Lỗi mạng
+      if (error.code === 'ECONNABORTED') {
+        return {
+          success: false,
+          message: 'Kết nối đến máy chủ quá thời gian chờ. Vui lòng thử lại sau.',
+          data: []
+        };
+      }
+
+      // Lỗi không có kết nối
+      if (error.code === 'ERR_NETWORK') {
+        return {
+          success: false,
+          message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet của bạn.',
+          data: []
+        };
+      }
+
+      // Lỗi 404 - Không tìm thấy
       if (error.response?.status === 404) {
         return {
           success: true,
@@ -374,11 +395,30 @@ export const getUserBookings = async (userId: string): Promise<ApiResponse<Booki
           data: []
         };
       }
+
+      // Lỗi 401 - Không có quyền
+      if (error.response?.status === 401) {
+        return {
+          success: false,
+          message: 'Bạn không có quyền truy cập thông tin này. Vui lòng đăng nhập lại.',
+          data: []
+        };
+      }
+
+      // Lỗi khác có response
+      if (error.response) {
+        return {
+          success: false,
+          message: error.response.data?.message || `Lỗi máy chủ: ${error.response.status}`,
+          data: []
+        };
+      }
     }
 
+    // Lỗi chung
     return {
       success: false,
-      message: 'Không thể lấy danh sách đặt phòng. Vui lòng kiểm tra kết nối internet và thử lại sau.',
+      message: 'Không thể lấy danh sách đặt phòng. Vui lòng thử lại sau.',
       data: []
     };
   }
