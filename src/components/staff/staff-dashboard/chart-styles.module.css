@@ -1,0 +1,39 @@
+.chartColumn {
+  transition: all 0.3s ease;
+}
+
+.chartColumn:hover {
+  transform: translateY(-2px);
+}
+
+.chartBarRoom {
+  transition: all 0.3s ease;
+  transform-origin: bottom;
+}
+
+.chartBarRoom:hover {
+  background: #66BB6A !important;
+  transform: scaleX(1.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+
+.chartBarService {
+  transition: all 0.3s ease;
+  transform-origin: bottom;
+}
+
+.chartBarService:hover {
+  background: #42A5F5 !important;
+  transform: scaleX(1.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+
+.chartColumn:hover .chartBarRoom,
+.chartColumn:hover .chartBarService {
+  opacity: 0.95;
+}
+
+.chartColumn:hover .chartLabel {
+  font-weight: bold;
+  color: #333 !important;
+}

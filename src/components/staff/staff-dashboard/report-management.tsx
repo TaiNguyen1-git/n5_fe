@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Statistic, DatePicker, Button, Table, Select, Tabs, Divider, message, Spin } from 'antd';
-import { BarChartOutlined, LineChartOutlined, PieChartOutlined, DownloadOutlined, ReloadOutlined, HomeOutlined, DollarOutlined, TeamOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Statistic, DatePicker, Button, Table, Tabs, Divider, message, Spin, Space, Dropdown, Radio } from 'antd';
+import { BarChartOutlined, LineChartOutlined, PieChartOutlined, DownloadOutlined, ReloadOutlined, HomeOutlined, DollarOutlined, TeamOutlined, CalendarOutlined, FilterOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import axios from 'axios';
+import { revenueService, RevenueData as ApiRevenueData } from '../../../services/revenueService';
+import styles from './chart-styles.module.css';
 
 const { RangePicker } = DatePicker;
-const { Option } = Select;
 const { TabPane } = Tabs;
 
 // Định nghĩa cấu trúc dữ liệu
@@ -55,6 +56,8 @@ const ReportManagement = () => {
   const [roomStatusData, setRoomStatusData] = useState<RoomStatusData[]>([]);
   const [customerData, setCustomerData] = useState<CustomerData[]>([]);
   const [roomTypeData, setRoomTypeData] = useState<RoomTypeData[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState<number>(0);
+  const [quickDateRange, setQuickDateRange] = useState<string>('30days');
 
   // State cho dữ liệu gốc từ API
   const [bills, setBills] = useState<any[]>([]);
@@ -190,10 +193,12 @@ const ReportManagement = () => {
 
   // Tạo biểu đồ
   const renderBarChart = () => {
-    // Kiểm tra xem có dữ liệu không
+    // Không sử dụng dữ liệu mẫu nữa, chỉ sử dụng dữ liệu từ API
+
+    // Kiểm tra xem có dữ liệu từ API không
     if (revenueData.length === 0) {
       return (
-        <div style={{ height: 300, background: '#f0f2f5', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ height: 300, background: 'white', border: '1px solid #e8e8e8', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
             <p>Không có dữ liệu để hiển thị</p>
           </div>
@@ -201,23 +206,241 @@ const ReportManagement = () => {
       );
     }
 
+    // Đảm bảo dữ liệu được sắp xếp theo ngày
+    const sortedData = [...revenueData].sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf());
+
+    // Lọc dữ liệu để chỉ hiển thị các mục có doanh thu > 0
+    let filteredData = sortedData.filter(item => item.totalRevenue > 0);
+
+    // Nếu không có mục nào có doanh thu > 0, hiển thị thông báo không có doanh thu
+    if (filteredData.length === 0) {
+      return (
+        <div style={{ height: 300, background: 'white', border: '1px solid #e8e8e8', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <p>Không có doanh thu trong khoảng thời gian này</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Đã xử lý trường hợp không có doanh thu ở trên
+
     // Tính toán giá trị lớn nhất để làm cơ sở cho chiều cao của các cột
-    const maxValue = Math.max(...revenueData.map(item => item.totalRevenue));
+    const maxValue = Math.max(...filteredData.map(item => item.totalRevenue));
+
+    // Giới hạn số lượng cột hiển thị để tránh quá đông
+    const maxBars = 15;
+    const dataToShow = filteredData.length > maxBars
+      ? filteredData.slice(Math.max(0, filteredData.length - maxBars))
+      : filteredData;
 
     // Hiển thị dữ liệu dưới dạng biểu đồ cột đơn giản
     return (
-      <div style={{ height: 300, background: '#f0f2f5', borderRadius: 8, padding: '16px 8px' }}>
-        <div style={{ display: 'flex', height: '85%', alignItems: 'flex-end', justifyContent: 'space-around' }}>
-          {revenueData.map((item, index) => {
-            const roomHeight = maxValue > 0 ? (item.roomRevenue / maxValue) * 100 : 0;
-            const serviceHeight = maxValue > 0 ? (item.serviceRevenue / maxValue) * 100 : 0;
+      <div style={{ height: 300, background: 'white', border: '1px solid #e8e8e8', borderRadius: 8, padding: '8px 8px', position: 'relative' }}>
+        {/* Bỏ tiêu đề biểu đồ theo yêu cầu */}
+
+        {/* Bỏ các nhãn giá trị trên trục Y theo yêu cầu */}
+
+        {/* Đường kẻ ngang ở giữa */}
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: '50%',
+          height: 1,
+          background: '#e0e0e0',
+          zIndex: 1
+        }}></div>
+
+        {/* Đường kẻ ngang ở 25% */}
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: '25%',
+          height: 1,
+          background: '#eeeeee',
+          zIndex: 1
+        }}></div>
+
+        {/* Đường kẻ ngang ở 75% */}
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: '75%',
+          height: 1,
+          background: '#eeeeee',
+          zIndex: 1
+        }}></div>
+
+        {/* Hiển thị trục X */}
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 2,
+          background: '#d0d0d0',
+          marginBottom: 30
+        }}></div>
+
+        <div style={{
+          display: 'flex',
+          height: '85%',
+          alignItems: 'flex-end',
+          justifyContent: 'space-around',
+          marginTop: 10,
+          marginBottom: 30,
+          position: 'relative',
+          zIndex: 2,
+          background: 'rgba(240, 240, 240, 0.2)'
+        }}>
+          {dataToShow.map((item, index) => {
+            // Đảm bảo chiều cao tối thiểu cho các cột có giá trị
+            const minHeight = item.totalRevenue > 0 ? 5 : 0;
+            const roomHeight = maxValue > 0 ? Math.max(minHeight, (item.roomRevenue / maxValue) * 100) : 0;
+            const serviceHeight = maxValue > 0 ? Math.max(minHeight, (item.serviceRevenue / maxValue) * 100) : 0;
 
             return (
-              <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: `${100 / Math.min(revenueData.length, 10)}%` }}>
-                <div style={{ width: '60%', height: `${roomHeight}%`, background: '#52c41a', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}></div>
-                <div style={{ width: '60%', height: `${serviceHeight}%`, background: '#1890ff' }}></div>
-                <div style={{ marginTop: 8, fontSize: 12, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+              <div
+                key={index}
+                className={styles.chartColumn}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  width: `${100 / Math.min(dataToShow.length, maxBars)}%`,
+                  cursor: 'pointer',
+                  position: 'relative',
+                  paddingLeft: 2,
+                  paddingRight: 2,
+                  background: index % 2 === 0 ? 'rgba(0, 0, 0, 0.02)' : 'transparent',
+                  height: '100%'
+                }}
+                title={`Ngày: ${dayjs(item.date).format('DD/MM/YYYY')}
+Doanh thu phòng: ${item.roomRevenue.toLocaleString('vi-VN')} VNĐ
+Doanh thu dịch vụ: ${item.serviceRevenue.toLocaleString('vi-VN')} VNĐ
+Tổng doanh thu: ${item.totalRevenue.toLocaleString('vi-VN')} VNĐ`}
+                onClick={() => {
+                  message.info(`Doanh thu ngày ${dayjs(item.date).format('DD/MM/YYYY')}: ${item.totalRevenue.toLocaleString('vi-VN')} VNĐ`);
+                }}
+              >
+                <div
+                  className={styles.chartBarRoom}
+                  style={{
+                    width: '70%',
+                    height: roomHeight > 0 ? `${roomHeight}%` : '0',
+                    minHeight: roomHeight > 0 ? '5px' : '0',
+                    background: '#4CAF50',
+                    borderRadius: 4,
+                    position: 'relative',
+                    zIndex: 2,
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                    marginBottom: 1,
+                    border: roomHeight > 0 ? '1px solid #43A047' : 'none'
+                  }}
+                >
+                  {roomHeight > 15 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 2,
+                      left: 0,
+                      right: 0,
+                      textAlign: 'center',
+                      fontSize: 10,
+                      color: 'white',
+                      textShadow: '0 0 2px rgba(0,0,0,0.5)'
+                    }}>
+                      {Math.round(item.roomRevenue / 1000)}
+                    </div>
+                  )}
+                  {roomHeight <= 15 && roomHeight > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: -16,
+                      left: 0,
+                      right: 0,
+                      textAlign: 'center',
+                      fontSize: 10,
+                      color: '#4CAF50',
+                      fontWeight: 'bold'
+                    }}>
+                      {Math.round(item.roomRevenue / 1000)}
+                    </div>
+                  )}
+                </div>
+                <div
+                  className={styles.chartBarService}
+                  style={{
+                    width: '70%',
+                    height: serviceHeight > 0 ? `${serviceHeight}%` : '0',
+                    minHeight: serviceHeight > 0 ? '5px' : '0',
+                    background: '#2196F3',
+                    borderRadius: 4,
+                    position: 'relative',
+                    zIndex: 1,
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                    border: serviceHeight > 0 ? '1px solid #1E88E5' : 'none'
+                  }}>
+                  {serviceHeight > 15 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 2,
+                      left: 0,
+                      right: 0,
+                      textAlign: 'center',
+                      fontSize: 10,
+                      color: 'white',
+                      textShadow: '0 0 2px rgba(0,0,0,0.5)'
+                    }}>
+                      {Math.round(item.serviceRevenue / 1000)}
+                    </div>
+                  )}
+                  {serviceHeight <= 15 && serviceHeight > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: -16,
+                      left: 0,
+                      right: 0,
+                      textAlign: 'center',
+                      fontSize: 10,
+                      color: '#2196F3',
+                      fontWeight: 'bold'
+                    }}>
+                      {Math.round(item.serviceRevenue / 1000)}
+                    </div>
+                  )}
+                </div>
+                <div
+                  className={styles.chartLabel}
+                  style={{
+                    marginTop: 8,
+                    fontSize: 11,
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    width: '100%',
+                    color: '#333',
+                    fontWeight: index % 2 === 0 ? 'bold' : 'normal',
+                    position: 'relative',
+                    backgroundColor: index % 2 === 0 ? 'rgba(0, 0, 0, 0.03)' : 'transparent',
+                    padding: '2px 0',
+                    borderRadius: 2
+                  }}>
                   {dayjs(item.date).format(reportType === 'daily' ? 'DD/MM' : reportType === 'monthly' ? 'MM/YYYY' : 'YYYY')}
+                  {index % 2 === 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: -25,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: 1,
+                      height: 5,
+                      background: '#ddd'
+                    }}></div>
+                  )}
                 </div>
               </div>
             );
@@ -232,7 +455,7 @@ const ReportManagement = () => {
     // Kiểm tra xem có dữ liệu không
     if (roomStatusData.length === 0) {
       return (
-        <div style={{ height: 300, background: '#f0f2f5', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ height: 300, background: 'white', border: '1px solid #e8e8e8', borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
             <p>Không có dữ liệu để hiển thị</p>
           </div>
@@ -242,7 +465,7 @@ const ReportManagement = () => {
 
     // Hiển thị dữ liệu dưới dạng biểu đồ đơn giản
     return (
-      <div style={{ height: 300, background: '#f0f2f5', borderRadius: 8, padding: 16 }}>
+      <div style={{ height: 300, background: 'white', border: '1px solid #e8e8e8', borderRadius: 8, padding: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
           {roomStatusData.map((item, index) => (
             <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
@@ -291,12 +514,90 @@ const ReportManagement = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Lấy dữ liệu hóa đơn
-      const billsResponse = await axios.get(BILLS_API);
-      const billsData = Array.isArray(billsResponse.data)
-        ? billsResponse.data
-        : billsResponse.data?.items || [];
-      setBills(billsData);
+      // Lấy tổng doanh thu
+      try {
+        const totalRevenueValue = await revenueService.getTotalRevenue();
+        setTotalRevenue(totalRevenueValue);
+      } catch (totalRevenueError) {
+        console.error('Error fetching total revenue:', totalRevenueError);
+        // Nếu không lấy được tổng doanh thu, sử dụng tổng từ dữ liệu chi tiết
+      }
+
+      // Lấy dữ liệu doanh thu từ API mới
+      try {
+        // Lấy dữ liệu doanh thu dựa trên loại báo cáo và khoảng thời gian
+        const revenueDataFromApi = await revenueService.getRevenueForDateRange(
+          dateRange[0],
+          dateRange[1],
+          reportType
+        );
+
+        // Chuyển đổi dữ liệu doanh thu từ API sang định dạng hiển thị
+        const formattedRevenueData = revenueDataFromApi.map((item, index) => {
+          let dateStr = '';
+
+          if (reportType === 'daily') {
+            // Đảm bảo ngày, tháng, năm đều có giá trị
+            const day = item.ngay || dayjs().date();
+            const month = item.thang || dayjs().month() + 1;
+            const year = item.nam || dayjs().year();
+            dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          } else if (reportType === 'monthly') {
+            const month = item.thang || dayjs().month() + 1;
+            const year = item.nam || dayjs().year();
+            dateStr = `${year}-${String(month).padStart(2, '0')}`;
+          } else {
+            dateStr = `${item.nam || dayjs().year()}`;
+          }
+
+          // Đảm bảo doanh thu là số dương
+          const totalRevenue = Math.max(0, item.tongDoanhThu || 0);
+
+          // Sử dụng doanh thu phòng và dịch vụ từ API nếu có, nếu không thì giả định 80/20
+          let roomRevenue = 0;
+          let serviceRevenue = 0;
+
+          if (item.roomRevenue !== undefined && item.serviceRevenue !== undefined) {
+            // Sử dụng giá trị từ API
+            roomRevenue = Math.round(item.roomRevenue);
+            serviceRevenue = Math.round(item.serviceRevenue);
+          } else {
+            // Giả định 80% doanh thu là từ phòng, 20% từ dịch vụ
+            roomRevenue = Math.round(totalRevenue * 0.8);
+            serviceRevenue = Math.round(totalRevenue * 0.2);
+          }
+
+          console.log(`Revenue data for ${dateStr}:`, { totalRevenue, roomRevenue, serviceRevenue });
+
+          return {
+            id: index + 1,
+            date: dateStr,
+            roomRevenue: roomRevenue,
+            serviceRevenue: serviceRevenue,
+            totalRevenue: totalRevenue
+          };
+        });
+
+        // Sắp xếp dữ liệu theo ngày
+        formattedRevenueData.sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf());
+
+        // Cập nhật state với dữ liệu doanh thu mới
+        setRevenueData(formattedRevenueData);
+      } catch (revenueError) {
+        console.error('Error fetching revenue data:', revenueError);
+        message.warning('Không thể lấy dữ liệu doanh thu từ API. Sử dụng dữ liệu từ hóa đơn.');
+
+        // Nếu không lấy được dữ liệu doanh thu, sử dụng phương pháp cũ
+        // Lấy dữ liệu hóa đơn
+        const billsResponse = await axios.get(BILLS_API);
+        const billsData = Array.isArray(billsResponse.data)
+          ? billsResponse.data
+          : billsResponse.data?.items || [];
+        setBills(billsData);
+
+        // Xử lý dữ liệu doanh thu từ hóa đơn
+        processRevenueData();
+      }
 
       // Lấy dữ liệu đặt phòng
       const bookingsResponse = await axios.get(BOOKINGS_API);
@@ -326,10 +627,10 @@ const ReportManagement = () => {
         : roomStatusesResponse.data?.items || [];
       setRoomStatuses(roomStatusesData);
 
-      // Không cần lấy dữ liệu chi tiết hóa đơn
-
-      // Xử lý dữ liệu sau khi lấy thành công
-      processData();
+      // Xử lý dữ liệu khác sau khi lấy thành công
+      processRoomStatusData();
+      processCustomerData();
+      processRoomTypeData();
     } catch (error) {
       console.error('Error fetching data:', error);
       message.error('Không thể lấy dữ liệu. Vui lòng thử lại sau.');
@@ -338,13 +639,7 @@ const ReportManagement = () => {
     }
   };
 
-  // Hàm xử lý dữ liệu
-  const processData = () => {
-    processRevenueData();
-    processRoomStatusData();
-    processCustomerData();
-    processRoomTypeData();
-  };
+  // Các hàm xử lý dữ liệu được gọi riêng lẻ khi cần
 
   // Hàm xử lý dữ liệu doanh thu
   const processRevenueData = () => {
@@ -545,15 +840,12 @@ const ReportManagement = () => {
       roomTypeCounts[roomType]++;
     });
 
-    // Nếu không có dữ liệu, thêm một số dữ liệu mẫu
+    // Nếu không có dữ liệu, hiển thị thông báo không có dữ liệu
     if (Object.keys(roomTypeCounts).length === 0) {
-      roomTypeCounts['Standard'] = 10;
-      roomTypeCounts['Deluxe'] = 5;
-      roomTypeCounts['Suite'] = 3;
-      roomTypeCounts['Family'] = 2;
+      return; // Sẽ hiển thị thông báo "Không có dữ liệu để hiển thị" ở component
     }
 
-    const totalRooms = rooms.length > 0 ? rooms.length : 20; // Sử dụng 20 làm tổng số phòng nếu không có dữ liệu
+    const totalRooms = rooms.length;
 
     // Chuyển đổi dữ liệu thành mảng
     const roomTypeDataArray = Object.keys(roomTypeCounts).map((roomType, index) => ({
@@ -578,12 +870,77 @@ const ReportManagement = () => {
   const handleDateRangeChange = (dates: any) => {
     if (dates && dates.length === 2) {
       setDateRange(dates);
+      setQuickDateRange('custom');
     }
   };
 
   // Hàm xử lý khi thay đổi loại báo cáo
   const handleReportTypeChange = (value: string) => {
     setReportType(value);
+  };
+
+  // Hàm xử lý khi chọn khoảng thời gian nhanh
+  const handleQuickDateRangeChange = (value: string) => {
+    setQuickDateRange(value);
+
+    let start: dayjs.Dayjs;
+    let end: dayjs.Dayjs = dayjs();
+
+    // Đặt loại báo cáo phù hợp với khoảng thời gian
+    if (value === 'thisYear' || value === 'lastYear') {
+      // Khi chọn năm, chuyển sang báo cáo theo tháng để tránh quá nhiều dữ liệu
+      setReportType('monthly');
+    } else if (value === 'thisMonth' || value === 'lastMonth') {
+      // Khi chọn tháng, chuyển sang báo cáo theo ngày
+      setReportType('daily');
+    }
+
+    switch (value) {
+      case 'today':
+        start = dayjs().startOf('day');
+        break;
+      case 'yesterday':
+        start = dayjs().subtract(1, 'day').startOf('day');
+        end = dayjs().subtract(1, 'day').endOf('day');
+        break;
+      case '7days':
+        start = dayjs().subtract(7, 'day');
+        break;
+      case '30days':
+        start = dayjs().subtract(30, 'day');
+        break;
+      case 'thisMonth':
+        start = dayjs().startOf('month');
+        break;
+      case 'lastMonth':
+        start = dayjs().subtract(1, 'month').startOf('month');
+        end = dayjs().subtract(1, 'month').endOf('month');
+        break;
+      case 'thisYear':
+        // Khi chọn năm nay, giới hạn số lượng dữ liệu bằng cách chỉ lấy dữ liệu theo tháng
+        start = dayjs().startOf('year');
+        // Đặt cờ để xử lý đặc biệt
+        setTimeout(() => {
+          // Hiển thị thông báo đang tải dữ liệu năm
+          message.info('Đang tải dữ liệu doanh thu năm ' + dayjs().year());
+        }, 0);
+        break;
+      case 'lastYear':
+        start = dayjs().subtract(1, 'year').startOf('year');
+        end = dayjs().subtract(1, 'year').endOf('year');
+        // Đặt cờ để xử lý đặc biệt
+        setTimeout(() => {
+          // Hiển thị thông báo đang tải dữ liệu năm
+          message.info('Đang tải dữ liệu doanh thu năm ' + dayjs().subtract(1, 'year').year());
+        }, 0);
+        break;
+      default:
+        start = dayjs().subtract(30, 'day');
+    }
+
+    setDateRange([start, end]);
+
+    // Không sử dụng dữ liệu mẫu nữa, chỉ sử dụng dữ liệu từ API
   };
 
   // Gọi API khi component được mount
@@ -593,38 +950,106 @@ const ReportManagement = () => {
 
   // Xử lý dữ liệu khi thay đổi khoảng thời gian hoặc loại báo cáo
   useEffect(() => {
-    if (bills.length > 0) {
-      processRevenueData();
+    // Kiểm tra xem có phải đang xem dữ liệu năm không
+    const isYearView = quickDateRange === 'thisYear' || quickDateRange === 'lastYear';
+
+    // Nếu đang xem dữ liệu năm và đã có dữ liệu mẫu, không cần gọi API lại
+    if (isYearView && revenueData.length > 0) {
+      return;
     }
-    if (rooms.length > 0) {
-      processRoomStatusData();
-      processRoomTypeData();
-    }
-    if (customers.length > 0) {
-      processCustomerData();
-    }
-  }, [dateRange, reportType, bills, rooms, customers, roomStatuses]);
+
+    // Khi thay đổi khoảng thời gian hoặc loại báo cáo, gọi lại API để lấy dữ liệu doanh thu mới
+    fetchData();
+  }, [dateRange, reportType, quickDateRange]);
+
+  // Custom styles for the filter section
+  const filterStyles = {
+    container: {
+      background: '#f5f7fa',
+      borderRadius: 8,
+      padding: '8px 12px',
+      marginBottom: 16,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    },
+    filterGroup: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+    },
+    label: {
+      fontSize: 13,
+      color: '#666',
+      marginRight: 4,
+    },
+  };
 
   return (
     <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <h2 style={{ margin: 0 }}>Báo cáo & Thống kê</h2>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <RangePicker
-            value={dateRange}
-            onChange={handleDateRangeChange}
-          />
-          <Select
-            value={reportType}
-            onChange={handleReportTypeChange}
-            style={{ width: 120 }}
-          >
-            <Option value="daily">Ngày</Option>
-            <Option value="monthly">Tháng</Option>
-            <Option value="yearly">Năm</Option>
-          </Select>
-          <Button icon={<ReloadOutlined />} onClick={handleRefresh}>Làm mới</Button>
-          <Button type="primary" icon={<DownloadOutlined />}>Xuất báo cáo</Button>
+      </div>
+
+      <div style={filterStyles.container}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={filterStyles.filterGroup}>
+            <span style={filterStyles.label}>Loại báo cáo:</span>
+            <Radio.Group
+              value={reportType}
+              onChange={(e) => handleReportTypeChange(e.target.value)}
+              size="small"
+              buttonStyle="solid"
+            >
+              <Radio.Button value="daily">Ngày</Radio.Button>
+              <Radio.Button value="monthly">Tháng</Radio.Button>
+              <Radio.Button value="yearly">Năm</Radio.Button>
+            </Radio.Group>
+          </div>
+
+          <div style={filterStyles.filterGroup}>
+            <span style={filterStyles.label}>Thời gian:</span>
+            <Dropdown
+              menu={{
+                items: [
+                  { key: 'today', label: 'Hôm nay' },
+                  { key: 'yesterday', label: 'Hôm qua' },
+                  { key: '7days', label: '7 ngày qua' },
+                  { key: '30days', label: '30 ngày qua' },
+                  { type: 'divider' },
+                  { key: 'thisMonth', label: 'Tháng này' },
+                  { key: 'lastMonth', label: 'Tháng trước' },
+                  { type: 'divider' },
+                  { key: 'thisYear', label: 'Năm nay' },
+                  { key: 'lastYear', label: 'Năm trước' }
+                ],
+                onClick: ({ key }) => handleQuickDateRangeChange(key)
+              }}
+              trigger={['click']}
+            >
+              <Button size="small" icon={<CalendarOutlined />} style={{ marginRight: 4 }}>
+                {quickDateRange === 'today' && 'Hôm nay'}
+                {quickDateRange === 'yesterday' && 'Hôm qua'}
+                {quickDateRange === '7days' && '7 ngày qua'}
+                {quickDateRange === '30days' && '30 ngày qua'}
+                {quickDateRange === 'thisMonth' && 'Tháng này'}
+                {quickDateRange === 'lastMonth' && 'Tháng trước'}
+                {quickDateRange === 'thisYear' && 'Năm nay'}
+                {quickDateRange === 'lastYear' && 'Năm trước'}
+                {quickDateRange === 'custom' && 'Tùy chỉnh'}
+              </Button>
+            </Dropdown>
+
+            <RangePicker
+              value={dateRange}
+              onChange={handleDateRangeChange}
+              size="small"
+              style={{ width: 210 }}
+              allowClear={false}
+              format="DD/MM/YYYY"
+            />
+
+            <Button size="small" icon={<ReloadOutlined />} onClick={handleRefresh} title="Làm mới" />
+            <Button size="small" type="primary" icon={<DownloadOutlined />} title="Xuất báo cáo">Xuất</Button>
+          </div>
         </div>
       </div>
 
@@ -634,7 +1059,7 @@ const ReportManagement = () => {
             <Card>
               <Statistic
                 title="Tổng doanh thu"
-                value={calculateTotalRevenue()}
+                value={totalRevenue || calculateTotalRevenue()}
                 valueStyle={{ color: '#1890ff' }}
                 suffix="VNĐ"
                 prefix={<DollarOutlined />}
@@ -679,24 +1104,35 @@ const ReportManagement = () => {
         </Row>
       </Spin>
 
-      <Tabs defaultActiveKey="1">
+      <Tabs
+        defaultActiveKey="1"
+        type="card"
+        size="small"
+        style={{ marginTop: 16 }}
+      >
         <TabPane
           tab={<span><BarChartOutlined />Báo cáo doanh thu</span>}
           key="1"
         >
           <Spin spinning={loading}>
-            <Card title="Biểu đồ doanh thu" style={{ marginBottom: 16 }}>
+            <Card
+              title="Biểu đồ doanh thu"
+              style={{ marginBottom: 16 }}
+              size="small"
+              extra={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ width: 10, height: 10, background: '#52c41a', marginRight: 6, borderRadius: 2 }}></div>
+                    <div>Doanh thu phòng</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ width: 10, height: 10, background: '#1890ff', marginRight: 6, borderRadius: 2 }}></div>
+                    <div>Doanh thu dịch vụ</div>
+                  </div>
+                </div>
+              }
+            >
               {renderBarChart()}
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16, gap: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ width: 12, height: 12, background: '#52c41a', marginRight: 8, borderRadius: 2 }}></div>
-                  <div>Doanh thu phòng</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ width: 12, height: 12, background: '#1890ff', marginRight: 8, borderRadius: 2 }}></div>
-                  <div>Doanh thu dịch vụ</div>
-                </div>
-              </div>
             </Card>
 
             <Table
@@ -704,6 +1140,7 @@ const ReportManagement = () => {
               dataSource={revenueData}
               rowKey="id"
               pagination={false}
+              size="small"
               summary={() => (
                 <Table.Summary fixed>
                   <Table.Summary.Row>
@@ -733,30 +1170,32 @@ const ReportManagement = () => {
           <Spin spinning={loading}>
             <Row gutter={16}>
               <Col span={12}>
-                <Card title="Biểu đồ tình trạng phòng">
+                <Card title="Biểu đồ tình trạng phòng" size="small">
                   {renderPieChart()}
                 </Card>
               </Col>
               <Col span={12}>
-                <Card title="Chi tiết tình trạng phòng">
+                <Card title="Chi tiết tình trạng phòng" size="small">
                   <Table
                     columns={roomStatusColumns}
                     dataSource={roomStatusData}
                     rowKey="status"
                     pagination={false}
+                    size="small"
                   />
                 </Card>
               </Col>
             </Row>
 
-            <Divider />
+            <Divider style={{ margin: '16px 0' }} />
 
-            <Card title="Thống kê loại phòng">
+            <Card title="Thống kê loại phòng" size="small">
               <Table
                 columns={roomTypeColumns}
                 dataSource={roomTypeData}
                 rowKey="id"
                 pagination={false}
+                size="small"
               />
             </Card>
           </Spin>
@@ -767,12 +1206,13 @@ const ReportManagement = () => {
           key="3"
         >
           <Spin spinning={loading}>
-            <Card title="Thống kê khách hàng theo tháng">
+            <Card title="Thống kê khách hàng theo tháng" size="small">
               <Table
                 columns={customerColumns}
                 dataSource={customerData}
                 rowKey="id"
                 pagination={false}
+                size="small"
                 summary={() => (
                   <Table.Summary fixed>
                     <Table.Summary.Row>

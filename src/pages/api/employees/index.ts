@@ -50,7 +50,13 @@ export default async function handler(
         taiKhoan: employee.taiKhoan || employee.taiKhoan_,
         taiKhoan_: employee.taiKhoan_ || employee.taiKhoan,
         luongCoBan: employee.luongCoBan || employee.luong || 0,
-        trangThai: employee.trangThai !== undefined ? employee.trangThai : true
+        trangThai: employee.trangThai !== undefined ? employee.trangThai : true,
+        // Thêm các trường mới
+        chucVuId: employee.chucVuId,
+        caLamId: employee.caLamId,
+        maVaiTro: employee.maVaiTro,
+        vaiTro: employee.vaiTro,
+        caLam: employee.caLam
       }));
 
       console.log('Formatted employees sample:', formattedEmployees.length > 0 ? formattedEmployees[0] : 'No employees');
@@ -72,7 +78,9 @@ export default async function handler(
       console.log('POST /api/employees - Request body:', req.body);
 
       // Kiểm tra các trường bắt buộc theo cấu trúc API
-      const { hoTen_, chucVu_, taiKhoan_, matKhau_, luongCoBan, trangThai } = req.body;
+      const {
+        hoTen_, chucVu_, taiKhoan_, matKhau_, luongCoBan, trangThai
+      } = req.body;
 
       if (!hoTen_) {
         return res.status(400).json({
@@ -81,7 +89,8 @@ export default async function handler(
         });
       }
 
-      // Chuẩn bị dữ liệu nhân viên theo cấu trúc API
+      // Chuẩn bị dữ liệu nhân viên theo cấu trúc API - chuyển trực tiếp từ request
+      // Không thay đổi cấu trúc dữ liệu để tránh lỗi
       const employeeData = {
         hoTen_,
         chucVu_,

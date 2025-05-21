@@ -53,15 +53,18 @@ export default async function handler(
       console.log(`PUT /api/employees/${id} - Request body:`, req.body);
 
       // Update employee using API structure
-      const { hoTen_, chucVu_, taiKhoan_, matKhau_, luongCoBan, trangThai } = req.body;
+      const { hoTen, chucVuId, caLamId, luongCoBan, maVaiTro, trangThai } = req.body;
 
       // Prepare employee data according to API structure
-      const employeeData: any = {};
-      if (hoTen_) employeeData.hoTen_ = hoTen_;
-      if (chucVu_) employeeData.chucVu_ = chucVu_;
-      if (taiKhoan_) employeeData.taiKhoan_ = taiKhoan_;
-      if (matKhau_) employeeData.matKhau_ = matKhau_;
+      const employeeData: any = {
+        id: Number(id) // Thêm ID vào dữ liệu cập nhật
+      };
+
+      if (hoTen) employeeData.hoTen = hoTen;
+      if (chucVuId !== undefined) employeeData.chucVuId = Number(chucVuId);
+      if (caLamId !== undefined) employeeData.caLamId = Number(caLamId);
       if (luongCoBan !== undefined) employeeData.luongCoBan = Number(luongCoBan);
+      if (maVaiTro !== undefined) employeeData.maVaiTro = Number(maVaiTro);
       if (trangThai !== undefined) employeeData.trangThai = trangThai;
 
       console.log(`Sending to API for update:`, employeeData);

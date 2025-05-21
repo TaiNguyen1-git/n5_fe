@@ -18,6 +18,12 @@ export interface Employee {
   taiKhoan_?: string | null;
   luongCoBan?: number;
   trangThai?: boolean;
+  // Các trường mới từ API
+  chucVuId?: number;
+  caLamId?: number;
+  maVaiTro?: number;
+  vaiTro?: string | null;
+  caLam?: string | null;
 }
 
 // API services for employees
