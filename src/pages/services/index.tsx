@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import styles from '../../styles/Services.module.css';
 import Link from 'next/link';
-import { Menu, Dropdown, message, Button, Spin } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
-import { isAuthenticated, redirectToLoginIfNotAuthenticated, getCurrentUser } from '../../services/authService';
+import { Button, Spin } from 'antd';
 import Layout from '../../components/Layout';
 import { serviceApi, DichVu } from '../../services/serviceApi';
 
@@ -112,11 +111,11 @@ const mapApiToServiceData = (apiData: DichVu[]): Service[] => {
   });
 };
 
-const Services = () => {
+// Tối ưu hóa component với memo
+const Services = memo(() => {
   const router = useRouter();
   const [services, setServices] = useState<Service[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [user, setUser] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('');
   const [loading, setLoading] = useState(true);
@@ -124,14 +123,38 @@ const Services = () => {
 
   // Lấy dữ liệu từ API khi component được mount
   useEffect(() => {
+    // Kiểm tra cache trước khi gọi API
+    const cachedServices = localStorage.getItem('cachedServices');
+    const cacheTime = localStorage.getItem('servicesCacheTime');
+    
+    if (cachedServices && cacheTime) {
+      const now = new Date().getTime();
+      const cacheAge = now - parseInt(cacheTime);
+      
+      // Sử dụng cache nếu chưa quá 30 phút
+      if (cacheAge < 30 * 60 * 1000) {
+        try {
+          const parsedServices = JSON.parse(cachedServices);
+          setServices(parsedServices);
+          setLoading(false);
+          return;
+        } catch (e) {
+          console.error('Lỗi khi parse cache:', e);
+        }
+      }
+    }
+    
     const fetchServices = async () => {
       try {
         setLoading(true);
         const apiData = await serviceApi.getAllServices();
-        console.log('API data received:', apiData); // Ghi log dữ liệu nhận được
         const mappedServices = mapApiToServiceData(apiData);
         setServices(mappedServices);
         setError(null);
+        
+        // Lưu vào cache
+        localStorage.setItem('cachedServices', JSON.stringify(mappedServices));
+        localStorage.setItem('servicesCacheTime', new Date().getTime().toString());
       } catch (err: any) {
         console.error('Lỗi khi lấy dữ liệu dịch vụ:', err);
         setError(err?.message || 'Không thể tải dữ liệu dịch vụ. Vui lòng thử lại sau.');
@@ -157,10 +180,6 @@ const Services = () => {
       return a.price - b.price;
     }
   });
-
-
-
-
 
   return (
     <Layout>
@@ -245,6 +264,7 @@ const Services = () => {
                         height={200}
                         className={styles.serviceImage}
                         unoptimized
+                        loading="lazy"
                         onError={(e) => {
                           (e.target as any).src = '/images/restaurant.jpg';
                         }}
@@ -278,13 +298,11 @@ const Services = () => {
                 <p>Không tìm thấy dịch vụ nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
               </div>
             )}
-
-
           </div>
         )}
       </div>
     </Layout>
   );
-};
+});
 
 export default Services;

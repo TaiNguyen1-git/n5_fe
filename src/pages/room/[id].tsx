@@ -1,15 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import styles from '../../styles/RoomDetail.module.css';
 import { getRoomById, bookRoom, Room } from '../../services/roomService';
 import { createCustomer } from '../../services/customerService';
 import { format } from 'date-fns';
 import { useUserStore } from '../../stores/userStore';
-import { Modal, Button } from 'antd';
+import { Modal, Button, Spin } from 'antd';
 import { CheckOutlined } from '@ant-design/icons';
 import Layout from '../../components/Layout';
-import LoadingSpinner from '../../components/LoadingSpinner';
+
+// Lazy load LoadingSpinner để giảm thời gian biên dịch
+const LoadingSpinner = dynamic(() => import('../../components/LoadingSpinner'), {
+  ssr: false,
+  loading: () => <Spin size="large" />
+});
 
 // Helper function to format dates for input fields
 const formatDateForInput = (date: Date): string => {

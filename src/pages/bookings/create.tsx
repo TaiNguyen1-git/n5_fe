@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
-import { Form, Input, DatePicker, InputNumber, Select, Button, Card, Divider, message, Row, Col } from 'antd';
-import { UserOutlined, MailOutlined, PhoneOutlined, HomeOutlined, CalendarOutlined, TeamOutlined } from '@ant-design/icons';
+import dynamic from 'next/dynamic';
+import { Form, Input, DatePicker, InputNumber, Button, Card, Divider, message, Row, Col } from 'antd';
+import { UserOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import Layout from '../../components/Layout';
 import styles from '../../styles/BookingCreate.module.css';
 import { getRoomById, Room } from '../../services/roomService';
@@ -114,11 +115,49 @@ export default function BookingCreate() {
   const fetchRoomDetails = async () => {
     setLoading(true);
     try {
+      // Kiểm tra cache trước khi gọi API
+      const cacheKey = `room_${roomId}`;
+      const cachedRoomStr = localStorage.getItem(cacheKey);
+      const cacheTimeStr = localStorage.getItem(`${cacheKey}_time`);
+
+      if (cachedRoomStr && cacheTimeStr) {
+        try {
+          const cachedRoom = JSON.parse(cachedRoomStr);
+          const cacheTime = new Date(cacheTimeStr);
+          const now = new Date();
+
+          // Nếu cache chưa quá 10 phút, sử dụng cache
+          if ((now.getTime() - cacheTime.getTime()) < 10 * 60 * 1000) {
+            console.log('Using cached room data');
+            setRoom(cachedRoom);
+
+            // Đặt giá mặc định cho 1 đêm nếu có giá
+            if (cachedRoom.giaTien) {
+              setTotalPrice(cachedRoom.giaTien);
+            }
+
+            setLoading(false);
+            return;
+          }
+        } catch (cacheError) {
+          console.warn('Error reading from cache:', cacheError);
+        }
+      }
+
+      // Nếu không có cache hoặc cache đã hết hạn, gọi API
       const response = await getRoomById(roomId as string);
       if (response && response.success && response.data) {
         // Sử dụng dữ liệu phòng như được trả về từ API
         const roomData = response.data;
         setRoom(roomData);
+
+        // Lưu vào cache
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(roomData));
+          localStorage.setItem(`${cacheKey}_time`, new Date().toISOString());
+        } catch (cacheError) {
+          console.warn('Error saving to cache:', cacheError);
+        }
 
         // Đặt giá mặc định cho 1 đêm nếu có giá
         if (roomData.giaTien) {
@@ -319,6 +358,9 @@ export default function BookingCreate() {
                     <img
                       src={room.hinhAnh || '/images/rooms/default-room.jpg'}
                       alt={room.tenPhong}
+                      loading="lazy"
+                      width="100%"
+                      height="auto"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = '/images/rooms/default-room.jpg';
