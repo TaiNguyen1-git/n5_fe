@@ -38,6 +38,7 @@ const nextConfig = {
     'rc-util',
     'rc-picker',
     'rc-pagination',
+    'rc-tree',
     '@ant-design/icons-svg',
     '@rc-component/trigger',
     '@rc-component/portal',
