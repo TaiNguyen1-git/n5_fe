@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Statistic, Table, Tag, Typography, Button, message, Spin } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, Row, Col, Statistic, Table, Tag, Typography, Button, message, Spin, Alert } from 'antd';
 import {
   UserOutlined,
   TeamOutlined,
@@ -28,15 +28,22 @@ const Dashboard = () => {
   });
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
 
-  useEffect(() => {
-    fetchDashboardData();
+  // Use useCallback to memoize the fetchDashboardData function
+  const fetchDashboardData = useCallback(async () => {
+    setLoading(true);
+    try {
+      await Promise.all([fetchStats(), fetchRecentBookings()]);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      message.error("Không thể tải dữ liệu. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    await Promise.all([fetchStats(), fetchRecentBookings()]);
-    setLoading(false);
-  };
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   // Fetch dashboard statistics
   const fetchStats = async () => {
@@ -142,6 +149,16 @@ const Dashboard = () => {
         <h2>Tổng quan hệ thống</h2>
         <p>Thông tin tổng quan về hoạt động của khách sạn</p>
       </div>
+
+      {loading && (
+        <Alert
+          message="Đang tải dữ liệu"
+          description="Vui lòng đợi trong khi chúng tôi tải thông tin tổng quan."
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
       <Spin spinning={statsLoading}>
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>

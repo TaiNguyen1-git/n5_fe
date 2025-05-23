@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import AdminDashboard from '../components/admin/admin-dashboard';
+import dynamic from 'next/dynamic';
 import { isAuthenticated, getCurrentUser } from '../services/authService';
 import Head from 'next/head';
 import { Spin } from 'antd';
+
+// Dynamically import the AdminDashboard component with SSR disabled
+const AdminDashboard = dynamic(
+  () => import('../components/admin/admin-dashboard'),
+  { ssr: false }
+);
 
 const AdminPage = () => {
   const router = useRouter();
@@ -117,5 +123,18 @@ const AdminPage = () => {
     </>
   );
 };
+
+// Use getServerSideProps to ensure this page is only rendered on the client
+export async function getStaticProps() {
+  return {
+    props: {}, // will be passed to the page component as props
+  };
+}
+
+// Add a special export to disable static optimization
+// This ensures the page is only rendered on the client
+AdminPage.getInitialProps = async () => {
+  return { props: {} };
+}
 
 export default AdminPage;

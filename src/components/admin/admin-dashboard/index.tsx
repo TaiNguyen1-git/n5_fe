@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Typography, Button, Avatar, Card, Row, Col, Table, Tag, Space, Modal, message } from 'antd';
+import React, { useState, useEffect, Suspense } from 'react';
+import { Layout, Menu, Typography, Button, Avatar, Card, Row, Col, Table, Tag, Space, Modal, message, Spin } from 'antd';
 import {
   UserOutlined,
   TeamOutlined,
@@ -126,16 +126,17 @@ const AdminDashboard = () => {
           </span>
         </Header>
         <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', borderRadius: 4 }}>
-          {tab === 'dashboard' && <Dashboard />}
-          {tab === 'employee' && <EmployeeManagement />}
-          {tab === 'staff' && <StaffManagement />}
-          {tab === 'user' && <UserManagement />}
-          {tab === 'room' && <RoomManagement />}
-          {tab === 'booking' && <BookingManagement />}
-          {tab === 'bill' && <BillManagement />}
-          {tab === 'workshift' && <WorkShiftManagement />}
-          {tab === 'service' && <ServiceManagement />}
-
+          <Suspense fallback={<div style={{ textAlign: 'center', padding: '50px' }}><Spin size="large" tip="Đang tải..." /></div>}>
+            {tab === 'dashboard' && <Dashboard />}
+            {tab === 'employee' && <EmployeeManagement />}
+            {tab === 'staff' && <StaffManagement />}
+            {tab === 'user' && <UserManagement />}
+            {tab === 'room' && <RoomManagement />}
+            {tab === 'booking' && <BookingManagement />}
+            {tab === 'bill' && <BillManagement />}
+            {tab === 'workshift' && <WorkShiftManagement />}
+            {tab === 'service' && <ServiceManagement />}
+          </Suspense>
         </Content>
       </Layout>
     </Layout>
