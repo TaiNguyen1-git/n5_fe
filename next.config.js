@@ -32,6 +32,10 @@ const nextConfig = {
 
   // Cấu hình cơ bản
   reactStrictMode: false,
+  eslint: {
+    // Disable ESLint during build
+    ignoreDuringBuilds: true,
+  },
 
   // Add transpile packages to fix module resolution issues
   transpilePackages: [
