@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Table, Tag, Button, Space, Modal, Input, Tabs, Card, Statistic, Row, Col, Select, DatePicker, Empty } from 'antd';
+import { Table, Tag, Button, Space, Modal, Tabs, Card, Statistic, Row, Col, DatePicker, Empty } from 'antd';
 import { EyeOutlined, CloseOutlined, CheckOutlined, HistoryOutlined, CalendarOutlined } from '@ant-design/icons';
 import styles from '../../styles/Bookings.module.css';
-import { isAuthenticated, redirectToLoginIfNotAuthenticated, getCurrentUser } from '../../services/authService';
+import { isAuthenticated, getCurrentUser } from '../../services/authService';
 import { getUserBookings, cancelBooking } from '../../services/roomService';
 import Layout from '../../components/Layout';
 import dayjs from 'dayjs';
 import axios from 'axios';
 
 const { TabPane } = Tabs;
-const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
 // Backend API endpoints
@@ -321,7 +320,7 @@ export default function BookingHistory() {
     {
       title: 'Hành động',
       key: 'action',
-      render: (text: string, record: Booking) => (
+      render: (_: string, record: Booking) => (
         <Space size="small">
           <Button
             icon={<EyeOutlined />}
@@ -543,17 +542,7 @@ export default function BookingHistory() {
                     </Button>
                   )}
 
-                  {viewBooking.status === 'completed' && !viewBooking.hasReview && (
-                    <Button
-                      type="primary"
-                      onClick={() => {
-                        setIsModalVisible(false);
-                        handleOpenReviewModal(viewBooking);
-                      }}
-                    >
-                      Viết đánh giá
-                    </Button>
-                  )}
+                  {/* Đã xóa chức năng đánh giá theo yêu cầu */}
                 </div>
               </div>
             </div>

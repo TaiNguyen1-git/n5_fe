@@ -24,9 +24,10 @@ export default async function handler(
 
   try {
     // Sử dụng formidable để xử lý form-data
-    const form = new formidable.IncomingForm();
-    form.keepExtensions = true;
-    
+    const form = formidable({
+      keepExtensions: true
+    });
+
     // Parse form data
     const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
@@ -36,10 +37,12 @@ export default async function handler(
     });
 
     // Kiểm tra file
-    const file = files.file as formidable.File;
-    if (!file) {
+    const fileArray = files.file;
+    if (!fileArray || !Array.isArray(fileArray) || fileArray.length === 0) {
       return res.status(400).json({ success: false, message: 'Không tìm thấy file' });
     }
+
+    const file = fileArray[0];
 
     // Kiểm tra loại file
     const fileType = file.mimetype;
@@ -49,7 +52,7 @@ export default async function handler(
 
     // Đọc file
     const fileData = fs.readFileSync(file.filepath);
-    
+
     // Tạo form data để gửi lên API backend
     const formData = new FormData();
     formData.append('file', new Blob([fileData], { type: fileType }), file.originalFilename || 'image.jpg');
@@ -74,19 +77,19 @@ export default async function handler(
         // Nếu API backend không trả về URL, lưu file vào thư mục public
         const publicDir = path.join(process.cwd(), 'public');
         const uploadsDir = path.join(publicDir, 'uploads');
-        
+
         // Tạo thư mục uploads nếu chưa tồn tại
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }
-        
+
         // Tạo tên file duy nhất
         const fileName = `${Date.now()}-${file.originalFilename || 'image.jpg'}`;
         const filePath = path.join(uploadsDir, fileName);
-        
+
         // Lưu file
         fs.copyFileSync(file.filepath, filePath);
-        
+
         // Trả về URL của file
         const fileUrl = `/uploads/${fileName}`;
         return res.status(200).json({
@@ -97,23 +100,23 @@ export default async function handler(
       }
     } catch (uploadError) {
       console.error('Error uploading to backend:', uploadError);
-      
+
       // Fallback: Lưu file vào thư mục public
       const publicDir = path.join(process.cwd(), 'public');
       const uploadsDir = path.join(publicDir, 'uploads');
-      
+
       // Tạo thư mục uploads nếu chưa tồn tại
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
-      
+
       // Tạo tên file duy nhất
       const fileName = `${Date.now()}-${file.originalFilename || 'image.jpg'}`;
       const filePath = path.join(uploadsDir, fileName);
-      
+
       // Lưu file
       fs.copyFileSync(file.filepath, filePath);
-      
+
       // Trả về URL của file
       const fileUrl = `/uploads/${fileName}`;
       return res.status(200).json({

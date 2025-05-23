@@ -72,7 +72,7 @@ export default function Payment() {
           ...prev,
           fullName: user.fullName || prev.fullName,
           email: user.email || prev.email,
-          phone: user.phone || prev.phone
+          phone: prev.phone // Sử dụng giá trị mặc định vì user không có trường phone
         }));
       }
     }
@@ -84,7 +84,7 @@ export default function Payment() {
       try {
         const items = JSON.parse(router.query.items as string);
         setCartItems(items);
-        const totalAmount = items.reduce((sum: number, item: CartItem) => 
+        const totalAmount = items.reduce((sum: number, item: CartItem) =>
           sum + (item.price * item.quantity), 0);
         setTotal(totalAmount);
       } catch (error) {
@@ -111,72 +111,72 @@ export default function Payment() {
 
   const validateForm = () => {
     const newErrors: Partial<PaymentForm> = {};
-    
+
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Vui lòng nhập họ tên';
     }
-    
+
     if (!formData.email.trim()) {
       newErrors.email = 'Vui lòng nhập email';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email không hợp lệ';
     }
-    
+
     if (!formData.phone.trim()) {
       newErrors.phone = 'Vui lòng nhập số điện thoại';
     } else if (!/^[0-9]{10}$/.test(formData.phone)) {
       newErrors.phone = 'Số điện thoại không hợp lệ';
     }
-    
+
     if (!formData.address.trim()) {
       newErrors.address = 'Vui lòng nhập địa chỉ';
     }
-    
+
     if (!formData.city.trim()) {
       newErrors.city = 'Vui lòng nhập thành phố';
     }
-    
+
     if (formData.paymentMethod === 'credit') {
       if (!formData.cardNumber.trim()) {
         newErrors.cardNumber = 'Vui lòng nhập số thẻ';
       } else if (!/^[0-9]{16}$/.test(formData.cardNumber)) {
         newErrors.cardNumber = 'Số thẻ không hợp lệ';
       }
-      
+
       if (!formData.cardExpiry.trim()) {
         newErrors.cardExpiry = 'Vui lòng nhập ngày hết hạn';
       } else if (!/^(0[1-9]|1[0-2])\/([0-9]{2})$/.test(formData.cardExpiry)) {
         newErrors.cardExpiry = 'Định dạng MM/YY';
       }
-      
+
       if (!formData.cardCVC.trim()) {
         newErrors.cardCVC = 'Vui lòng nhập CVV';
       } else if (!/^[0-9]{3,4}$/.test(formData.cardCVC)) {
         newErrors.cardCVC = 'CVV không hợp lệ';
       }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Redirect to success page
       router.push({
         pathname: '/payment/success',
-        query: { 
+        query: {
           orderId: Math.random().toString(36).substring(2, 15),
           total: total
         }
@@ -202,18 +202,18 @@ export default function Payment() {
         <div className={styles.main}>
           <div className={styles.content}>
             <h1 className={styles.title}>Thanh Toán</h1>
-            
+
             <Steps current={1} className={styles.steps}>
               <Step title="Giỏ hàng" description="Chọn dịch vụ" />
               <Step title="Thanh toán" description="Nhập thông tin" status="process" />
               <Step title="Hoàn thành" description="Xác nhận đơn" />
             </Steps>
-            
+
             <Divider />
-            
+
             <div className={styles.grid}>
               <div className={styles.orderSummary}>
-                <Card 
+                <Card
                   title={<div className={styles.summaryTitle}>Thông tin đơn hàng</div>}
                   bordered={false}
                   className={styles.summaryCard}
@@ -223,10 +223,10 @@ export default function Payment() {
                       <div key={item.id} className={styles.cartItem}>
                         <div className={styles.itemInfo}>
                           <h3>{item.name}</h3>
-                          <Badge 
-                            count={item.category} 
-                            style={{ backgroundColor: '#108ee9' }} 
-                            className={styles.categoryBadge} 
+                          <Badge
+                            count={item.category}
+                            style={{ backgroundColor: '#108ee9' }}
+                            className={styles.categoryBadge}
                           />
                         </div>
                         <div className={styles.itemDetails}>
@@ -240,19 +240,19 @@ export default function Payment() {
                       </div>
                     ))}
                   </div>
-                  
+
                   <Divider />
-                  
+
                   <div className={styles.total}>
                     <span>Tổng tiền:</span>
                     <span className={styles.totalAmount}>{formatPrice(total)}</span>
                   </div>
                 </Card>
               </div>
-              
+
               <form className={styles.paymentForm} onSubmit={handleSubmit}>
-                <Card 
-                  title={<div><UserOutlined /> Thông tin cá nhân</div>} 
+                <Card
+                  title={<div><UserOutlined /> Thông tin cá nhân</div>}
                   bordered={false}
                   className={styles.formCard}
                 >
@@ -275,7 +275,7 @@ export default function Payment() {
                         </div>
                       </Col>
                     </Row>
-                    
+
                     <Row gutter={16}>
                       <Col span={12}>
                         <div className={styles.formGroup}>
@@ -312,7 +312,7 @@ export default function Payment() {
                         </div>
                       </Col>
                     </Row>
-                    
+
                     <Row gutter={16}>
                       <Col span={16}>
                         <div className={styles.formGroup}>
@@ -351,18 +351,18 @@ export default function Payment() {
                     </Row>
                   </div>
                 </Card>
-                
-                <Card 
-                  title={<div><SafetyOutlined /> Phương thức thanh toán</div>} 
+
+                <Card
+                  title={<div><SafetyOutlined /> Phương thức thanh toán</div>}
                   bordered={false}
                   className={styles.formCard}
                 >
                   <div className={styles.formSection}>
                     <div className={styles.paymentMethods}>
-                      <Radio.Group 
+                      <Radio.Group
                         onChange={(e) => handleInputChange({
                           target: { name: 'paymentMethod', value: e.target.value }
-                        } as React.ChangeEvent<HTMLInputElement>)} 
+                        } as React.ChangeEvent<HTMLInputElement>)}
                         value={formData.paymentMethod}
                         className={styles.radioGroup}
                       >
@@ -382,7 +382,7 @@ export default function Payment() {
                         </div>
                       </Radio.Group>
                     </div>
-                    
+
                     {formData.paymentMethod === 'credit' && (
                       <div className={styles.creditCardForm}>
                         <Row gutter={16}>
@@ -405,7 +405,7 @@ export default function Payment() {
                             </div>
                           </Col>
                         </Row>
-                        
+
                         <Row gutter={16}>
                           <Col span={12}>
                             <div className={styles.formGroup}>
@@ -444,7 +444,7 @@ export default function Payment() {
                         </Row>
                       </div>
                     )}
-                    
+
                     {formData.paymentMethod === 'transfer' && (
                       <div className={styles.bankDetails}>
                         <div className={styles.bankTransferInfo}>
@@ -462,7 +462,7 @@ export default function Payment() {
                             <strong>12345678909876</strong>
                           </div>
                         </div>
-                        
+
                         <Row gutter={16}>
                           <Col span={12}>
                             <div className={styles.formGroup}>
@@ -502,15 +502,15 @@ export default function Payment() {
                     )}
                   </div>
                 </Card>
-                
+
                 {/* Display submit error if any */}
                 {errors.submit && (
                   <div className={styles.submitError}>
                     {errors.submit}
                   </div>
                 )}
-                
-                <Button 
+
+                <Button
                   type="primary"
                   htmlType="submit"
                   className={styles.submitButton}
