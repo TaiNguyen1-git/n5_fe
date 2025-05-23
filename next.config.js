@@ -41,6 +41,7 @@ const nextConfig = {
     '@ant-design/icons-svg',
     '@rc-component/trigger',
     '@rc-component/portal',
+    '@rc-component/util',
     'rc-motion',
     'rc-resize-observer',
     'rc-virtual-list'
