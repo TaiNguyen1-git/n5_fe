@@ -38,11 +38,30 @@ export const dashboardService = {
       if (response.data && response.data.success) {
         return response.data.data;
       }
-      
-      throw new Error('Invalid response format');
+
+      // Return default values if response format is invalid
+      console.warn('Invalid response format from dashboard stats API, using default values');
+      return {
+        totalRooms: 0,
+        availableRooms: 0,
+        occupiedRooms: 0,
+        totalBookings: 0,
+        totalCustomers: 0,
+        totalEmployees: 0,
+        totalRevenue: 0
+      };
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
-      throw error;
+      // Return default values on error
+      return {
+        totalRooms: 0,
+        availableRooms: 0,
+        occupiedRooms: 0,
+        totalBookings: 0,
+        totalCustomers: 0,
+        totalEmployees: 0,
+        totalRevenue: 0
+      };
     }
   },
 
@@ -58,11 +77,14 @@ export const dashboardService = {
       if (response.data && response.data.success) {
         return response.data.data;
       }
-      
-      throw new Error('Invalid response format');
+
+      // Return empty array if response format is invalid
+      console.warn('Invalid response format from recent bookings API, using empty array');
+      return [];
     } catch (error) {
       console.error('Error fetching recent bookings:', error);
-      throw error;
+      // Return empty array on error
+      return [];
     }
   }
 };

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import AdminDashboard from '../components/admin/admin-dashboard';
 import { isAuthenticated, getCurrentUser } from '../services/authService';
 import Head from 'next/head';
+import { Spin } from 'antd';
 
 const AdminPage = () => {
   const router = useRouter();
@@ -92,32 +93,11 @@ const AdminPage = () => {
         alignItems: 'center',
         height: '100vh',
         width: '100%',
-        backgroundColor: '#f5f5f5'
+        backgroundColor: '#fff'
       }}>
-        <div style={{
-          textAlign: 'center',
-          padding: '20px',
-          borderRadius: '8px',
-          backgroundColor: 'white',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-        }}>
-          <h2 style={{ marginBottom: '20px', color: '#333' }}>Đang tải trang quản trị...</h2>
-          <div style={{
-            display: 'inline-block',
-            width: '50px',
-            height: '50px',
-            border: '5px solid #f3f3f3',
-            borderTop: '5px solid #3498db',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }}></div>
-          <style jsx>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
-        </div>
+        <Spin tip="Đang tải trang quản trị..." size="large">
+          <div style={{ padding: '50px', background: '#fff' }} />
+        </Spin>
       </div>
     );
   }
