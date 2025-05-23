@@ -14,8 +14,6 @@
       }
     }
   ],
-  "buildCommand": "next build",
-  "buildMaxDuration": 900,
   "env": {
     "NEXT_PUBLIC_API_URL": "https://ptud-web-1.onrender.com/api"
   },

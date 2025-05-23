@@ -42,6 +42,10 @@ const nextConfig = {
   },
   // Increase build timeout
   staticPageGenerationTimeout: 180,
+  // Skip admin page during static generation
+  experimental: {
+    excludeDefaultMomentLocales: true,
+  },
 
   // Add transpile packages to fix module resolution issues
   transpilePackages: [

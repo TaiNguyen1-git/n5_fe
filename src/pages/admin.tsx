@@ -8,7 +8,23 @@ import { Spin } from 'antd';
 // Dynamically import the AdminDashboard component with SSR disabled
 const AdminDashboard = dynamic(
   () => import('../components/admin/admin-dashboard'),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        width: '100%',
+        backgroundColor: '#fff'
+      }}>
+        <Spin tip="Đang tải trang quản trị..." size="large">
+          <div style={{ padding: '50px', background: '#fff' }} />
+        </Spin>
+      </div>
+    )
+  }
 );
 
 const AdminPage = () => {
@@ -18,73 +34,79 @@ const AdminPage = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      setAuthChecking(true);
-      console.log('Admin Page - Kiểm tra xác thực người dùng');
+      try {
+        setAuthChecking(true);
+        console.log('Admin Page - Kiểm tra xác thực người dùng');
 
-      // Thêm độ trễ nhỏ để đảm bảo cookies được đọc đúng
-      await new Promise(resolve => setTimeout(resolve, 100));
+        // Thêm độ trễ nhỏ để đảm bảo cookies được đọc đúng
+        await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Kiểm tra xác thực người dùng
-      const isAuth = isAuthenticated();
-      console.log('Admin Page - Kết quả kiểm tra xác thực:', isAuth);
+        // Kiểm tra xác thực người dùng
+        const isAuth = isAuthenticated();
+        console.log('Admin Page - Kết quả kiểm tra xác thực:', isAuth);
 
-      if (!isAuth) {
-        console.log('Admin Page - Người dùng chưa xác thực, chuyển hướng đến trang đăng nhập');
-        router.push('/login');
-        return;
-      }
-
-      // Kiểm tra vai trò admin bằng loaiTK
-      const user = getCurrentUser();
-      console.log('Admin Page - Thông tin người dùng:', user);
-
-      // Kiểm tra chi tiết về quyền admin
-      const loaiTK = user?.loaiTK;
-      const role = user?.role;
-      const vaiTro = user?.vaiTro;
-
-      console.log('Admin Page - Chi tiết quyền admin:', {
-        loaiTK,
-        role,
-        vaiTro,
-        tenLoai: user?.tenLoai
-      });
-
-      // Chỉ cho phép admin truy cập
-      let isAdmin = false;
-
-      // Kiểm tra quyền admin dựa vào vai trò và loaiTK
-      if (role === 'admin') {
-        console.log('Admin Page - Xác định là admin theo role');
-        isAdmin = true;
-      } else if (vaiTro === 1) {
-        console.log('Admin Page - Xác định là admin theo vaiTro');
-        isAdmin = true;
-      } else if (loaiTK !== undefined && loaiTK !== null) {
-        // Chuyển đổi loaiTK thành số nếu cần
-        const loaiTKValue = typeof loaiTK === 'number'
-          ? loaiTK
-          : (typeof loaiTK === 'string' ? parseInt(loaiTK as string, 10) : null);
-
-        console.log('Admin Page - loaiTK sau khi xử lý:', loaiTKValue);
-
-        // Kiểm tra nếu là 1 (admin)
-        if (loaiTKValue === 1) {
-          console.log('Admin Page - Xác định là admin theo loaiTK');
-          isAdmin = true;
+        if (!isAuth) {
+          console.log('Admin Page - Người dùng chưa xác thực, chuyển hướng đến trang đăng nhập');
+          router.push('/login');
+          return;
         }
-      }
 
-      if (!isAdmin) {
-        console.log('Admin Page - Người dùng không phải admin:',
-                   role, loaiTK);
-        router.push('/');
-      } else {
-        console.log('Admin Page - Xác nhận người dùng là admin');
-        setIsAuthorized(true);
-      }
+        // Kiểm tra vai trò admin bằng loaiTK
+        const user = getCurrentUser();
+        console.log('Admin Page - Thông tin người dùng:', user);
 
-      setAuthChecking(false);
+        // Kiểm tra chi tiết về quyền admin
+        const loaiTK = user?.loaiTK;
+        const role = user?.role;
+        const vaiTro = user?.vaiTro;
+
+        console.log('Admin Page - Chi tiết quyền admin:', {
+          loaiTK,
+          role,
+          vaiTro,
+          tenLoai: user?.tenLoai
+        });
+
+        // Chỉ cho phép admin truy cập
+        let isAdmin = false;
+
+        // Kiểm tra quyền admin dựa vào vai trò và loaiTK
+        if (role === 'admin') {
+          console.log('Admin Page - Xác định là admin theo role');
+          isAdmin = true;
+        } else if (vaiTro === 1) {
+          console.log('Admin Page - Xác định là admin theo vaiTro');
+          isAdmin = true;
+        } else if (loaiTK !== undefined && loaiTK !== null) {
+          // Chuyển đổi loaiTK thành số nếu cần
+          const loaiTKValue = typeof loaiTK === 'number'
+            ? loaiTK
+            : (typeof loaiTK === 'string' ? parseInt(loaiTK as string, 10) : null);
+
+          console.log('Admin Page - loaiTK sau khi xử lý:', loaiTKValue);
+
+          // Kiểm tra nếu là 1 (admin)
+          if (loaiTKValue === 1) {
+            console.log('Admin Page - Xác định là admin theo loaiTK');
+            isAdmin = true;
+          }
+        }
+
+        if (!isAdmin) {
+          console.log('Admin Page - Người dùng không phải admin:',
+                    role, loaiTK);
+          router.push('/');
+        } else {
+          console.log('Admin Page - Xác nhận người dùng là admin');
+          setIsAuthorized(true);
+        }
+      } catch (error) {
+        console.error('Admin Page - Lỗi khi kiểm tra xác thực:', error);
+        // In case of error, redirect to login
+        router.push('/login');
+      } finally {
+        setAuthChecking(false);
+      }
     };
 
     checkAuth();
@@ -124,17 +146,10 @@ const AdminPage = () => {
   );
 };
 
-// Use getServerSideProps to ensure this page is only rendered on the client
-export async function getStaticProps() {
-  return {
-    props: {}, // will be passed to the page component as props
-  };
-}
-
 // Add a special export to disable static optimization
 // This ensures the page is only rendered on the client
 AdminPage.getInitialProps = async () => {
-  return { props: {} };
+  return {};
 }
 
 export default AdminPage;
