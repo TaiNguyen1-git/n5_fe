@@ -87,7 +87,14 @@ const WorkShiftManagement: React.FC = () => {
       result = result.filter(shift => {
         if (!shift.ngayLamViec) return false;
         const shiftDate = dayjs(shift.ngayLamViec);
-        return shiftDate.isAfter(dateRange[0]) && shiftDate.isBefore(dateRange[1].add(1, 'day'));
+        const startDate = dateRange[0];
+        const endDate = dateRange[1];
+
+        // Kiểm tra null trước khi sử dụng
+        if (startDate && endDate) {
+          return shiftDate.isAfter(startDate) && shiftDate.isBefore(endDate.add(1, 'day'));
+        }
+        return true;
       });
     }
 

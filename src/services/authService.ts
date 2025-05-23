@@ -454,13 +454,16 @@ export const isAuthenticated = (): boolean => {
       setAuthCookie(USER_DATA_KEY, localUser);
       console.log('isAuthenticated - Restored user data from localStorage to cookie');
     }
-
-    // Sử dụng token từ localStorage
-    return true;
   }
 
-  if (!token && !localToken && !localUser) {
-    console.log('isAuthenticated - No token or user data found in cookie or localStorage');
+  // Kiểm tra xem có token và user data không
+  if (!token && !localToken) {
+    console.log('isAuthenticated - No token found in cookie or localStorage');
+    return false;
+  }
+
+  if (!localUser) {
+    console.log('isAuthenticated - No user data found in localStorage');
     return false;
   }
 
@@ -483,9 +486,20 @@ export const isAuthenticated = (): boolean => {
       return true;
     }
 
-    console.log('isAuthenticated - Valid token found');
-    // Kiểm tra token hợp lệ
-    return true;
+    // Kiểm tra xem token có phải là JWT hợp lệ không
+    if (activeToken && activeToken.split('.').length === 3) {
+      console.log('isAuthenticated - Valid JWT token found');
+      return true;
+    }
+
+    // Kiểm tra xem token có giá trị không
+    if (activeToken && activeToken.length > 10) {
+      console.log('isAuthenticated - Valid token found');
+      return true;
+    }
+
+    console.log('isAuthenticated - Invalid token format');
+    return false;
   } catch (e) {
     console.error('Error checking token validity', e);
     return false;

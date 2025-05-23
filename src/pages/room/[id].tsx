@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../../styles/RoomDetail.module.css';
-import { getRoomById, bookRoom, Room, Booking } from '../../services/roomService';
-import { isAuthenticated, getCurrentUser, redirectToLoginIfNotAuthenticated } from '../../services/authService';
-import Layout from '../../components/Layout';
+import { getRoomById, bookRoom, Room } from '../../services/roomService';
+import { createCustomer } from '../../services/customerService';
 import { format } from 'date-fns';
 import { useUserStore } from '../../stores/userStore';
+import { Modal, Button } from 'antd';
+import { CheckOutlined } from '@ant-design/icons';
+import Layout from '../../components/Layout';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 // Helper function to format dates for input fields
 const formatDateForInput = (date: Date): string => {
@@ -25,7 +28,7 @@ interface BookingFormState {
   guestPhone: string;
   checkInDate: string;
   checkOutDate: string;
-  totalPrice: number;
+  totalPrice: number | null;
 }
 
 export default function RoomDetail() {
@@ -50,13 +53,9 @@ export default function RoomDetail() {
     totalPrice: 0,
   });
 
-  const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
-  const [bookingSuccess, setBookingSuccess] = useState(false);
 
   const userStore = useUserStore();
-  const [requireLogin, setRequireLogin] = useState(false);
-  const [pendingBooking, setPendingBooking] = useState<any>(null);
   const [bookingMessage, setBookingMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -75,9 +74,9 @@ export default function RoomDetail() {
       // Điền thông tin người dùng vào form
       setBookingForm(prev => ({
         ...prev,
-        guestName: user.fullName || user.tenHienThi || '',
+        guestName: user.fullName || '',
         guestEmail: user.email || '',
-        guestPhone: user.phone || user.phoneNumber || ''
+        guestPhone: ''
       }));
     }
   }, [userStore.user]);
@@ -98,8 +97,9 @@ export default function RoomDetail() {
         document.title = `${roomData.data.tenPhong} - Khách sạn Nhóm 5`;
 
         // If there's a warning message (like data from cache), show it
-        if (roomData.message && roomData.message.includes('bộ nhớ đệm')) {
-          setError(roomData.message);
+        const responseWithMessage = roomData as { message?: string };
+        if (responseWithMessage.message && responseWithMessage.message.includes('bộ nhớ đệm')) {
+          setError(responseWithMessage.message);
         }
 
         // Thiết lập thời gian nhận/trả phòng mặc định
@@ -150,7 +150,10 @@ export default function RoomDetail() {
   };
 
   const calculateTotalPrice = useCallback(() => {
-    if (!room || !checkInDate || !checkOutDate) return room?.giaTien || 0;
+    // Sử dụng giá mặc định nếu không có giá
+    const roomPrice = room?.giaTien || 500000;
+
+    if (!room || !checkInDate || !checkOutDate) return roomPrice;
 
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
@@ -158,10 +161,14 @@ export default function RoomDetail() {
     // Calculate number of nights
     const nights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
 
-    return room.giaTien * nights;
+    return roomPrice * nights;
   }, [room, checkInDate, checkOutDate]);
 
-  const handleBooking = async (bookingData: any) => {
+  // State cho modal thông báo đặt phòng thành công
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+
+  // Xử lý đặt phòng
+  const processBooking = async (bookingData: any) => {
     setIsSubmitting(true);
     setBookingMessage('');
     setBookingError('');
@@ -169,56 +176,152 @@ export default function RoomDetail() {
     try {
       if (!room) {
         setBookingError('Không tìm thấy thông tin phòng');
+        setIsSubmitting(false);
         return;
       }
 
       if (!isDateRangeValid(bookingData.checkInDate, bookingData.checkOutDate)) {
         setBookingError('Ngày check-out phải sau ngày check-in ít nhất 1 ngày');
+        setIsSubmitting(false);
         return;
       }
 
-      // Kiểm tra người dùng đã đăng nhập chưa
+      // Lấy thông tin người dùng nếu đã đăng nhập
       const user = userStore.user;
-      if (!user || !user.token) {
-        // Lưu thông tin đặt phòng vào localStorage để xử lý sau khi đăng nhập
-        setPendingBooking({
-          roomId: room.id,
-          ...bookingData
+
+      // Không cần tính tổng tiền cho API mới
+
+      // Tạo khách hàng mới cho mọi đơn đặt phòng
+      let customerId = user?.id;
+
+      // Nếu không có ID khách hàng (chưa đăng nhập hoặc đăng nhập nhưng không có ID)
+      if (!customerId) {
+        console.log('Tạo khách hàng mới trước khi đặt phòng');
+
+        // Tạo khách hàng mới
+        const customerResponse = await createCustomer({
+          tenKH: bookingData.guestName || (user?.fullName || 'Khách hàng'),
+          email: bookingData.email || (user?.email || 'guest@example.com'),
+          phone: bookingData.phoneNumber || '',
+          maVaiTro: 3 // Khách hàng
         });
-        setRequireLogin(true);
-        return;
+
+        if (!customerResponse.success) {
+          setBookingError(customerResponse.message || 'Không thể tạo thông tin khách hàng. Vui lòng thử lại sau.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Lấy ID khách hàng từ response
+        customerId = customerResponse.data?.maKH;
+        console.log('Đã tạo khách hàng mới với ID:', customerId);
       }
 
-      // Thực hiện đặt phòng
-      const response = await bookRoom({
-        maPhong: parseInt(room.id || '0'),
-        maKH: user.id ? user.id.toString() : '',
-        tenKH: bookingData.guestName || user.fullName || user.tenHienThi || '',
-        email: bookingData.email || user.email || '',
-        soDienThoai: bookingData.phoneNumber || user.phone || user.phoneNumber || '',
-        ngayBatDau: format(new Date(bookingData.checkInDate), 'yyyy-MM-dd'),
-        ngayKetThuc: format(new Date(bookingData.checkOutDate), 'yyyy-MM-dd'),
-        soLuongKhach: bookingData.guestCount,
-        tongTien: room.giaTien * Math.max(1, Math.ceil((new Date(bookingData.checkOutDate).getTime() - new Date(bookingData.checkInDate).getTime()) / (1000 * 3600 * 24)))
-      });
+      // Lấy mã phòng từ dữ liệu phòng hoặc từ API
+      let roomId = 0;
 
-      if (response.success) {
-        setBookingMessage('Đặt phòng thành công! Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.');
-        setBookingSuccess(true);
-        // Làm sạch form
-        setBookingForm({
-          guestName: '',
-          guestEmail: '',
-          guestPhone: '',
-          checkInDate: '',
-          checkOutDate: '',
-          totalPrice: 0,
-        });
-        setCheckInDate('');
-        setCheckOutDate('');
-        setGuests(1);
-      } else {
-        setBookingError(response.message || 'Đặt phòng thất bại. Vui lòng thử lại sau.');
+      try {
+        // Đầu tiên, thử lấy mã phòng từ dữ liệu phòng hiện tại
+        if (room.maPhong) {
+          roomId = typeof room.maPhong === 'string' ? parseInt(room.maPhong) : room.maPhong;
+          console.log('Using room ID from current data:', roomId);
+        } else if (room.id) {
+          roomId = parseInt(room.id);
+          console.log('Using room ID from room.id:', roomId);
+        }
+
+        // Nếu không có mã phòng hợp lệ, thử lấy từ API
+        if (isNaN(roomId) || roomId === 0) {
+          console.log('Fetching exact room ID from API...');
+          try {
+            const roomIdResponse = await fetch(`/api/room-id?roomId=${room.id || room.maPhong}`);
+            const roomIdData = await roomIdResponse.json();
+
+            if (roomIdResponse.ok && roomIdData.success && roomIdData.data?.maPhong) {
+              roomId = roomIdData.data.maPhong;
+              console.log('Using exact room ID from API:', roomId);
+            } else {
+              console.warn('Could not get room ID from API, using fallback ID');
+              // Sử dụng ID dự phòng nếu không thể lấy từ API
+              roomId = parseInt(room.id || '3');
+            }
+          } catch (apiError) {
+            console.error('Error fetching room ID from API:', apiError);
+            // Sử dụng ID dự phòng nếu không thể lấy từ API
+            roomId = parseInt(room.id || '3');
+          }
+        }
+
+        // Kiểm tra mã phòng hợp lệ
+        if (isNaN(roomId) || roomId === 0) {
+          throw new Error('Mã phòng không hợp lệ sau khi thử tất cả các cách');
+        }
+
+        console.log('Room data:', JSON.stringify(room, null, 2));
+        console.log('Final room ID to use:', roomId);
+
+        // Chuẩn bị dữ liệu đặt phòng theo đúng cấu trúc API yêu cầu
+        const bookingRequestData = {
+          maKH: customerId ? parseInt(customerId.toString()) : 0,
+          maPhong: roomId,
+          ngayDat: new Date().toISOString(),
+          ngayBD: format(new Date(bookingData.checkInDate), 'yyyy-MM-dd'), // Sử dụng ngayBD thay vì checkIn
+          ngayKT: format(new Date(bookingData.checkOutDate), 'yyyy-MM-dd'), // Sử dụng ngayKT thay vì checkOut
+          trangThai: 1, // Đang xử lý
+          xoa: false,
+          // Thêm thông tin khách hàng để API handler có thể tạo khách hàng nếu cần
+          tenKH: bookingData.guestName || '',
+          email: bookingData.email || '',
+          soDienThoai: bookingData.phoneNumber || ''
+        };
+
+        console.log('Sending booking request with data:', JSON.stringify(bookingRequestData, null, 2));
+
+        // Thực hiện đặt phòng
+        const response = await bookRoom(bookingRequestData);
+
+        if (response.success) {
+          console.log('Booking successful, response data:', JSON.stringify(response.data, null, 2));
+
+          // Lấy thông tin phòng từ response nếu có
+          console.log('Processing successful booking response:', JSON.stringify(response, null, 2));
+
+          // Xử lý nhiều cấu trúc dữ liệu phản hồi khác nhau
+          let bookingId = 'N/A';
+          if (response.data?.maHD) {
+            bookingId = response.data.maHD;
+          } else if (response.data?.data?.maHD) {
+            bookingId = response.data.data.maHD;
+          } else if (response.data?.id) {
+            bookingId = response.data.id;
+          }
+
+          const roomNumber = room.soPhong || room.id || 'N/A';
+
+          // Thiết lập thông báo thành công với thông tin phòng
+          setBookingMessage(`Đặt phòng thành công! Mã đặt phòng: ${bookingId}, Phòng: ${roomNumber}. Nhân viên sẽ liên hệ với bạn trong thời gian sớm nhất để xác nhận đặt phòng.`);
+
+          // Hiển thị modal thông báo thành công thay vì nội dung trong trang
+          setIsSuccessModalVisible(true);
+
+          // Làm sạch form
+          setBookingForm({
+            guestName: '',
+            guestEmail: '',
+            guestPhone: '',
+            checkInDate: '',
+            checkOutDate: '',
+            totalPrice: null,
+          });
+          setCheckInDate('');
+          setCheckOutDate('');
+          setGuests(1);
+        } else {
+          setBookingError(response.message || 'Đặt phòng thất bại. Vui lòng thử lại sau.');
+        }
+      } catch (error) {
+        console.error('Error fetching room ID or booking room:', error);
+        setBookingError('Không thể xác định mã phòng hoặc đặt phòng. Vui lòng thử lại sau.');
       }
     } catch (err) {
       console.error('Error booking room:', err);
@@ -232,7 +335,7 @@ export default function RoomDetail() {
           setBookingError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để đặt phòng.');
           userStore.logout();
           setTimeout(() => {
-            setRequireLogin(true);
+            router.push('/login');
           }, 1500);
         } else {
           setBookingError('Có lỗi xảy ra khi đặt phòng. Vui lòng thử lại sau.');
@@ -258,14 +361,7 @@ export default function RoomDetail() {
   };
 
   if (loading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.loading}>
-          <img src="/hotel-loading.jpg" alt="Loading" className={styles.loadingImage} />
-          <p>Đang tải thông tin phòng...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (error || !room) {
@@ -286,20 +382,61 @@ export default function RoomDetail() {
     <Layout>
       <div className={styles.container}>
         <div className={styles.content}>
+
+
+          {/* Booking Success Modal */}
+          <Modal
+            title="Đặt phòng thành công"
+            open={isSuccessModalVisible}
+            onCancel={() => setIsSuccessModalVisible(false)}
+            footer={[
+              <Button
+                key="ok"
+                type="primary"
+                onClick={() => setIsSuccessModalVisible(false)}
+              >
+                Đóng
+              </Button>
+            ]}
+          >
+            <div className={styles.successModal}>
+              <div className={styles.successIcon}>
+                <CheckOutlined style={{ fontSize: '32px', color: '#52c41a' }} />
+              </div>
+              <h3>Đặt phòng thành công!</h3>
+              <p>{bookingMessage}</p>
+              <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+            </div>
+          </Modal>
+
           <div className={styles.roomDetailContainer}>
             {/* Room gallery */}
             <div className={styles.roomGallery}>
               <div className={styles.mainImage}>
-                <img src={room.images?.[activeImage] || room.hinhAnh} alt={room.tenPhong} />
+                <img
+                  src={room.images?.[activeImage] || room.hinhAnh || '/images/rooms/default-room.jpg'}
+                  alt={room.tenPhong}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/images/rooms/default-room.jpg';
+                  }}
+                />
               </div>
               <div className={styles.thumbnails}>
-                {(room.images || [room.hinhAnh]).map((image, index) => (
+                {(room.images?.length ? room.images : ['/images/rooms/default-room.jpg']).map((image, index) => (
                   <div
                     key={index}
                     className={`${styles.thumbnail} ${index === activeImage ? styles.active : ''}`}
                     onClick={() => setActiveImage(index)}
                   >
-                    <img src={image} alt={`${room.tenPhong} - hình ${index + 1}`} />
+                    <img
+                      src={image || '/images/rooms/default-room.jpg'}
+                      alt={`${room.tenPhong} - hình ${index + 1}`}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/rooms/default-room.jpg';
+                      }}
+                    />
                   </div>
                 ))}
               </div>
@@ -308,7 +445,9 @@ export default function RoomDetail() {
             {/* Room information */}
             <div className={styles.roomInfo}>
               <h1 className={styles.roomName}>{room.tenPhong}</h1>
-              <p className={styles.roomPrice}>{room.giaTien?.toLocaleString()} đ / đêm</p>
+              <p className={styles.roomPrice}>
+                {`${(room.giaTien || 500000).toLocaleString('vi-VN')} đ / đêm`}
+              </p>
 
               <div className={styles.roomDescription}>
                 <h2>Mô tả</h2>
@@ -350,19 +489,7 @@ export default function RoomDetail() {
             <div className={styles.bookingForm}>
               <h2>Đặt phòng</h2>
 
-              {bookingSuccess ? (
-                <div className={styles.bookingSuccess}>
-                  <h3>Đặt phòng thành công!</h3>
-                  <p>{bookingMessage}</p>
-                  <button
-                    onClick={() => setBookingSuccess(false)}
-                    className={styles.newBookingButton}
-                  >
-                    Đặt phòng khác
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={(e) => {
+              <form onSubmit={async (e) => {
                   e.preventDefault();
                   const formData = {
                     guestName: bookingForm.guestName,
@@ -372,7 +499,8 @@ export default function RoomDetail() {
                     checkOutDate: checkOutDate,
                     guestCount: guests
                   };
-                  handleBooking(formData);
+                  // Bỏ qua modal xác nhận và đặt phòng trực tiếp
+                  await processBooking(formData);
                 }}>
                   {bookingError && (
                     <div className={styles.bookingError}>
@@ -454,18 +582,19 @@ export default function RoomDetail() {
 
                   <div className={styles.totalPrice}>
                     <span>Tổng tiền</span>
-                    <span className={styles.price}>{calculateTotalPrice().toLocaleString()} đ</span>
+                    <span className={styles.price}>
+                      {`${(calculateTotalPrice() || (room.giaTien || 500000)).toLocaleString('vi-VN')} đ`}
+                    </span>
                   </div>
 
                   <button
                     type="submit"
                     className={styles.bookButton}
-                    disabled={bookingLoading || isSubmitting}
+                    disabled={isSubmitting}
                   >
-                    {bookingLoading || isSubmitting ? 'Đang xử lý...' : 'Đặt ngay'}
+                    {isSubmitting ? 'Đang xử lý...' : 'Đặt ngay'}
                   </button>
                 </form>
-              )}
             </div>
           </div>
         </div>

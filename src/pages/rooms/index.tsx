@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Layout from '../../components/Layout';
 import styles from '../../styles/RoomsList.module.css';
+import Layout from '../../components/Layout';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import {
   Card,
   Row,
@@ -308,10 +309,7 @@ const RoomsPage = () => {
         </div>
 
         {loading ? (
-          <div className={styles.loadingContainer}>
-            <Spin size="large" />
-            <p>Đang tải danh sách phòng...</p>
-          </div>
+          <LoadingSpinner fullScreen={false} />
         ) : error ? (
           <div className={styles.errorContainer}>
             <p>{error}</p>

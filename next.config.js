@@ -30,18 +30,21 @@ const nextConfig = {
     ],
   },
 
-  // Tăng timeout cho API requests
-  api: {
-    responseLimit: false,
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-    externalResolver: true,
-  },
-
-  // Add production settings
-  swcMinify: true,
+  // Cấu hình cơ bản
   reactStrictMode: false,
+
+  // Add transpile packages to fix module resolution issues
+  transpilePackages: [
+    'rc-util',
+    'rc-picker',
+    'rc-pagination',
+    '@ant-design/icons-svg',
+    '@rc-component/trigger',
+    '@rc-component/portal',
+    'rc-motion',
+    'rc-resize-observer',
+    'rc-virtual-list'
+  ],
 
   // Add environment variables that can be accessed client-side
   publicRuntimeConfig: {

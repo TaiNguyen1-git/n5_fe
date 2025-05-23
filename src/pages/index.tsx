@@ -4,8 +4,9 @@ import styles from '../styles/Home.module.css';
 import Link from 'next/link';
 import { getRooms, Room } from '../services/roomService';
 import { isAuthenticated, getCurrentUser, logout } from '../services/authService';
-import Layout from '../components/Layout';
 import axios from 'axios';
+import Layout from '../components/Layout';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 // Cấu trúc phòng từ API mới
 interface APIRoom {
@@ -219,41 +220,7 @@ export default function Home() {
 
   // Hiển thị màn hình loading khi đang kiểm tra xác thực
   if (authChecking) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        width: '100%',
-        backgroundColor: '#f5f5f5'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          padding: '20px',
-          borderRadius: '8px',
-          backgroundColor: 'white',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-        }}>
-          <h2 style={{ marginBottom: '20px', color: '#333' }}>Đang tải...</h2>
-          <div style={{
-            display: 'inline-block',
-            width: '50px',
-            height: '50px',
-            border: '5px solid #f3f3f3',
-            borderTop: '5px solid #3498db',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }}></div>
-          <style jsx>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   // Chỉ render trang chính khi đã kiểm tra xong và xác định đây là trang cần hiển thị
@@ -351,12 +318,12 @@ export default function Home() {
                 {hotelRooms.map(room => (
                   <Link href={`/room/${room.id}`} key={room.id} className={styles.roomCard}>
                     <img
-                      src={room.hinhAnh}
+                      src={room.hinhAnh || '/images/rooms/default-room.jpg'}
                       alt={room.tenPhong}
                       className={styles.roomImage}
                       onError={(e) => {
                         // Fallback if image fails to load
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop';
+                        (e.target as HTMLImageElement).src = '/images/rooms/default-room.jpg';
                       }}
                     />
                     <div className={styles.roomInfo}>
@@ -368,7 +335,7 @@ export default function Home() {
                         {room.soLuongKhach} khách · {room.features?.slice(0, 2).join(' · ')}
                       </p>
                       <p className={styles.roomPrice}>
-                        {room.giaTien?.toLocaleString('vi-VN')} VNĐ / đêm
+                        {`${(room.giaTien || 500000).toLocaleString('vi-VN')} VNĐ / đêm`}
                       </p>
                       <div className={styles.roomStatus}>
                         <span className={room.trangThai === 1 ? styles.available : styles.unavailable}>

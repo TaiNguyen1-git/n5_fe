@@ -20,17 +20,17 @@
   .roomDetailContainer {
     grid-template-columns: 2fr 1fr;
   }
-  
+
   .roomGallery {
     grid-column: 1;
     grid-row: 1;
   }
-  
+
   .roomInfo {
     grid-column: 1;
     grid-row: 2;
   }
-  
+
   .bookingForm {
     grid-column: 2;
     grid-row: 1 / span 2;
@@ -543,12 +543,12 @@
   .roomDetailContainer {
     grid-template-columns: 1fr;
   }
-  
+
   .bookingForm {
     position: static;
     margin-top: 40px;
   }
-  
+
   .roomFeatures ul {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -558,15 +558,15 @@
   .thumbnails {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .roomName {
     font-size: 1.8rem;
   }
-  
+
   .roomFeatures ul {
     grid-template-columns: 1fr;
   }
-  
+
   .formRow {
     grid-template-columns: 1fr;
   }
@@ -576,12 +576,81 @@
   .thumbnails {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .mainImage {
     height: 300px;
   }
-  
+
   .formRow {
     grid-template-columns: 1fr;
   }
-} 
+}
+
+/* Confirmation Modal Styles */
+.confirmationModal {
+  padding: 10px 0;
+}
+
+.bookingSummary {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.bookingSummary p {
+  margin: 8px 0;
+}
+
+.paymentMethods {
+  margin-bottom: 20px;
+}
+
+.paymentOption {
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.paymentOption:hover {
+  background-color: #f5f5f5;
+}
+
+.paymentDescription {
+  margin-top: 5px;
+  margin-left: 22px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Success Modal Styles */
+.successModal {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.successIcon {
+  margin-bottom: 16px;
+  font-size: 48px;
+  color: #52c41a;
+}
+
+.successModal h3 {
+  color: #52c41a;
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+.successModal p {
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #333;
+}

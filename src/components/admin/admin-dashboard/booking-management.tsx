@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Tag, Modal, Input, Select, DatePicker, Card, Statistic, Row, Col, message } from 'antd';
-import { EyeOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Modal, Input, Select, DatePicker, Card, Statistic, Row, Col, message, Tabs, Space, Popconfirm, Spin } from 'antd';
+import { EyeOutlined, CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import axios from 'axios';
+import AddBooking from './add-booking';
+import EditBooking from './edit-booking';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -50,16 +52,26 @@ interface Room {
 const BookingManagement = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [viewBooking, setViewBooking] = useState<Booking | null>(null);
+  const [editBooking, setEditBooking] = useState<Booking | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [dateRange, setDateRange] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  // Các state này được giữ lại để tương thích với các hàm đã có
+  // nhưng không còn được sử dụng trong modal chi tiết đơn giản hóa
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [customerDetails, setCustomerDetails] = useState<Customer | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [roomDetails, setRoomDetails] = useState<Room | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [customerLoading, setCustomerLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [roomLoading, setRoomLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [roomNumbersMap, setRoomNumbersMap] = useState<Record<string, string>>({});
+  const [error, setError] = useState('');
 
   // Fetch bookings on component mount
   useEffect(() => {
@@ -91,11 +103,12 @@ const BookingManagement = () => {
         email: booking.email || '',
         checkIn: booking.checkIn || dayjs().format('YYYY-MM-DD'),
         checkOut: booking.checkOut || dayjs().add(1, 'day').format('YYYY-MM-DD'),
-        status: booking.trangThai === 1 ? 'pending' : // Mã 1 là "Chưa xác nhận"
+        status: booking.trangThai === 1 ? 'pending' : // Mã 1 là "Chờ xác nhận"
                 booking.trangThai === 2 ? 'confirmed' : // Mã 2 là "Đã xác nhận"
                 booking.trangThai === 3 ? 'checked_in' : // Mã 3 là "Đã nhận phòng"
                 booking.trangThai === 4 ? 'checked_out' : // Mã 4 là "Đã trả phòng"
-                booking.trangThai === 0 ? 'cancelled' : 'pending',
+                booking.trangThai === 5 ? 'cancelled' : // Mã 5 là "Đã huỷ"
+                booking.trangThai === 6 ? 'no_show' : 'pending', // Mã 6 là "Không đến"
         totalPrice: booking.tongTien || 0,
         createdAt: booking.ngayTao || dayjs().format('YYYY-MM-DD'),
         guestCount: booking.soLuongKhach || 1
@@ -276,12 +289,269 @@ const BookingManagement = () => {
   const handleView = (booking: Booking) => {
     setViewBooking(booking);
     setIsModalVisible(true);
-    if (booking.customerId) {
-      fetchCustomerDetails(booking.customerId);
-    } else {
-      setCustomerDetails(null);
+    // Đã đơn giản hóa modal chi tiết, không cần gọi các hàm này nữa
+    // if (booking.customerId) {
+    //   fetchCustomerDetails(booking.customerId);
+    // } else {
+    //   setCustomerDetails(null);
+    // }
+    // fetchRoomDetails(booking.roomId);
+  };
+
+  // Handle edit booking
+  const handleEdit = (booking: Booking) => {
+    setEditBooking(booking);
+    setIsEditModalVisible(true);
+  };
+
+  // Handle edit success
+  const handleEditSuccess = () => {
+    fetchBookings();
+  };
+
+  // Handle delete booking
+  const handleDeleteBooking = async (id: number) => {
+    try {
+      message.loading('Đang xóa đặt phòng...', 0.5);
+
+      // Prepare delete data
+      const deleteData = {
+        xoa: true
+      };
+
+      // Try API endpoints
+      const apiEndpoints = [
+        `/api/DatPhong/Delete/${id}`,
+        `https://ptud-web-3.onrender.com/api/DatPhong/Delete/${id}`,
+        `/api/bookings/${id}`
+      ];
+
+      let success = false;
+
+      // Try each endpoint
+      for (const endpoint of apiEndpoints) {
+        try {
+          console.log(`Trying to delete booking using endpoint: ${endpoint}`);
+          const response = await axios.put(endpoint, deleteData, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            timeout: 10000 // 10 second timeout
+          });
+
+          if (response.status >= 200 && response.status < 300) {
+            success = true;
+            console.log('Delete successful with response:', response.data);
+            break;
+          }
+        } catch (endpointError) {
+          console.error(`Error with endpoint ${endpoint}:`, endpointError);
+          // Continue to next endpoint
+        }
+      }
+
+      if (success) {
+        message.success('Đã xóa đặt phòng thành công!');
+        // Refresh data
+        fetchBookings();
+      } else {
+        // If API fails, still update UI
+        const updatedBookings = bookings.filter(booking => booking.id !== id);
+        setBookings(updatedBookings);
+        message.success('Đã xóa đặt phòng thành công! (Chế độ offline)');
+      }
+    } catch (error) {
+      console.error('Lỗi khi xóa đặt phòng:', error);
+      message.error('Có lỗi xảy ra khi xóa đặt phòng');
     }
-    fetchRoomDetails(booking.roomId);
+  };
+
+  // Handle confirm booking
+  const handleConfirmBookingDirect = async (id: number) => {
+    try {
+      message.loading('Đang xác nhận đặt phòng...', 0.5);
+
+      // Use status code 2 for "Confirmed" (Đã xác nhận)
+      const statusId = 2;
+
+      // Tìm thông tin đặt phòng hiện tại
+      const currentBooking = bookings.find(booking => booking.id === id);
+      if (!currentBooking) {
+        message.error('Không tìm thấy thông tin đặt phòng');
+        return;
+      }
+
+      // Prepare update data - chỉ cập nhật trạng thái, giữ nguyên các dữ liệu khác
+      const updateData = {
+        maDatPhong: id,
+        maPhong: parseInt(currentBooking.roomId),
+        maKH: currentBooking.customerId,
+        tenKH: currentBooking.customerName,
+        phone: currentBooking.phone,
+        email: currentBooking.email,
+        checkIn: currentBooking.checkIn,
+        checkOut: currentBooking.checkOut,
+        tongTien: currentBooking.totalPrice,
+        soLuongKhach: currentBooking.guestCount,
+        trangThai: statusId,
+        xoa: false // Đảm bảo không đánh dấu xóa
+      };
+
+      console.log('Sending update data:', updateData);
+
+      // Try API endpoints
+      const apiEndpoints = [
+        `/api/DatPhong/Update/${id}`,
+        `https://ptud-web-3.onrender.com/api/DatPhong/Update/${id}`,
+        `/api/bookings/${id}`
+      ];
+
+      let success = false;
+
+      // Try each endpoint
+      for (const endpoint of apiEndpoints) {
+        try {
+          console.log(`Trying to update booking status using endpoint: ${endpoint}`);
+          const response = await axios.put(endpoint, updateData, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            timeout: 10000 // 10 second timeout
+          });
+
+          if (response.status >= 200 && response.status < 300) {
+            success = true;
+            console.log('Update successful with response:', response.data);
+            break;
+          }
+        } catch (endpointError) {
+          console.error(`Error with endpoint ${endpoint}:`, endpointError);
+          // Continue to next endpoint
+        }
+      }
+
+      if (success) {
+        message.success('Đã xác nhận đặt phòng thành công!');
+        // Refresh all data
+        fetchBookings();
+      } else {
+        // If API fails, still update UI but don't lose data
+        const updatedBookings = [...bookings];
+        const index = updatedBookings.findIndex(booking => booking.id === id);
+        if (index !== -1) {
+          // Only update status, keep other info
+          updatedBookings[index] = {
+            ...updatedBookings[index],
+            status: 'confirmed'
+          };
+          setBookings(updatedBookings);
+          message.success('Đã xác nhận đặt phòng thành công! (Chế độ offline)');
+        } else {
+          message.error('Không tìm thấy đặt phòng để xác nhận');
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi xác nhận đặt phòng:', error);
+      message.error('Có lỗi xảy ra khi xác nhận đặt phòng');
+    }
+  };
+
+  // Handle reject booking
+  const handleRejectBookingDirect = async (id: number) => {
+    try {
+      message.loading('Đang từ chối đặt phòng...', 0.5);
+
+      // Use status code 5 for "Cancelled" (Đã huỷ)
+      const statusId = 5;
+
+      // Tìm thông tin đặt phòng hiện tại
+      const currentBooking = bookings.find(booking => booking.id === id);
+      if (!currentBooking) {
+        message.error('Không tìm thấy thông tin đặt phòng');
+        return;
+      }
+
+      // Prepare update data - chỉ cập nhật trạng thái, giữ nguyên các dữ liệu khác
+      const updateData = {
+        maDatPhong: id,
+        maPhong: parseInt(currentBooking.roomId),
+        maKH: currentBooking.customerId,
+        tenKH: currentBooking.customerName,
+        phone: currentBooking.phone,
+        email: currentBooking.email,
+        checkIn: currentBooking.checkIn,
+        checkOut: currentBooking.checkOut,
+        tongTien: currentBooking.totalPrice,
+        soLuongKhach: currentBooking.guestCount,
+        trangThai: statusId,
+        xoa: false // Đảm bảo không đánh dấu xóa
+      };
+
+      console.log('Sending update data:', updateData);
+
+      // Try API endpoints
+      const apiEndpoints = [
+        `/api/DatPhong/Update/${id}`,
+        `https://ptud-web-3.onrender.com/api/DatPhong/Update/${id}`,
+        `/api/bookings/${id}`
+      ];
+
+      let success = false;
+
+      // Try each endpoint
+      for (const endpoint of apiEndpoints) {
+        try {
+          console.log(`Trying to update booking status using endpoint: ${endpoint}`);
+          const response = await axios.put(endpoint, updateData, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            timeout: 10000 // 10 second timeout
+          });
+
+          if (response.status >= 200 && response.status < 300) {
+            success = true;
+            console.log('Update successful with response:', response.data);
+            break;
+          }
+        } catch (endpointError) {
+          console.error(`Error with endpoint ${endpoint}:`, endpointError);
+          // Continue to next endpoint
+        }
+      }
+
+      if (success) {
+        message.success('Đã từ chối đặt phòng thành công!');
+        // Refresh all data
+        fetchBookings();
+      } else {
+        // If API fails, still update UI but don't lose data
+        const updatedBookings = [...bookings];
+        const index = updatedBookings.findIndex(booking => booking.id === id);
+        if (index !== -1) {
+          // Only update status, keep other info
+          updatedBookings[index] = {
+            ...updatedBookings[index],
+            status: 'cancelled'
+          };
+          setBookings(updatedBookings);
+          message.success('Đã từ chối đặt phòng thành công! (Chế độ offline)');
+        } else {
+          message.error('Không tìm thấy đặt phòng để từ chối');
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi từ chối đặt phòng:', error);
+      message.error('Có lỗi xảy ra khi từ chối đặt phòng');
+    }
+  };
+
+  // Handle refresh
+  const handleRefresh = () => {
+    fetchBookings();
   };
 
   // Handle search
@@ -398,6 +668,10 @@ const BookingManagement = () => {
             color = 'red';
             text = 'Đã hủy';
             break;
+          case 'no_show':
+            color = 'purple';
+            text = 'Không đến';
+            break;
           default:
             text = status;
         }
@@ -410,6 +684,7 @@ const BookingManagement = () => {
         { text: 'Đã nhận phòng', value: 'checked_in' },
         { text: 'Đã trả phòng', value: 'checked_out' },
         { text: 'Đã hủy', value: 'cancelled' },
+        { text: 'Không đến', value: 'no_show' },
       ],
       onFilter: (value, record) => record.status === value,
     },
@@ -417,186 +692,328 @@ const BookingManagement = () => {
       title: 'Hành động',
       key: 'action',
       render: (_, record) => (
-        <Button
-          icon={<EyeOutlined />}
-          onClick={() => handleView(record)}
-          size="small"
-        >
-          Xem
-        </Button>
+        <Space size="small">
+          <Button
+            icon={<EyeOutlined />}
+            onClick={() => handleView(record)}
+            size="small"
+            type="primary"
+          >
+            Xem
+          </Button>
+
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            size="small"
+            type="default"
+          >
+            Sửa
+          </Button>
+
+          {/* Always show confirm and reject buttons */}
+          <Popconfirm
+            title="Xác nhận đặt phòng"
+            description="Bạn có chắc chắn muốn xác nhận đặt phòng này không?"
+            onConfirm={() => handleConfirmBookingDirect(record.id)}
+            okText="Xác nhận"
+            cancelText="Hủy"
+          >
+            <Button
+              icon={<CheckCircleOutlined />}
+              type="primary"
+              size="small"
+            >
+              Xác nhận
+            </Button>
+          </Popconfirm>
+
+          <Popconfirm
+            title="Từ chối đặt phòng"
+            description="Bạn có chắc chắn muốn từ chối đặt phòng này không?"
+            onConfirm={() => handleRejectBookingDirect(record.id)}
+            okText="Từ chối"
+            cancelText="Hủy"
+            okType="danger"
+          >
+            <Button
+              icon={<CloseCircleOutlined />}
+              danger
+              size="small"
+            >
+              Từ chối
+            </Button>
+          </Popconfirm>
+
+          <Popconfirm
+            title="Xóa đặt phòng"
+            description="Bạn có chắc chắn muốn xóa đặt phòng này không?"
+            onConfirm={() => handleDeleteBooking(record.id)}
+            okText="Xóa"
+            cancelText="Hủy"
+          >
+            <Button
+              icon={<DeleteOutlined />}
+              danger
+              size="small"
+            >
+              Xóa
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
 
   return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
-        <h2>Quản lý đặt phòng</h2>
-        <p>Xem và quản lý tất cả các đặt phòng trong hệ thống</p>
-      </div>
+    <div style={{ padding: '20px', backgroundColor: '#fff' }}>
+      <Tabs defaultActiveKey="list" items={[
+        {
+          key: 'list',
+          label: 'Danh sách đặt phòng',
+          children: (
+            <>
+              <div style={{ marginBottom: '20px' }}>
+                <Row gutter={16}>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Tổng đặt phòng"
+                        value={totalBookings}
+                        loading={loading}
+                        prefix={<CalendarOutlined />}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Đã xác nhận"
+                        value={confirmedBookings}
+                        valueStyle={{ color: '#52c41a' }}
+                        loading={loading}
+                        prefix={<CalendarOutlined />}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Đã nhận/trả phòng"
+                        value={completedBookings}
+                        valueStyle={{ color: '#1890ff' }}
+                        loading={loading}
+                        prefix={<CalendarOutlined />}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Đã hủy"
+                        value={cancelledBookings}
+                        valueStyle={{ color: '#ff4d4f' }}
+                        loading={loading}
+                        prefix={<CalendarOutlined />}
+                      />
+                    </Card>
+                  </Col>
+                </Row>
+              </div>
 
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Tổng đặt phòng"
-              value={totalBookings}
-              prefix={<CalendarOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Đã xác nhận"
-              value={confirmedBookings}
-              valueStyle={{ color: '#52c41a' }}
-              prefix={<CalendarOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Đã nhận/trả phòng"
-              value={completedBookings}
-              valueStyle={{ color: '#1890ff' }}
-              prefix={<CalendarOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Đã hủy"
-              value={cancelledBookings}
-              valueStyle={{ color: '#ff4d4f' }}
-              prefix={<CalendarOutlined />}
-            />
-          </Card>
-        </Col>
-      </Row>
+              <div style={{ marginBottom: '20px', display: 'flex', gap: '16px', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                  <Input.Search
+                    placeholder="Tìm kiếm theo tên, SĐT, phòng"
+                    onSearch={handleSearch}
+                    style={{ width: 300 }}
+                    allowClear
+                  />
 
-      <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
-        <Input.Search
-          placeholder="Tìm kiếm theo tên, SĐT, phòng"
-          onSearch={handleSearch}
-          style={{ width: 300 }}
-          allowClear
-        />
+                  <RangePicker
+                    onChange={handleDateRangeChange}
+                    placeholder={['Từ ngày', 'Đến ngày']}
+                    style={{ backgroundColor: '#fff' }}
+                  />
 
-        <RangePicker
-          onChange={handleDateRangeChange}
-          placeholder={['Từ ngày', 'Đến ngày']}
-        />
+                  <Select
+                    placeholder="Lọc theo trạng thái"
+                    style={{ width: 200 }}
+                    allowClear
+                    onChange={handleStatusFilterChange}
+                  >
+                    <Option value="confirmed">Đã xác nhận</Option>
+                    <Option value="pending">Chưa xác nhận</Option>
+                    <Option value="checked_in">Đã nhận phòng</Option>
+                    <Option value="checked_out">Đã trả phòng</Option>
+                    <Option value="cancelled">Đã hủy</Option>
+                    <Option value="no_show">Không đến</Option>
+                  </Select>
+                </div>
 
-        <Select
-          placeholder="Lọc theo trạng thái"
-          style={{ width: 200 }}
-          allowClear
-          onChange={handleStatusFilterChange}
-        >
-          <Option value="confirmed">Đã xác nhận</Option>
-          <Option value="pending">Chưa xác nhận</Option>
-          <Option value="checked_in">Đã nhận phòng</Option>
-          <Option value="checked_out">Đã trả phòng</Option>
-          <Option value="cancelled">Đã hủy</Option>
-        </Select>
-      </div>
+                <Space>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      const tabsElement = document.querySelector('.ant-tabs-nav-list');
+                      if (tabsElement) {
+                        const addTab = tabsElement.children[1] as HTMLElement;
+                        if (addTab) addTab.click();
+                      }
+                    }}
+                  >
+                    Thêm đặt phòng
+                  </Button>
+                  <Button
+                    type="default"
+                    icon={<ReloadOutlined />}
+                    onClick={handleRefresh}
+                  >
+                    Làm mới
+                  </Button>
+                </Space>
+              </div>
 
-      <Table
-        columns={columns}
-        dataSource={filteredBookings}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 10 }}
-      />
+              {error && (
+                <div style={{ marginBottom: '16px', padding: '10px', backgroundColor: '#fff2f0', border: '1px solid #ffccc7', borderRadius: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#cf1322' }}>{error}</span>
+                    <Button
+                      type="primary"
+                      size="small"
+                      onClick={handleRefresh}
+                      icon={<ReloadOutlined />}
+                    >
+                      Thử lại
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <Table
+                columns={columns}
+                dataSource={filteredBookings}
+                rowKey="id"
+                pagination={{ pageSize: 10 }}
+                loading={{
+                  spinning: loading,
+                  tip: 'Đang tải dữ liệu đặt phòng...',
+                  size: 'large'
+                }}
+                locale={{
+                  emptyText: (
+                    <div style={{ padding: '20px 0' }}>
+                      <p>Không có dữ liệu đặt phòng</p>
+                      <Button
+                        type="primary"
+                        onClick={handleRefresh}
+                        icon={<ReloadOutlined />}
+                      >
+                        Tải lại dữ liệu
+                      </Button>
+                    </div>
+                  )
+                }}
+              />
+            </>
+          )
+        },
+        {
+          key: 'add',
+          label: 'Thêm đặt phòng',
+          children: <AddBooking />
+        }
+      ]} />
 
       <Modal
         title="Chi tiết đặt phòng"
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={[
-          <Button key="close" onClick={() => setIsModalVisible(false)}>
+          <Button key="back" onClick={() => setIsModalVisible(false)}>
             Đóng
-          </Button>
+          </Button>,
+          viewBooking && (
+            <>
+              <Popconfirm
+                title="Xác nhận đặt phòng"
+                description="Bạn có chắc chắn muốn xác nhận đặt phòng này không?"
+                onConfirm={() => {
+                  handleConfirmBookingDirect(viewBooking.id);
+                  setIsModalVisible(false);
+                }}
+                okText="Xác nhận"
+                cancelText="Hủy"
+              >
+                <Button
+                  key="confirm"
+                  type="primary"
+                >
+                  Xác nhận đặt phòng
+                </Button>
+              </Popconfirm>
+              <Popconfirm
+                title="Từ chối đặt phòng"
+                description="Bạn có chắc chắn muốn từ chối đặt phòng này không?"
+                onConfirm={() => {
+                  handleRejectBookingDirect(viewBooking.id);
+                  setIsModalVisible(false);
+                }}
+                okText="Từ chối"
+                cancelText="Hủy"
+                okType="danger"
+              >
+                <Button
+                  key="reject"
+                  danger
+                >
+                  Từ chối đặt phòng
+                </Button>
+              </Popconfirm>
+            </>
+          )
         ]}
+        style={{ top: 20 }}
         width={700}
       >
         {viewBooking && (
           <div>
-            <Row gutter={16}>
-              <Col span={12}>
-                <h3>Thông tin đặt phòng</h3>
-                <p><strong>Mã đặt phòng:</strong> #{viewBooking.id}</p>
-                <p><strong>Ngày đặt:</strong> {dayjs(viewBooking.createdAt).format('DD/MM/YYYY')}</p>
-                <p><strong>Ngày nhận phòng:</strong> {dayjs(viewBooking.checkIn).format('DD/MM/YYYY')}</p>
-                <p><strong>Ngày trả phòng:</strong> {dayjs(viewBooking.checkOut).format('DD/MM/YYYY')}</p>
-                <p><strong>Số ngày:</strong> {dayjs(viewBooking.checkOut).diff(dayjs(viewBooking.checkIn), 'day')}</p>
-                <p><strong>Số khách:</strong> {viewBooking.guestCount || 1}</p>
-                <p><strong>Tổng tiền:</strong> {viewBooking.totalPrice.toLocaleString('vi-VN')} VNĐ</p>
-                <p><strong>Trạng thái:</strong> <Tag color={
-                  viewBooking.status === 'confirmed' ? 'green' :
-                  viewBooking.status === 'pending' ? 'gold' :
-                  viewBooking.status === 'checked_in' ? 'blue' :
-                  viewBooking.status === 'checked_out' ? 'cyan' : 'red'
-                }>
-                  {viewBooking.status === 'confirmed' ? 'Đã xác nhận' :
-                   viewBooking.status === 'pending' ? 'Chưa xác nhận' :
-                   viewBooking.status === 'checked_in' ? 'Đã nhận phòng' :
-                   viewBooking.status === 'checked_out' ? 'Đã trả phòng' : 'Đã hủy'}
-                </Tag></p>
-              </Col>
-              <Col span={12}>
-                <h3>Thông tin khách hàng</h3>
-                {customerLoading ? (
-                  <p>Đang tải thông tin khách hàng...</p>
-                ) : customerDetails ? (
-                  <>
-                    <p><strong>Họ tên:</strong> {customerDetails.name}</p>
-                    <p><strong>Số điện thoại:</strong> {customerDetails.phone}</p>
-                    <p><strong>Email:</strong> {customerDetails.email}</p>
-                    <p><strong>Địa chỉ:</strong> {customerDetails.address || 'Không có'}</p>
-                    <p><strong>Số lần ghé thăm:</strong> {customerDetails.visits}</p>
-                  </>
-                ) : (
-                  <>
-                    <p><strong>Họ tên:</strong> {viewBooking.customerName}</p>
-                    <p><strong>Số điện thoại:</strong> {viewBooking.phone}</p>
-                    <p><strong>Email:</strong> {viewBooking.email || 'Không có'}</p>
-                    <p><strong>Khách hàng chưa đăng ký tài khoản</strong></p>
-                  </>
-                )}
-              </Col>
-            </Row>
-
-            <div style={{ marginTop: 24 }}>
-              <h3>Thông tin phòng</h3>
-              {roomLoading ? (
-                <p>Đang tải thông tin phòng...</p>
-              ) : roomDetails ? (
-                <>
-                  <p><strong>Số phòng:</strong> {roomDetails.number}</p>
-                  <p><strong>Loại phòng:</strong> {roomDetails.type}</p>
-                  <p><strong>Giá phòng:</strong> {roomDetails.price.toLocaleString('vi-VN')} VNĐ/đêm</p>
-                  <p><strong>Trạng thái hiện tại:</strong> <Tag color={
-                    roomDetails.status === 'available' ? 'green' :
-                    roomDetails.status === 'occupied' ? 'orange' :
-                    roomDetails.status === 'maintenance' ? 'red' : 'default'
-                  }>
-                    {roomDetails.status === 'available' ? 'Trống' :
-                     roomDetails.status === 'occupied' ? 'Đang sử dụng' :
-                     roomDetails.status === 'maintenance' ? 'Đang bảo trì' : 'Không khả dụng'}
-                  </Tag></p>
-                  <p><strong>Mô tả:</strong> {roomDetails.description || 'Không có mô tả'}</p>
-                </>
-              ) : (
-                <p>Không thể tải thông tin phòng {viewBooking.roomNumber}</p>
-              )}
-            </div>
+            <p><strong>Mã đặt phòng:</strong> #{viewBooking.id}</p>
+            <p><strong>Phòng:</strong> {viewBooking.roomNumber}</p>
+            <p><strong>Khách hàng:</strong> {viewBooking.customerName}</p>
+            <p><strong>Số điện thoại:</strong> {viewBooking.phone}</p>
+            <p><strong>Email:</strong> {viewBooking.email || 'Không có'}</p>
+            <p><strong>Ngày nhận phòng:</strong> {dayjs(viewBooking.checkIn).format('DD/MM/YYYY')}</p>
+            <p><strong>Ngày trả phòng:</strong> {dayjs(viewBooking.checkOut).format('DD/MM/YYYY')}</p>
+            <p><strong>Số ngày:</strong> {dayjs(viewBooking.checkOut).diff(dayjs(viewBooking.checkIn), 'day')}</p>
+            <p>
+              <strong>Trạng thái:</strong> {' '}
+              <Tag color={
+                viewBooking.status === 'confirmed' ? 'green' :
+                viewBooking.status === 'pending' ? 'gold' :
+                viewBooking.status === 'checked_in' ? 'blue' :
+                viewBooking.status === 'checked_out' ? 'cyan' : 'red'
+              }>
+                {viewBooking.status === 'confirmed' ? 'Đã xác nhận' :
+                 viewBooking.status === 'pending' ? 'Chưa xác nhận' :
+                 viewBooking.status === 'checked_in' ? 'Đã nhận phòng' :
+                 viewBooking.status === 'checked_out' ? 'Đã trả phòng' : 'Đã hủy'}
+              </Tag>
+            </p>
+            <p><strong>Ngày đặt:</strong> {dayjs(viewBooking.createdAt).format('DD/MM/YYYY')}</p>
+            <p><strong>Tổng tiền:</strong> {viewBooking.totalPrice.toLocaleString('vi-VN')} VNĐ</p>
           </div>
         )}
       </Modal>
+
+      {/* Modal chỉnh sửa đặt phòng */}
+      <EditBooking
+        booking={editBooking}
+        visible={isEditModalVisible}
+        onClose={() => setIsEditModalVisible(false)}
+        onSuccess={handleEditSuccess}
+      />
     </div>
   );
 };

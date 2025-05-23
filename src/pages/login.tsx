@@ -17,12 +17,21 @@ export default function Login() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (isAuthenticated()) {
-      const redirectPath = redirect && typeof redirect === 'string'
-        ? decodeURIComponent(redirect)
-        : '/';
-      router.push(redirectPath);
-    }
+    // Thêm kiểm tra để đảm bảo không chuyển hướng khi đang ở trang đăng nhập
+    const checkAuth = async () => {
+      if (isAuthenticated()) {
+        console.log('Login page - User is already authenticated, redirecting...');
+        const redirectPath = redirect && typeof redirect === 'string'
+          ? decodeURIComponent(redirect)
+          : '/';
+        router.push(redirectPath);
+      } else {
+        console.log('Login page - User is not authenticated, staying on login page');
+      }
+    };
+
+    // Chỉ kiểm tra xác thực sau khi trang đã tải hoàn toàn
+    setTimeout(checkAuth, 500);
   }, [redirect, router]);
 
   // Cập nhật username nếu được truyền từ trang đăng ký

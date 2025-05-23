@@ -80,7 +80,7 @@ const SettingsManagement = () => {
             username: currentUser.username || '',
             fullName: currentUser.fullName || '',
             email: currentUser.email || '',
-            phone: currentUser.phone || '',
+            phone: '', // Mặc định là chuỗi rỗng vì không có trong User type
             role: currentUser.role || 'staff',
             department: 'reception', // Giá trị mặc định
           };
@@ -130,7 +130,7 @@ const SettingsManagement = () => {
       }
 
       // Lấy tên tài khoản từ thông tin người dùng hiện tại
-      const username = currentUser.username || currentUser.tenTK;
+      const username = currentUser.username || '';
 
       // Chuẩn bị dữ liệu cập nhật theo đúng cấu trúc API
       const updateData = {

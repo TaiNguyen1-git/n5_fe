@@ -36,19 +36,7 @@ const BillManagement = () => {
 
   // Helper function để lấy phương thức thanh toán dựa vào mã
   const getPaymentMethod = (maPhuongThuc: number | null | undefined): string => {
-    // Tìm phương thức thanh toán trong danh sách từ API
-    const method = paymentMethods.find(m => m.id === maPhuongThuc);
-
-    // Nếu tìm thấy, trả về tên phương thức
-    if (method) {
-      const name = method.tenPhuongThuc.toLowerCase();
-      if (name.includes('momo') || name.includes('ví') || name.includes('wallet')) return 'ewallet';
-      if (name.includes('tiền') || name.includes('cash')) return 'cash';
-      if (name.includes('thẻ') || name.includes('card')) return 'card';
-      if (name.includes('chuyển') || name.includes('transfer')) return 'transfer';
-    }
-
-    // Nếu không tìm thấy, sử dụng switch case
+    // Sử dụng switch case để đảm bảo tính nhất quán
     switch (maPhuongThuc) {
       case 1: return 'cash'; // Tiền mặt
       case 2: return 'card'; // Thẻ
@@ -64,7 +52,7 @@ const BillManagement = () => {
     const method = paymentMethods.find(m => m.id === maPhuongThuc);
 
     // Nếu tìm thấy, trả về tên phương thức
-    if (method) {
+    if (method && method.tenPhuongThuc) {
       return method.tenPhuongThuc;
     }
 
@@ -73,8 +61,8 @@ const BillManagement = () => {
       case 1: return 'Tiền mặt';
       case 2: return 'Thẻ';
       case 3: return 'Chuyển khoản';
-      case 4: return 'Momo';
-      default: return 'Tiền mặt';
+      case 4: return 'Ví điện tử';
+      default: return 'Không xác định';
     }
   };
 
@@ -978,8 +966,7 @@ const BillManagement = () => {
     const matchesStatus = statusFilter ? bill.status === statusFilter : true;
     const matchesSearch = searchText
       ? bill.billNumber.toLowerCase().includes(searchText.toLowerCase()) ||
-        bill.customerName.toLowerCase().includes(searchText.toLowerCase()) ||
-        bill.roomNumber.includes(searchText)
+        bill.customerName.toLowerCase().includes(searchText.toLowerCase())
       : true;
     return matchesStatus && matchesSearch;
   });
@@ -1009,11 +996,7 @@ const BillManagement = () => {
         );
       }
     },
-    {
-      title: 'Phòng',
-      dataIndex: 'roomNumber',
-      key: 'roomNumber',
-    },
+
     {
       title: 'Ngày lập hóa đơn',
       dataIndex: 'createdAt',
@@ -1246,7 +1229,7 @@ const BillManagement = () => {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <Input.Search
-          placeholder="Tìm theo mã hóa đơn, tên khách, số phòng"
+          placeholder="Tìm theo mã hóa đơn, tên khách hàng"
           allowClear
           style={{ width: 300 }}
           onSearch={value => setSearchText(value)}
@@ -1300,9 +1283,7 @@ const BillManagement = () => {
                     <p><strong>Email:</strong> {customers.find(c => c.maKH === viewBill.maKH)?.email}</p>
                   </>
                 )}
-                <p><strong>Phòng:</strong> {viewBill.roomNumber}</p>
-                <p><strong>Ngày nhận phòng:</strong> {dayjs(viewBill.checkIn).format('DD/MM/YYYY')}</p>
-                <p><strong>Ngày trả phòng:</strong> {dayjs(viewBill.checkOut).format('DD/MM/YYYY')}</p>
+
               </Col>
               <Col span={12}>
                 <p><strong>Mã hóa đơn:</strong> {viewBill.billNumber}</p>

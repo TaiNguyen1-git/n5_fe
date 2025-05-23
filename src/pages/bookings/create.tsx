@@ -22,51 +22,51 @@ interface BookingFormValues {
 export default function BookingCreate() {
   const router = useRouter();
   const { roomId } = router.query;
-  
+
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [form] = Form.useForm();
-  
+
   const [checkInDate, setCheckInDate] = useState<string | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState(1);
   const [nights, setNights] = useState(1);
   const [totalPrice, setTotalPrice] = useState(0);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  
+
   // Get room details when roomId is available
   useEffect(() => {
     if (roomId) {
       fetchRoomDetails();
     }
   }, [roomId]);
-  
+
   // Initialize default dates if not set
   useEffect(() => {
     if (room && (!checkInDate || !checkOutDate)) {
       // Sử dụng đối tượng dayjs thay vì chuỗi
       const today = dayjs();
       const tomorrow = dayjs().add(1, 'day');
-      
+
       if (!checkInDate) {
         setCheckInDate(today.format('YYYY-MM-DD'));
         form.setFieldsValue({ checkInDate: today });
       }
-      
+
       if (!checkOutDate) {
         setCheckOutDate(tomorrow.format('YYYY-MM-DD'));
         form.setFieldsValue({ checkOutDate: tomorrow });
       }
     }
   }, [room]);
-  
+
   // Set user data if authenticated
   useEffect(() => {
     if (isAuthenticated()) {
       const user = getCurrentUser();
       setCurrentUser(user);
-      
+
       if (user) {
         form.setFieldsValue({
           fullName: user.fullName || '',
@@ -81,43 +81,52 @@ export default function BookingCreate() {
       redirectToLoginIfNotAuthenticated('/bookings/create?roomId=' + roomId);
     }
   }, []);
-  
+
   // Calculate total price when dates or room changes
   useEffect(() => {
-    if (room && room.giaTien && checkInDate && checkOutDate) {
+    // Kiểm tra xem phòng có giá không
+    if (!room?.giaTien) {
+      return; // Không tính toán nếu không có giá
+    }
+
+    const roomPrice = room.giaTien;
+
+    if (room && checkInDate && checkOutDate) {
       const start = dayjs(checkInDate);
       const end = dayjs(checkOutDate);
       const nightCount = end.diff(start, 'day');
-      
+
       if (nightCount > 0) {
         setNights(nightCount);
-        setTotalPrice(room.giaTien * nightCount);
+        setTotalPrice(roomPrice * nightCount);
       } else {
         // Mặc định là 1 đêm nếu ngày không hợp lệ
         setNights(1);
-        setTotalPrice(room.giaTien);
+        setTotalPrice(roomPrice);
       }
-    } else if (room && room.giaTien) {
+    } else if (room) {
       // Mặc định hiển thị giá cho 1 đêm nếu chưa chọn ngày
       setNights(1);
-      setTotalPrice(room.giaTien);
+      setTotalPrice(roomPrice);
     }
   }, [room, checkInDate, checkOutDate]);
-  
+
   const fetchRoomDetails = async () => {
     setLoading(true);
     try {
       const response = await getRoomById(roomId as string);
       if (response && response.success && response.data) {
-        // Đảm bảo giá trị giaTien luôn là số
-        const roomData = {
-          ...response.data,
-          giaTien: response.data.giaTien || 0
-        };
+        // Sử dụng dữ liệu phòng như được trả về từ API
+        const roomData = response.data;
         setRoom(roomData);
-        
-        // Đặt giá mặc định cho 1 đêm
-        setTotalPrice(roomData.giaTien);
+
+        // Đặt giá mặc định cho 1 đêm nếu có giá
+        if (roomData.giaTien) {
+          setTotalPrice(roomData.giaTien);
+        } else {
+          // Nếu không có giá, hiển thị thông báo
+          setError('Không thể tính giá phòng này. Vui lòng liên hệ với khách sạn để biết thêm chi tiết.');
+        }
       } else {
         setError('Không thể tìm thấy thông tin phòng');
       }
@@ -128,44 +137,29 @@ export default function BookingCreate() {
       setLoading(false);
     }
   };
-  
-  const handleCheckInChange = (date: any, dateString: string | string[]) => {
+
+  const handleCheckInChange = (_: any, dateString: string | string[]) => {
     setCheckInDate(dateString as string);
     // Không cần set lại form field vì DatePicker đã tự cập nhật
   };
-  
-  const handleCheckOutChange = (date: any, dateString: string | string[]) => {
+
+  const handleCheckOutChange = (_: any, dateString: string | string[]) => {
     setCheckOutDate(dateString as string);
     // Không cần set lại form field vì DatePicker đã tự cập nhật
   };
-  
+
   const handleGuestCountChange = (value: number | null) => {
     if (value !== null) {
       setGuestCount(value);
       form.setFieldsValue({ guestCount: value });
     }
   };
-  
+
   const handleSubmit = (values: BookingFormValues) => {
     if (!room || !room.giaTien) return;
-    
-    // Store booking information for payment page
-    const bookingData = {
-      roomId: roomId,
-      roomType: room.tenPhong,
-      roomImage: room.hinhAnh,
-      pricePerNight: room.giaTien,
-      totalPrice: totalPrice,
-      checkInDate: values.checkInDate,
-      checkOutDate: values.checkOutDate,
-      nights: nights,
-      guestCount: values.guestCount,
-      fullName: values.fullName,
-      email: values.email,
-      phone: values.phone,
-      specialRequests: values.specialRequests
-    };
-    
+
+    // Prepare booking information for payment page
+
     // Convert to query string format for the payment page
     const item = {
       id: roomId,
@@ -175,24 +169,24 @@ export default function BookingCreate() {
       category: 'Phòng',
       quantity: 1
     };
-    
+
     // Navigate to payment page with room information
     router.push({
       pathname: '/payment',
-      query: { 
+      query: {
         items: JSON.stringify([item])
       }
     });
   };
-  
+
   return (
     <Layout>
       <div className={styles.container}>
         <h1 className={styles.pageTitle}>Đặt phòng</h1>
-        
+
         <Row gutter={24}>
           <Col xs={24} sm={24} md={16} lg={16} xl={16}>
-            <Card title="Thông tin đặt phòng" bordered={false} className={styles.bookingCard}>
+            <Card title="Thông tin đặt phòng" className={styles.bookingCard}>
               {loading ? (
                 <div className={styles.loading}>Đang tải thông tin phòng...</div>
               ) : error ? (
@@ -211,7 +205,7 @@ export default function BookingCreate() {
                         name="checkInDate"
                         rules={[{ required: true, message: 'Vui lòng chọn ngày nhận phòng' }]}
                       >
-                        <DatePicker 
+                        <DatePicker
                           format="YYYY-MM-DD"
                           onChange={handleCheckInChange}
                           disabledDate={(current) => {
@@ -228,13 +222,13 @@ export default function BookingCreate() {
                         name="checkOutDate"
                         rules={[{ required: true, message: 'Vui lòng chọn ngày trả phòng' }]}
                       >
-                        <DatePicker 
+                        <DatePicker
                           format="YYYY-MM-DD"
                           onChange={handleCheckOutChange}
                           disabledDate={(current) => {
                             if (!current) return false;
                             const checkInDay = form.getFieldValue('checkInDate');
-                            return current < dayjs().startOf('day') || 
+                            return current < dayjs().startOf('day') ||
                                   (checkInDay && current < checkInDay);
                           }}
                           style={{ width: '100%' }}
@@ -243,23 +237,23 @@ export default function BookingCreate() {
                       </Form.Item>
                     </Col>
                   </Row>
-                  
+
                   <Form.Item
                     label="Số lượng khách"
                     name="guestCount"
                     initialValue={1}
                     rules={[{ required: true, message: 'Vui lòng chọn số lượng khách' }]}
                   >
-                    <InputNumber 
-                      min={1} 
-                      max={room.soLuongKhach || 1} 
+                    <InputNumber
+                      min={1}
+                      max={room.soLuongKhach || 1}
                       onChange={handleGuestCountChange}
                       style={{ width: '100%' }}
                     />
                   </Form.Item>
-                  
+
                   <Divider />
-                  
+
                   <Form.Item
                     label="Họ và tên"
                     name="fullName"
@@ -267,7 +261,7 @@ export default function BookingCreate() {
                   >
                     <Input prefix={<UserOutlined />} placeholder="Nhập họ và tên" />
                   </Form.Item>
-                  
+
                   <Row gutter={16}>
                     <Col span={12}>
                       <Form.Item
@@ -291,21 +285,21 @@ export default function BookingCreate() {
                       </Form.Item>
                     </Col>
                   </Row>
-                  
+
                   <Form.Item
                     label="Yêu cầu đặc biệt (không bắt buộc)"
                     name="specialRequests"
                   >
-                    <Input.TextArea 
-                      rows={4} 
-                      placeholder="Nhập yêu cầu đặc biệt nếu có" 
+                    <Input.TextArea
+                      rows={4}
+                      placeholder="Nhập yêu cầu đặc biệt nếu có"
                     />
                   </Form.Item>
-                  
+
                   <Form.Item>
-                    <Button 
-                      type="primary" 
-                      htmlType="submit" 
+                    <Button
+                      type="primary"
+                      htmlType="submit"
                       size="large"
                       className={styles.submitButton}
                     >
@@ -316,20 +310,27 @@ export default function BookingCreate() {
               ) : null}
             </Card>
           </Col>
-          
+
           <Col xs={24} sm={24} md={8} lg={8} xl={8}>
-            <Card title="Thông tin phòng" bordered={false} className={styles.roomCard}>
+            <Card title="Thông tin phòng" className={styles.roomCard}>
               {room && (
                 <>
                   <div className={styles.roomImage}>
-                    <img src={room.hinhAnh} alt={room.tenPhong} />
+                    <img
+                      src={room.hinhAnh || '/images/rooms/default-room.jpg'}
+                      alt={room.tenPhong}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/rooms/default-room.jpg';
+                      }}
+                    />
                   </div>
-                  
+
                   <h2 className={styles.roomName}>{room.tenPhong}</h2>
                   <p className={styles.roomDescription}>{room.moTa}</p>
-                  
+
                   <Divider />
-                  
+
                   <div className={styles.roomDetails}>
                     <div className={styles.detailItem}>
                       <span className={styles.detailLabel}>Sức chứa:</span>
@@ -338,25 +339,25 @@ export default function BookingCreate() {
                     <div className={styles.detailItem}>
                       <span className={styles.detailLabel}>Giá mỗi đêm:</span>
                       <span className={styles.detailValue}>
-                        {(room.giaTien || 0).toLocaleString('vi-VN')} đ
+                        {`${(room.giaTien || 500000).toLocaleString('vi-VN')} đ`}
                       </span>
                     </div>
                   </div>
-                  
+
                   <Divider />
-                  
+
                   <div className={styles.priceBreakdown}>
                     <h3>Chi tiết giá</h3>
-                    
+
                     <div className={styles.priceItem}>
                       <span>
-                        {(room.giaTien || 0).toLocaleString('vi-VN')} đ x {nights} đêm
+                        {`${(room.giaTien || 500000).toLocaleString('vi-VN')} đ x ${nights} đêm`}
                       </span>
                       <span>{totalPrice.toLocaleString('vi-VN')} đ</span>
                     </div>
-                    
+
                     <Divider />
-                    
+
                     <div className={styles.totalPrice}>
                       <span>Tổng cộng:</span>
                       <span>{totalPrice.toLocaleString('vi-VN')} đ</span>
@@ -370,4 +371,4 @@ export default function BookingCreate() {
       </div>
     </Layout>
   );
-} 
+}

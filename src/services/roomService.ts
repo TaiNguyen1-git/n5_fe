@@ -15,6 +15,7 @@ export interface Room {
   loaiPhong?: string;
   images?: string[];
   features?: string[];
+  soPhong?: string;
   beds?: {
     type: string;
     count: number;
@@ -25,20 +26,24 @@ export interface Room {
 export interface Booking {
   maHD?: number;
   maPhong: number;
-  maKH?: string;
-  tenKH: string;
-  email: string;
+  maKH?: number | string | null;
+  tenKH?: string;
+  email?: string;
   soDienThoai?: string;
-  ngayBatDau: string;
-  ngayKetThuc: string;
-  soLuongKhach: number;
-  tongTien: number;
+  ngayBatDau?: string;
+  ngayKetThuc?: string;
+  soLuongKhach?: number;
+  tongTien?: number;
   trangThai?: number;
   ngayTao?: string;
+  ngayDat?: string;
+  checkIn?: string;
+  checkOut?: string;
+  xoa?: boolean;
 }
 
 // Response interface
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   success: boolean;
   message?: string;
   data?: T;
@@ -88,19 +93,24 @@ export const getRooms = async (
         timeout: 20000, // Tăng timeout lên 20 giây
         headers: { 'Cache-Control': 'no-store' }
       });
-      const formattedData = response.data.map((room: any) => ({
-        id: room.maPhong.toString(),
-        maPhong: room.maPhong,
-        tenPhong: room.ten,
-        moTa: room.moTa,
-        hinhAnh: room.hinhAnh,
-        giaTien: room.giaTien,
-        soLuongKhach: room.soLuongKhach,
-        trangThai: room.trangThai,
-        loaiPhong: room.loaiPhong,
-        images: [room.hinhAnh],
-        features: room.moTa.split(',').map((item: string) => item.trim())
-      }));
+      const formattedData = response.data.map((room: any) => {
+        // Lấy giá từ loaiPhong.giaPhong nếu có
+        const roomPrice = room.giaTien || (room.loaiPhong && room.loaiPhong.giaPhong) || null;
+
+        return {
+          id: room.maPhong.toString(),
+          maPhong: room.maPhong,
+          tenPhong: room.ten || (room.soPhong ? `Phòng ${room.soPhong}` : ''),
+          moTa: room.moTa || 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản',
+          hinhAnh: room.hinhAnh || '/images/rooms/default-room.jpg',
+          giaTien: roomPrice,
+          soLuongKhach: room.soNguoi || room.soLuongKhach || 2,
+          trangThai: room.trangThai || 1,
+          loaiPhong: room.tenLoaiPhong || (room.loaiPhong && room.loaiPhong.tenLoai) || 'Standard',
+          images: [room.hinhAnh || '/images/rooms/default-room.jpg'],
+          features: room.moTa ? room.moTa.split(',').map((item: string) => item.trim()) : ['Wi-Fi miễn phí', 'Điều hòa', 'TV', 'Tủ lạnh']
+        };
+      });
 
       // Không lưu cache
 
@@ -265,38 +275,106 @@ export const getRoomById = async (id: string) => {
  */
 export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> => {
   try {
-    // Cấu trúc dữ liệu đặt phòng theo API
+    // Kiểm tra dữ liệu đầu vào
+    console.log('Original booking data:', JSON.stringify(bookingData, null, 2));
+
+    // Đảm bảo maPhong là số hợp lệ
+    let roomId = 0;
+    if (bookingData.maPhong) {
+      roomId = typeof bookingData.maPhong === 'string' ? parseInt(bookingData.maPhong) : bookingData.maPhong;
+    }
+
+    // Đảm bảo roomId không phải là NaN hoặc 0
+    if (isNaN(roomId) || roomId === 0) {
+      throw new Error('Mã phòng không hợp lệ');
+    }
+
+    // Cấu trúc dữ liệu đặt phòng theo đúng cấu trúc API yêu cầu
     const serverData = {
-      maPhong: bookingData.maPhong,
-      maKH: bookingData.maKH || null,
-      tenKH: bookingData.tenKH || 'Khách hàng',
-      email: bookingData.email || 'guest@example.com',
-      soDienThoai: bookingData.soDienThoai || '',
-      ngayBatDau: bookingData.ngayBatDau,
-      ngayKetThuc: bookingData.ngayKetThuc,
-      soLuongKhach: bookingData.soLuongKhach,
-      tongTien: bookingData.tongTien,
-      trangThai: bookingData.trangThai || 1 // Mặc định là 1 (Đang xử lý)
+      maKH: bookingData.maKH ? (typeof bookingData.maKH === 'string' ? parseInt(bookingData.maKH) : bookingData.maKH) : 0,
+      maPhong: roomId,
+      ngayDat: new Date().toISOString(),
+      ngayBD: bookingData.checkIn || bookingData.ngayBatDau, // Sử dụng ngayBD thay vì checkIn
+      ngayKT: bookingData.checkOut || bookingData.ngayKetThuc, // Sử dụng ngayKT thay vì checkOut
+      trangThai: 1, // Đang xử lý
+      xoa: false
     };
 
     // Log thông tin đặt phòng để debug
     console.log('Sending booking data to API:', serverData);
 
     // Gọi API proxy thay vì gọi trực tiếp
-    const response = await axios.post('/api/book-room', serverData, {
-      timeout: 15000, // 15 giây timeout
-      headers: {
-        'Content-Type': 'application/json'
+    console.log('Calling booking API with data:', JSON.stringify(serverData, null, 2));
+
+    try {
+      // Thử nhiều URL API khác nhau - ưu tiên sử dụng proxy API
+      const API_URLS = [
+        '/api/proxy?url=https://ptud-web-1.onrender.com/api/DatPhong/Create', // Proxy API - ưu tiên cao nhất
+        '/api/proxy?url=https://ptud-web-3.onrender.com/api/DatPhong/Create', // Proxy API thứ hai
+        '/api/book-room', // API handler tùy chỉnh
+        '/api/bookings/create', // API handler thứ ba
+        '/api/booking' // Sử dụng proxy Next.js
+      ];
+
+      let response;
+      let error;
+
+      // Thử từng URL cho đến khi thành công
+      for (const url of API_URLS) {
+        try {
+          console.log(`Trying to book room with URL: ${url}`);
+          response = await axios.post(url, serverData, {
+            timeout: 15000, // 15 giây timeout
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': '*/*'
+            }
+          });
+
+          // Nếu thành công, thoát khỏi vòng lặp
+          if (response && response.status >= 200 && response.status < 300) {
+            console.log(`Successfully booked room with URL: ${url}`);
+            break;
+          }
+        } catch (err: any) {
+          console.error(`Error booking room with URL ${url}:`, err.message);
+          error = err;
+          // Tiếp tục thử URL tiếp theo
+        }
       }
-    });
 
-    console.log('Booking response:', response.data);
+      // Nếu không có response thành công, ném lỗi cuối cùng
+      if (!response) {
+        throw error || new Error('Failed to book room with all available URLs');
+      }
 
-    return {
-      success: true,
-      message: 'Đặt phòng thành công',
-      data: response.data
-    };
+      console.log('Booking response status:', response.status);
+      console.log('Booking response data:', JSON.stringify(response.data, null, 2));
+
+      // Kiểm tra xem response có chứa dữ liệu đặt phòng không
+      if (!response.data) {
+        console.warn('API response missing data:', response.data);
+      }
+
+      // Xử lý dữ liệu phản hồi từ proxy API
+      const responseData = response.data?.data || response.data;
+
+      console.log('Processed response data:', responseData);
+
+      return {
+        success: true,
+        message: 'Đặt phòng thành công',
+        data: responseData
+      };
+    } catch (error: any) {
+      console.error('Error in booking API call:', error);
+
+      // Trả về response lỗi
+      return {
+        success: false,
+        message: error.message || 'Không thể đặt phòng. Vui lòng thử lại sau.'
+      };
+    }
   } catch (error) {
     console.error('Error booking room:', error);
 
@@ -470,7 +548,5 @@ export const cancelBooking = async (bookingId: number): Promise<ApiResponse<any>
 export default {
   getRooms,
   getRoomById,
-  bookRoom,
-  getUserBookings,
-  cancelBooking
+  bookRoom
 };

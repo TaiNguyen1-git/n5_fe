@@ -18,7 +18,12 @@ const nextConfig: NextConfig = {
     'rc-util',
     'rc-picker',
     'rc-pagination',
-    '@ant-design/icons-svg'
+    '@ant-design/icons-svg',
+    '@rc-component/trigger',
+    '@rc-component/portal',
+    'rc-motion',
+    'rc-resize-observer',
+    'rc-virtual-list'
   ],
   async rewrites() {
     return [
