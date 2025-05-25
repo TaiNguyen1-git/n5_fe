@@ -145,7 +145,7 @@ export default function Home() {
           giaTien: room.loaiPhong?.giaPhong || 500000,
           soLuongKhach: room.soNguoi || 2,
           trangThai: room.trangThai || 1,
-          loaiPhong: room.loaiPhong?.tenLoai || 'Standard',
+          loaiPhong: room.tenLoaiPhong || room.loaiPhong?.tenLoai || 'Standard',
           features: room.moTa ? room.moTa.split(',').map((item: string) => item.trim()) : ['Wi-Fi miễn phí', 'Điều hòa', 'TV']
         }));
 

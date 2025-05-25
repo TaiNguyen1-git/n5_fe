@@ -18,7 +18,7 @@ export default async function handler(
   if (req.method === 'GET') {
     try {
       const { id } = req.query;
-      
+
       if (!id) {
         return res.status(400).json({
           success: false,
@@ -26,16 +26,11 @@ export default async function handler(
         });
       }
 
-      console.log(`Fetching position with ID ${id} from backend API...`);
-      
       // Get position from backend API
       const response = await axios.get(`${BACKEND_API_URL}/ChucVu/GetById`, {
         params: { id },
         timeout: 15000 // 15 second timeout
       });
-
-      // Log response for debugging
-      console.log(`API ChucVu/GetById response for ID ${id}:`, response.data);
 
       // Return the position data directly
       return res.status(200).json({

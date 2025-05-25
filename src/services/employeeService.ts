@@ -26,13 +26,26 @@ export interface Employee {
   caLam?: string | null;
 }
 
+// Define interface for paginated response
+export interface PaginatedEmployeeResponse {
+  items: Employee[];
+  totalItems: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 // API services for employees
 export const employeeService = {
-  // Get all employees
-  getAllEmployees: async (): Promise<Employee[]> => {
+  // Get all employees with pagination
+  getAllEmployees: async (pageNumber: number = 1, pageSize: number = 10): Promise<PaginatedEmployeeResponse> => {
     try {
-      console.log('Fetching employees from API...');
+      console.log(`Fetching employees from API with pagination: page ${pageNumber}, size ${pageSize}`);
       const response = await axios.get(`${BASE_URL}/employees`, {
+        params: {
+          pageNumber,
+          pageSize
+        },
         timeout: 15000 // 15 second timeout
       });
 
@@ -46,36 +59,79 @@ export const employeeService = {
       });
 
       if (response.data) {
-        // Nếu dữ liệu có cấu trúc items
-        if (response.data.items && Array.isArray(response.data.items)) {
-          console.log('Using items array, length:', response.data.items.length);
-          return response.data.items;
+        // Nếu dữ liệu có cấu trúc success và data với pagination
+        if (response.data.success && response.data.data) {
+          const data = response.data.data;
+
+          // Check if data has pagination structure
+          if (data.items && Array.isArray(data.items)) {
+            console.log('Using paginated success.data structure, items length:', data.items.length);
+            return {
+              items: data.items,
+              totalItems: data.totalItems || data.items.length,
+              pageNumber: data.pageNumber || pageNumber,
+              pageSize: data.pageSize || pageSize,
+              totalPages: data.totalPages || Math.ceil((data.totalItems || data.items.length) / pageSize)
+            };
+          }
+          // If data is directly an array (fallback)
+          else if (Array.isArray(data)) {
+            console.log('Using success.data array, length:', data.length);
+            return {
+              items: data,
+              totalItems: data.length,
+              pageNumber: pageNumber,
+              pageSize: pageSize,
+              totalPages: Math.ceil(data.length / pageSize)
+            };
+          }
         }
-        // Nếu dữ liệu có cấu trúc data
-        else if (response.data.data && Array.isArray(response.data.data)) {
-          console.log('Using data array, length:', response.data.data.length);
-          return response.data.data;
+        // Nếu dữ liệu có cấu trúc items trực tiếp
+        else if (response.data.items && Array.isArray(response.data.items)) {
+          console.log('Using direct items array, length:', response.data.items.length);
+          return {
+            items: response.data.items,
+            totalItems: response.data.totalItems || response.data.items.length,
+            pageNumber: response.data.pageNumber || pageNumber,
+            pageSize: response.data.pageSize || pageSize,
+            totalPages: response.data.totalPages || Math.ceil((response.data.totalItems || response.data.items.length) / pageSize)
+          };
         }
-        // Nếu dữ liệu là mảng trực tiếp
+        // Nếu dữ liệu là mảng trực tiếp (fallback)
         else if (Array.isArray(response.data)) {
           console.log('Using direct array, length:', response.data.length);
-          return response.data;
-        }
-        // Nếu dữ liệu có cấu trúc success và data
-        else if (response.data.success && response.data.data) {
-          if (Array.isArray(response.data.data)) {
-            console.log('Using success.data array, length:', response.data.data.length);
-            return response.data.data;
-          } else {
-            console.log('Data is not an array:', typeof response.data.data);
-          }
+          return {
+            items: response.data,
+            totalItems: response.data.length,
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            totalPages: Math.ceil(response.data.length / pageSize)
+          };
         }
       }
 
-      console.warn('No valid employee data structure found, returning empty array');
-      return [];
+      console.warn('No valid employee data structure found, returning empty pagination response');
+      return {
+        items: [],
+        totalItems: 0,
+        pageNumber: pageNumber,
+        pageSize: pageSize,
+        totalPages: 0
+      };
     } catch (error) {
       console.error('Error fetching employees:', error);
+      throw error;
+    }
+  },
+
+  // Get all employees without pagination (for backward compatibility)
+  getAllEmployeesNoPagination: async (): Promise<Employee[]> => {
+    try {
+      console.log('Fetching all employees without pagination...');
+      const response = await employeeService.getAllEmployees(1, 1000); // Get a large page
+      return response.items;
+    } catch (error) {
+      console.error('Error fetching employees without pagination:', error);
       throw error;
     }
   },

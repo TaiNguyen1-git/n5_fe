@@ -42,9 +42,9 @@ const nextConfig = {
   },
   // Increase build timeout
   staticPageGenerationTimeout: 180,
-  // Skip admin page during static generation
+  // Optimize bundle size
   experimental: {
-    excludeDefaultMomentLocales: true,
+    optimizePackageImports: ['antd'],
   },
 
   // Add transpile packages to fix module resolution issues

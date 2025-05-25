@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Select, Input, Tag, Space, Modal, message, Spin, Form, InputNumber, Upload, Popconfirm } from 'antd';
 import { EyeOutlined, ReloadOutlined, EditOutlined, SaveOutlined, UploadOutlined, PlusOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { getRooms, PaginatedRoomResponse } from '../../../services/roomService';
 import axios from 'axios';
 
 // Định nghĩa cấu trúc dữ liệu phòng theo API
@@ -94,6 +95,17 @@ const RoomManagement = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total: number, range: [number, number]) =>
+      `${range[0]}-${range[1]} của ${total} phòng`,
+  });
+
   // Format room data from API response
   const formatRoomData = (data: any[]): Room[] => {
     return data.map((room: any) => ({
@@ -106,71 +118,124 @@ const RoomManagement = () => {
       soLuongKhach: room.soNguoi || room.soLuongKhach || 0,
       trangThai: room.trangThaiPhong?.maTT || room.trangThai || 1,
       tenTT: room.trangThaiPhong?.tenTT || room.tenTT || '',
-      loaiPhong: room.loaiPhong?.tenLoai || room.loaiPhong || ''
+      loaiPhong: room.tenLoaiPhong || room.loaiPhong?.tenLoai || room.loaiPhong || ''
     }));
   };
 
-  // Fetch rooms from API with fallback mechanisms
-  const fetchRooms = async () => {
+  // Fetch rooms from API with pagination
+  const fetchRooms = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoading(true);
     setError('');
 
-    // Try each API endpoint in sequence
-    for (let i = 0; i < API_URLS.length; i++) {
-      try {
-        console.log(`Trying API endpoint: ${API_URLS[i]}`);
-        const response = await axios.get(API_URLS[i], {
-          timeout: 10000, // 10 second timeout
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
-          }
-        });
+    try {
+      console.log(`Fetching rooms with pagination: page ${pageNumber}, size ${pageSize}`);
 
-        // Handle different response formats
-        if (response.data) {
-          let formattedRooms: Room[] = [];
+      // Use the new getRooms service with pagination
+      const response = await getRooms(undefined, pageNumber, pageSize);
 
-          if (Array.isArray(response.data.items)) {
-            // Format for API response with items array
-            formattedRooms = formatRoomData(response.data.items);
-          } else if (Array.isArray(response.data)) {
-            // Format for direct array response
-            formattedRooms = formatRoomData(response.data);
-          } else if (response.data.data && Array.isArray(response.data.data)) {
-            // Format for response with data property
-            formattedRooms = formatRoomData(response.data.data);
-          }
+      if (response.success && response.data) {
+        const paginatedData = response.data as PaginatedRoomResponse;
 
-          if (formattedRooms.length > 0) {
-            setRooms(formattedRooms);
-            setLoading(false);
-            return; // Success, exit the function
-          }
-        }
+        // Format room data
+        const formattedRooms = formatRoomData(paginatedData.items);
 
-        // If we get here, the response format wasn't recognized
-        console.warn(`Unrecognized data format from ${API_URLS[i]}`);
+        // Update rooms and pagination info
+        setRooms(formattedRooms);
+        setPagination(prev => ({
+          ...prev,
+          current: paginatedData.pageNumber,
+          pageSize: paginatedData.pageSize,
+          total: paginatedData.totalItems,
+        }));
 
-      } catch (err) {
-        console.error(`Error fetching rooms from ${API_URLS[i]}:`, err);
-        // Continue to the next API endpoint
+        setLoading(false);
+        return;
+      } else {
+        throw new Error(response.message || 'Failed to fetch rooms');
       }
-    }
+    } catch (error) {
+      console.error('Error fetching rooms with pagination:', error);
 
-    // If all API calls failed, use mock data as last resort
-    console.warn('All API endpoints failed, using mock data');
-    setRooms(MOCK_ROOMS);
-    message.warning('Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu.');
-    setError('Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu.');
-    setLoading(false);
+      // Fallback to old API method
+      console.log('Falling back to old API method...');
+
+      // Try each API endpoint in sequence
+      for (let i = 0; i < API_URLS.length; i++) {
+        try {
+          console.log(`Trying API endpoint: ${API_URLS[i]}`);
+          const response = await axios.get(API_URLS[i], {
+            timeout: 10000, // 10 second timeout
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          });
+
+          // Handle different response formats
+          if (response.data) {
+            let formattedRooms: Room[] = [];
+
+            if (Array.isArray(response.data.items)) {
+              // Format for API response with items array
+              formattedRooms = formatRoomData(response.data.items);
+            } else if (Array.isArray(response.data)) {
+              // Format for direct array response
+              formattedRooms = formatRoomData(response.data);
+            } else if (response.data.data && Array.isArray(response.data.data)) {
+              // Format for response with data property
+              formattedRooms = formatRoomData(response.data.data);
+            }
+
+            if (formattedRooms.length > 0) {
+              setRooms(formattedRooms);
+              // Update pagination for fallback (client-side pagination)
+              setPagination(prev => ({
+                ...prev,
+                total: formattedRooms.length,
+              }));
+              setLoading(false);
+              return; // Success, exit the function
+            }
+          }
+
+          // If we get here, the response format wasn't recognized
+          console.warn(`Unrecognized data format from ${API_URLS[i]}`);
+
+        } catch (err) {
+          console.error(`Error fetching rooms from ${API_URLS[i]}:`, err);
+          // Continue to the next API endpoint
+        }
+      }
+
+      // If all API calls failed, use mock data as last resort
+      console.warn('All API endpoints failed, using mock data');
+      setRooms(MOCK_ROOMS);
+      setPagination(prev => ({
+        ...prev,
+        total: MOCK_ROOMS.length,
+      }));
+      message.warning('Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu.');
+      setError('Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu.');
+      setLoading(false);
+    }
   };
 
   // Load rooms when component mounts
   useEffect(() => {
-    fetchRooms();
+    fetchRooms(pagination.current, pagination.pageSize);
   }, []);
+
+  // Handle table pagination change
+  const handleTableChange = (page: number, pageSize?: number) => {
+    const newPagination = {
+      ...pagination,
+      current: page,
+      pageSize: pageSize || pagination.pageSize,
+    };
+    setPagination(newPagination);
+    fetchRooms(page, pageSize || pagination.pageSize);
+  };
 
   const handleView = (room: Room) => {
     setViewingRoom(room);
@@ -254,7 +319,7 @@ const RoomManagement = () => {
       if (success) {
         message.success('Cập nhật phòng thành công');
         setEditModal(false);
-        fetchRooms(); // Tải lại danh sách phòng
+        fetchRooms(pagination.current, pagination.pageSize); // Tải lại danh sách phòng
       } else {
         message.error(`Cập nhật phòng thất bại: ${errorMessage || 'Không thể kết nối đến máy chủ'}`);
       }
@@ -279,7 +344,7 @@ const RoomManagement = () => {
   };
 
   const handleRefresh = () => {
-    fetchRooms();
+    fetchRooms(pagination.current, pagination.pageSize);
   };
 
   // Xử lý xóa phòng
@@ -332,14 +397,14 @@ const RoomManagement = () => {
 
       if (success) {
         message.success('Xóa phòng thành công');
-        fetchRooms(); // Tải lại danh sách phòng
+        fetchRooms(pagination.current, pagination.pageSize); // Tải lại danh sách phòng
       } else {
         // Thử phương thức DELETE nếu PUT không thành công
         try {
           const response = await axios.delete(`/api/rooms/${roomId}`);
           if (response.status >= 200 && response.status < 300) {
             message.success('Xóa phòng thành công');
-            fetchRooms(); // Tải lại danh sách phòng
+            fetchRooms(pagination.current, pagination.pageSize); // Tải lại danh sách phòng
             return;
           }
         } catch (deleteError) {
@@ -417,7 +482,7 @@ const RoomManagement = () => {
       if (success) {
         message.success('Tạo phòng mới thành công');
         setCreateModal(false);
-        fetchRooms(); // Tải lại danh sách phòng
+        fetchRooms(pagination.current, pagination.pageSize); // Tải lại danh sách phòng
       } else {
         message.error(`Tạo phòng mới thất bại: ${errorMessage || 'Không thể kết nối đến máy chủ'}`);
       }
@@ -590,7 +655,11 @@ const RoomManagement = () => {
         columns={columns}
         dataSource={filteredRooms}
         rowKey="maPhong"
-        pagination={{ pageSize: 10 }}
+        pagination={{
+          ...pagination,
+          onChange: handleTableChange,
+          onShowSizeChange: handleTableChange,
+        }}
         loading={{
           spinning: loading,
           tip: 'Đang tải dữ liệu phòng...',

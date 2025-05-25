@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
+import FormData from 'form-data';
 
 // Define response type
 type ResponseData = {
@@ -32,16 +33,24 @@ export default async function handler(
         });
       }
 
-      // Chuẩn bị dữ liệu người dùng - chuyển đổi sang cấu trúc backend mong đợi
+      // Chuẩn bị dữ liệu người dùng - đảm bảo tất cả trường đều có giá trị hợp lệ
       const userData = {
-        tenTK: TenTK,
-        matKhau: MatKhau,
-        tenHienThi: TenHienThi || TenTK,
-        email: Email || '',
-        phone: Phone || '',
-        loaiTK: Number(LoaiTK) || 2, // Mặc định là tài khoản nhân viên
-        createAt: CreateAt || new Date().toISOString()
+        TenTK: TenTK?.trim() || '',
+        MatKhau: MatKhau?.trim() || '',
+        TenHienThi: TenHienThi?.trim() || TenTK?.trim() || '',
+        Email: Email?.trim() || '',
+        Phone: Phone?.trim() || '',
+        LoaiTK: Number(LoaiTK) || 2, // Mặc định là tài khoản nhân viên
+        CreateAt: CreateAt || new Date().toISOString()
       };
+
+      // Kiểm tra lại các trường bắt buộc sau khi trim
+      if (!userData.TenTK || !userData.MatKhau) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tên tài khoản và mật khẩu không được để trống sau khi xử lý'
+        });
+      }
 
       // Log chi tiết dữ liệu
       console.log('User data structure:', {
@@ -56,8 +65,19 @@ export default async function handler(
 
       console.log('Sending to API:', userData);
 
-      // Tạo người dùng thông qua API backend
-      const response = await axios.post(`${BACKEND_API_URL}/User/Create`, userData);
+      // Tạo FormData để gửi đến backend API (backend yêu cầu multipart/form-data)
+      const formData = new FormData();
+      Object.keys(userData).forEach(key => {
+        formData.append(key, userData[key as keyof typeof userData]);
+      });
+
+      // Tạo người dùng thông qua API backend với form-data
+      const response = await axios.post(`${BACKEND_API_URL}/User/Create`, formData, {
+        headers: {
+          ...formData.getHeaders()
+        },
+        timeout: 30000
+      });
 
       console.log('API response:', response.data);
 

@@ -22,7 +22,7 @@ export default async function handler(
       const bookingsResponse = await axios.get(`${BACKEND_API_URL}/DatPhong/GetAll`, {
         timeout: 15000
       });
-      
+
       // Xử lý dữ liệu đặt phòng
       let bookings = [];
       if (bookingsResponse.data) {
@@ -32,40 +32,106 @@ export default async function handler(
           bookings = bookingsResponse.data.items;
         }
       }
-      
-      // Lọc và định dạng dữ liệu đặt phòng gần đây
-      const recentBookings = bookings
+
+      // Lọc và sắp xếp dữ liệu đặt phòng
+      const filteredBookings = bookings
+        .filter((booking: any) => !booking.xoa) // Chỉ lấy những đặt phòng chưa bị xóa
         .sort((a: any, b: any) => {
-          // Sắp xếp theo ngày đặt phòng mới nhất
-          const dateA = dayjs(a.ngayBatDau || a.ngayDat);
-          const dateB = dayjs(b.ngayBatDau || b.ngayDat);
+          // Sắp xếp theo ngày tạo đặt phòng mới nhất
+          const dateA = dayjs(a.ngayTao || a.ngayDat || a.ngayBatDau);
+          const dateB = dayjs(b.ngayTao || b.ngayDat || b.ngayBatDau);
           return dateB.unix() - dateA.unix();
         })
-        .slice(0, 5) // Lấy 5 đặt phòng gần nhất
-        .map((booking: any) => {
-          // Xác định trạng thái đặt phòng
+        .slice(0, 10); // Lấy 10 đặt phòng gần nhất
+
+      // Fetch thông tin khách hàng cho từng đặt phòng
+      const recentBookings = await Promise.all(
+        filteredBookings.map(async (booking: any) => {
+          // Xác định trạng thái đặt phòng theo mã trạng thái API
           let status = 'pending';
-          if (booking.trangThai === 2) {
-            status = 'confirmed';
-          } else if (booking.trangThai === 3) {
-            status = 'cancelled';
-          } else if (dayjs().isAfter(dayjs(booking.ngayBatDau)) && dayjs().isBefore(dayjs(booking.ngayKetThuc))) {
-            status = 'checked_in';
-          } else if (dayjs().isAfter(dayjs(booking.ngayKetThuc))) {
-            status = 'checked_out';
+          switch(booking.trangThai) {
+            case 1:
+              status = 'pending'; // Chờ xác nhận
+              break;
+            case 2:
+              status = 'confirmed'; // Đã xác nhận
+              break;
+            case 3:
+              status = 'checked_in'; // Đã nhận phòng
+              break;
+            case 4:
+              status = 'checked_out'; // Đã trả phòng
+              break;
+            case 5:
+              status = 'cancelled'; // Đã hủy
+              break;
+            case 6:
+              status = 'cancelled'; // Không đến
+              break;
+            default:
+              // Xác định trạng thái dựa trên thời gian nếu không có mã trạng thái rõ ràng
+              if (dayjs().isAfter(dayjs(booking.ngayKetThuc || booking.ngayKT))) {
+                status = 'checked_out';
+              } else if (dayjs().isAfter(dayjs(booking.ngayBatDau || booking.ngayBD)) &&
+                         dayjs().isBefore(dayjs(booking.ngayKetThuc || booking.ngayKT))) {
+                status = 'checked_in';
+              } else {
+                status = 'pending';
+              }
           }
-          
+
+          // Lấy tên khách hàng từ API nếu có maKH
+          let customerName = 'Khách hàng';
+          if (booking.maKH) {
+            try {
+              const customerResponse = await axios.get(`${BACKEND_API_URL}/KhachHang/GetById/${booking.maKH}`, {
+                timeout: 5000
+              });
+
+              if (customerResponse.data && customerResponse.data.value && customerResponse.data.value.tenKH) {
+                customerName = customerResponse.data.value.tenKH;
+              }
+            } catch (error) {
+              console.error(`Error fetching customer ${booking.maKH}:`, error);
+              // Fallback to existing name fields
+              customerName = booking.tenKH || booking.khachHang?.tenKH || `Khách hàng ${booking.maKH}`;
+            }
+          } else {
+            // Sử dụng tên có sẵn nếu không có maKH
+            customerName = booking.tenKH || booking.khachHang?.tenKH || 'Khách hàng';
+          }
+
+          // Lấy thông tin phòng từ API nếu có maPhong
+          let roomNumber = booking.maPhong?.toString() || booking.soPhong || 'N/A';
+          if (booking.maPhong) {
+            try {
+              const roomResponse = await axios.get(`${BACKEND_API_URL}/Phong/GetById/${booking.maPhong}`, {
+                timeout: 5000
+              });
+
+              if (roomResponse.data && roomResponse.data.value) {
+                const room = roomResponse.data.value;
+                roomNumber = room.soPhong || room.maPhong?.toString() || booking.maPhong.toString();
+              }
+            } catch (error) {
+              console.error(`Error fetching room ${booking.maPhong}:`, error);
+              // Fallback to existing room fields
+              roomNumber = booking.soPhong || booking.maPhong?.toString() || 'N/A';
+            }
+          }
+
           return {
-            id: booking.maDatPhong || booking.id,
-            roomNumber: booking.maPhong || booking.soPhong || 'N/A',
-            customerName: booking.tenKH || 'Khách hàng',
-            checkIn: booking.ngayBatDau || dayjs().format('YYYY-MM-DD'),
-            checkOut: booking.ngayKetThuc || dayjs().add(1, 'day').format('YYYY-MM-DD'),
+            id: booking.maDatPhong || booking.id || Math.random(),
+            roomNumber: roomNumber,
+            customerName: customerName,
+            checkIn: booking.ngayBatDau || booking.ngayBD || booking.checkIn || dayjs().format('YYYY-MM-DD'),
+            checkOut: booking.ngayKetThuc || booking.ngayKT || booking.checkOut || dayjs().add(1, 'day').format('YYYY-MM-DD'),
             status: status,
-            totalPrice: booking.tongTien || 0
+            totalPrice: booking.tongTien || booking.giaTien || 0
           };
-        });
-      
+        })
+      );
+
       // Trả về dữ liệu đặt phòng gần đây
       return res.status(200).json({
         success: true,

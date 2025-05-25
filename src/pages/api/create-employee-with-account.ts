@@ -83,7 +83,7 @@ export default async function handler(
         }
         // Nếu là lỗi khác, bỏ qua và tiếp tục tạo tài khoản
         else {
-          console.warn('Error checking username, proceeding anyway:', checkError.message);
+
         }
       }
 

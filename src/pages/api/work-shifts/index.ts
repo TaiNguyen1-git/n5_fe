@@ -22,8 +22,7 @@ export default async function handler(
         timeout: 15000 // 15 second timeout
       });
 
-      // Log response for debugging
-      console.log('API CaLam/GetAll response:', JSON.stringify(response.data).substring(0, 500) + '...');
+
 
       // Transform data for frontend if needed
       let workShifts = [];

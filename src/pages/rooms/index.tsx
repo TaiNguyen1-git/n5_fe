@@ -51,114 +51,174 @@ interface Room {
 const RoomsPage = () => {
   const router = useRouter();
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const pageSize = 9;
 
   // Các state cho bộ lọc
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000000]);
   const [guestCount, setGuestCount] = useState<number | null>(null);
   const [roomType, setRoomType] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 9;
+  const [roomStatus, setRoomStatus] = useState<number | null>(null);
+  const [allRoomTypes, setAllRoomTypes] = useState<string[]>([]);
 
-  // Lấy danh sách phòng từ API
-  useEffect(() => {
-    const fetchRooms = async () => {
-      setLoading(true);
-      setError(null);
+  // Fetch room types from API
+  const fetchRoomTypes = async () => {
+    try {
+      const response = await fetch('/api/LoaiPhong/GetAll');
 
-      try {
-        // Thử lấy dữ liệu từ nhiều endpoint khác nhau
-        const endpoints = [
-          '/api/rooms',
-          '/api/Phong/GetAll',
-          'https://ptud-web-1.onrender.com/api/Phong/GetAll'
-        ];
+      if (response.ok) {
+        const result = await response.json();
 
-        let roomsData: Room[] = [];
-        let success = false;
-
-        for (const endpoint of endpoints) {
-          try {
-            const response = await fetch(endpoint);
-            if (response.ok) {
-              const data = await response.json();
-
-              // Xử lý dữ liệu tùy thuộc vào cấu trúc phản hồi
-              if (Array.isArray(data)) {
-                roomsData = data;
-                success = true;
-                break;
-              } else if (data.items && Array.isArray(data.items)) {
-                roomsData = data.items;
-                success = true;
-                break;
-              } else if (data.data && Array.isArray(data.data)) {
-                roomsData = data.data;
-                success = true;
-                break;
-              }
-            }
-          } catch (endpointError) {
-            console.error(`Error fetching from ${endpoint}:`, endpointError);
-            // Tiếp tục thử endpoint tiếp theo
-          }
+        if (result.success && Array.isArray(result.data)) {
+          const types = result.data.map((type: any) => type.tenLoai).filter(Boolean);
+          setAllRoomTypes(types);
+        } else {
+          setAllRoomTypes(['Single', 'Double', 'Triple', 'Vip', 'Deluxe']);
         }
-
-        if (!success) {
-          // Nếu không lấy được dữ liệu từ API, sử dụng dữ liệu mẫu
-          roomsData = generateMockRooms();
-          message.warning('Không thể kết nối đến máy chủ. Hiển thị dữ liệu mẫu.');
-        }
-
-        // Chuẩn hóa dữ liệu phòng
-        const normalizedRooms = roomsData.map(room => normalizeRoomData(room));
-
-        setRooms(normalizedRooms);
-        setFilteredRooms(normalizedRooms);
-      } catch (error) {
-        console.error('Error fetching rooms:', error);
-        setError('Không thể tải danh sách phòng. Vui lòng thử lại sau.');
-
-        // Sử dụng dữ liệu mẫu khi có lỗi
-        const mockRooms = generateMockRooms();
-        setRooms(mockRooms);
-        setFilteredRooms(mockRooms);
-      } finally {
-        setLoading(false);
+      } else {
+        setAllRoomTypes(['Single', 'Double', 'Triple', 'Vip', 'Deluxe']);
       }
-    };
+    } catch (error) {
+      // Fallback to default types if API fails
+      setAllRoomTypes(['Single', 'Double', 'Triple', 'Vip', 'Deluxe']);
+    }
+  };
 
-    fetchRooms();
+  // Lấy danh sách phòng từ API với pagination
+  const fetchRooms = async (page: number = 1) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Build query parameters
+      const params = new URLSearchParams({
+        pageNumber: page.toString(),
+        pageSize: pageSize.toString()
+      });
+
+      // Add filter parameters
+      if (guestCount) {
+        params.append('soLuongKhach', guestCount.toString());
+      }
+
+      if (priceRange[0] > 0) {
+        params.append('giaMin', priceRange[0].toString());
+      }
+
+      if (priceRange[1] < 2000000) {
+        params.append('giaMax', priceRange[1].toString());
+      }
+
+      params.append('_t', Date.now().toString());
+      const response = await fetch(`/api/rooms?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const { items, totalItems, totalPages, pageNumber } = result.data;
+
+        // Convert API data to Room interface format
+        const normalizedRooms = items.map((room: any) => ({
+          maPhong: room.maPhong || room.id || 0,
+          id: room.maPhong || room.id || 0,
+          soPhong: room.soPhong || `Phòng ${room.maPhong || ''}`,
+          tenPhong: room.tenPhong || `Phòng ${room.soPhong || room.maPhong || ''}`,
+          soNguoi: room.soLuongKhach || room.soNguoi || 2,
+          hinhAnh: room.hinhAnh || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop',
+          moTa: room.moTa || 'Thông tin phòng đang được cập nhật',
+          trangThai: room.trangThai || 1,
+          trangThaiText: room.trangThaiTen || getTrangThaiText(room.trangThai || 1),
+          giaTien: room.giaTien || 500000,
+          loaiPhongText: room.loaiPhong || 'Standard',
+          features: room.features || ['WiFi', 'TV', 'Điều hòa', 'Minibar']
+        }));
+
+        // Filter by search term, room type, and room status on frontend (since API doesn't support these filters)
+        let filteredRooms = normalizedRooms;
+
+        if (searchTerm) {
+          filteredRooms = filteredRooms.filter((room: Room) =>
+            room.tenPhong?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            room.soPhong?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            room.moTa?.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        }
+
+        if (roomType) {
+          filteredRooms = filteredRooms.filter((room: Room) => room.loaiPhongText === roomType);
+        }
+
+        if (roomStatus !== null) {
+          filteredRooms = filteredRooms.filter((room: Room) => room.trangThai === roomStatus);
+        }
+
+        setRooms(filteredRooms);
+        setTotalItems(totalItems || filteredRooms.length);
+        setTotalPages(totalPages || Math.ceil((totalItems || filteredRooms.length) / pageSize));
+        setCurrentPage(pageNumber || page);
+
+        // Collect unique room types for filter
+        const uniqueTypes = Array.from(new Set(normalizedRooms.map((room: Room) => room.loaiPhongText).filter(Boolean)));
+
+        // Don't override room types from API with room data
+        // Room types should come from the dedicated API endpoint
+      } else {
+        throw new Error('Invalid API response format');
+      }
+    } catch (error) {
+      setError('Không thể tải danh sách phòng. Vui lòng thử lại sau.');
+
+      // Sử dụng dữ liệu mẫu khi có lỗi
+      const mockRooms = generateMockRooms();
+      setRooms(mockRooms);
+      setTotalItems(mockRooms.length);
+      setTotalPages(Math.ceil(mockRooms.length / pageSize));
+
+      // Set room types from mock data
+      const mockTypes = Array.from(new Set(mockRooms.map(room => room.loaiPhongText)));
+      setAllRoomTypes(mockTypes);
+
+      message.warning('Không thể kết nối đến máy chủ. Hiển thị dữ liệu mẫu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch room types when component mounts
+  useEffect(() => {
+    fetchRoomTypes();
   }, []);
 
-  // Chuẩn hóa dữ liệu phòng từ API
-  const normalizeRoomData = (room: any): Room => {
-    return {
-      maPhong: room.maPhong || room.id || 0,
-      id: room.maPhong || room.id || 0,
-      soPhong: room.soPhong || `Phòng ${room.maPhong || ''}`,
-      tenPhong: room.tenPhong || `Phòng ${room.soPhong || room.maPhong || ''}`,
-      soNguoi: room.soNguoi || room.soLuongKhach || 2,
-      hinhAnh: room.hinhAnh || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop',
-      moTa: room.moTa || 'Thông tin phòng đang được cập nhật',
-      trangThai: room.trangThai || room.maTT || 1,
-      trangThaiText: getTrangThaiText(room.trangThai || room.maTT || 1),
-      giaTien: room.loaiPhong?.giaPhong || room.giaPhong || room.giaTien || 500000,
-      loaiPhongText: room.loaiPhong?.tenLoai || room.tenLoai || 'Standard',
-      features: ['WiFi', 'TV', 'Điều hòa', 'Minibar']
-    };
-  };
+  // Fetch rooms when component mounts or filters change
+  useEffect(() => {
+    fetchRooms(1);
+  }, [guestCount, priceRange]);
+
+  // Handle search, room type, and room status filter changes (client-side filtering)
+  useEffect(() => {
+    fetchRooms(currentPage);
+  }, [searchTerm, roomType, roomStatus]);
+
+
 
   // Hàm tạo dữ liệu mẫu khi không có API
   const generateMockRooms = (): Room[] => {
-    const roomTypes = ['Standard', 'Deluxe', 'Suite', 'Family'];
+    const roomTypes = ['Single', 'Double', 'Triple', 'Vip', 'Deluxe'];
     const mockRooms: Room[] = [];
 
     for (let i = 1; i <= 12; i++) {
-      const roomTypeIndex = (i % 4);
+      const roomTypeIndex = (i % 5);
       const roomType = roomTypes[roomTypeIndex];
       const price = (roomTypeIndex + 1) * 500000;
 
@@ -167,7 +227,7 @@ const RoomsPage = () => {
         id: i,
         soPhong: `${100 + i}`,
         tenPhong: `Phòng ${100 + i}`,
-        soNguoi: roomTypeIndex === 3 ? 4 : 2,
+        soNguoi: roomTypeIndex === 4 ? 4 : roomTypeIndex === 3 ? 3 : 2,
         hinhAnh: `https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop`,
         moTa: `Phòng ${roomType} thoáng mát, đầy đủ tiện nghi`,
         trangThai: i % 3 === 0 ? 2 : 1,
@@ -184,59 +244,36 @@ const RoomsPage = () => {
   // Hàm lấy text trạng thái phòng
   const getTrangThaiText = (trangThai: number): string => {
     switch (trangThai) {
-      case 1: return 'Trống';
+      case 1: return 'Phòng trống';
       case 2: return 'Đã đặt';
-      case 3: return 'Đang sử dụng';
-      case 4: return 'Đang dọn dẹp';
+      case 3: return 'Có khách';
+      case 4: return 'Trả phòng';
+      case 5: return 'Đang dọn';
       default: return 'Không xác định';
     }
   };
 
-  // Lọc phòng dựa trên các tiêu chí
-  useEffect(() => {
-    let result = [...rooms];
+  // Danh sách trạng thái phòng cho filter
+  const roomStatusOptions = [
+    { value: 1, label: 'Phòng trống', color: 'green' },
+    { value: 2, label: 'Đã đặt', color: 'orange' },
+    { value: 3, label: 'Có khách', color: 'red' },
+    { value: 4, label: 'Trả phòng', color: 'blue' },
+    { value: 5, label: 'Đang dọn', color: 'purple' }
+  ];
 
-    // Lọc theo từ khóa tìm kiếm
-    if (searchTerm) {
-      result = result.filter(room =>
-        room.tenPhong?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        room.soPhong?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        room.moTa?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Lọc theo khoảng giá
-    result = result.filter(room =>
-      room.giaTien && room.giaTien >= priceRange[0] && room.giaTien <= priceRange[1]
-    );
-
-    // Lọc theo số lượng khách
-    if (guestCount) {
-      result = result.filter(room => room.soNguoi >= guestCount);
-    }
-
-    // Lọc theo loại phòng
-    if (roomType) {
-      result = result.filter(room => room.loaiPhongText === roomType);
-    }
-
-    setFilteredRooms(result);
-    setCurrentPage(1);
-  }, [searchTerm, priceRange, guestCount, roomType, rooms]);
-
-  // Xử lý khi click vào phòng
-  const handleRoomClick = (roomId: number) => {
-    router.push(`/room/${roomId}`);
+  // Handle pagination change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchRooms(page);
   };
 
-  // Tính toán phòng hiển thị trên trang hiện tại
-  const paginatedRooms = filteredRooms.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-
-  // Lấy danh sách loại phòng duy nhất
-  const uniqueRoomTypes = Array.from(new Set(rooms.map(room => room.loaiPhongText)));
+  // Xử lý khi click vào phòng
+  const handleRoomClick = (room: Room) => {
+    // Sử dụng soPhong thay vì maPhong vì API cần soPhong
+    const roomIdentifier = room.soPhong || room.maPhong || room.id;
+    router.push(`/room/${roomIdentifier}`);
+  };
 
   return (
     <Layout>
@@ -248,7 +285,7 @@ const RoomsPage = () => {
 
         <div className={styles.filterSection}>
           <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} sm={24} md={8} lg={8} xl={8}>
+            <Col xs={24} sm={24} md={6} lg={6} xl={6}>
               <Search
                 placeholder="Tìm kiếm phòng..."
                 allowClear
@@ -259,7 +296,7 @@ const RoomsPage = () => {
               />
             </Col>
 
-            <Col xs={24} sm={12} md={5} lg={5} xl={5}>
+            <Col xs={24} sm={8} md={4} lg={4} xl={4}>
               <Select
                 placeholder={<><UserOutlined /> Số khách</>}
                 style={{ width: '100%' }}
@@ -274,16 +311,42 @@ const RoomsPage = () => {
               </Select>
             </Col>
 
-            <Col xs={24} sm={12} md={5} lg={5} xl={5}>
+            <Col xs={24} sm={8} md={4} lg={4} xl={4}>
               <Select
                 placeholder={<><HomeOutlined /> Loại phòng</>}
                 style={{ width: '100%' }}
                 onChange={(value) => setRoomType(value)}
                 allowClear
                 size="large"
+                value={roomType}
               >
-                {uniqueRoomTypes.map((type) => (
+                <Option value={null}>Tất cả loại phòng</Option>
+                {allRoomTypes.map((type) => (
                   <Option key={type} value={type}>{type}</Option>
+                ))}
+              </Select>
+            </Col>
+
+            <Col xs={24} sm={8} md={4} lg={4} xl={4}>
+              <Select
+                placeholder="Tình trạng phòng"
+                style={{ width: '100%' }}
+                onChange={(value) => setRoomStatus(value)}
+                allowClear
+                size="large"
+                value={roomStatus}
+              >
+                <Option value={null}>Tất cả tình trạng</Option>
+                {roomStatusOptions.map((status) => (
+                  <Option key={status.value} value={status.value}>
+                    <span style={{ color: status.color === 'green' ? '#52c41a' :
+                                         status.color === 'orange' ? '#fa8c16' :
+                                         status.color === 'red' ? '#f5222d' :
+                                         status.color === 'blue' ? '#1890ff' :
+                                         status.color === 'purple' ? '#722ed1' : '#000' }}>
+                      ● {status.label}
+                    </span>
+                  </Option>
                 ))}
               </Select>
             </Col>
@@ -305,7 +368,7 @@ const RoomsPage = () => {
         </div>
 
         <div className={styles.roomsResults}>
-          <p>{filteredRooms.length} phòng được tìm thấy</p>
+          <p>{totalItems} phòng được tìm thấy</p>
         </div>
 
         {loading ? (
@@ -317,12 +380,12 @@ const RoomsPage = () => {
               Thử lại
             </Button>
           </div>
-        ) : filteredRooms.length === 0 ? (
+        ) : rooms.length === 0 ? (
           <Empty description="Không tìm thấy phòng nào phù hợp với tiêu chí tìm kiếm" />
         ) : (
           <>
             <Row gutter={[24, 24]}>
-              {paginatedRooms.map((room) => (
+              {rooms.map((room) => (
                 <Col xs={24} sm={12} md={8} key={room.id}>
                   <Card
                     hoverable
@@ -337,12 +400,21 @@ const RoomsPage = () => {
                             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop';
                           }}
                         />
-                        <Tag color={room.trangThai === 1 ? 'green' : 'orange'} className={styles.roomStatus}>
+                        <Tag
+                          color={
+                            room.trangThai === 1 ? 'green' :
+                            room.trangThai === 2 ? 'orange' :
+                            room.trangThai === 3 ? 'red' :
+                            room.trangThai === 4 ? 'blue' :
+                            room.trangThai === 5 ? 'purple' : 'default'
+                          }
+                          className={styles.roomStatus}
+                        >
                           {room.trangThaiText}
                         </Tag>
                       </div>
                     }
-                    onClick={() => handleRoomClick(room.maPhong)}
+                    onClick={() => handleRoomClick(room)}
                   >
                     <div className={styles.roomCardContent}>
                       <h3>{room.tenPhong}</h3>
@@ -366,10 +438,14 @@ const RoomsPage = () => {
             <div className={styles.pagination}>
               <Pagination
                 current={currentPage}
-                total={filteredRooms.length}
+                total={totalItems}
                 pageSize={pageSize}
-                onChange={(page) => setCurrentPage(page)}
+                onChange={handlePageChange}
                 showSizeChanger={false}
+                showQuickJumper
+                showTotal={(total, range) =>
+                  `${range[0]}-${range[1]} của ${total} phòng`
+                }
               />
             </div>
           </>

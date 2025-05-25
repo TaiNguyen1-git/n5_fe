@@ -127,7 +127,6 @@ export default function RoomDetail() {
         setError(roomData.message || 'Không tìm thấy thông tin phòng');
       }
     } catch (err) {
-      console.error('Error fetching room data:', err);
       if (err instanceof Error) {
         // Hiển thị thông báo lỗi thân thiện với người dùng
         if ('isAxiosError' in err) {
@@ -202,8 +201,6 @@ export default function RoomDetail() {
 
       // Nếu không có ID khách hàng (chưa đăng nhập hoặc đăng nhập nhưng không có ID)
       if (!customerId) {
-        console.log('Tạo khách hàng mới trước khi đặt phòng');
-
         // Tạo khách hàng mới
         const customerResponse = await createCustomer({
           tenKH: bookingData.guestName || (user?.fullName || 'Khách hàng'),
@@ -457,7 +454,7 @@ export default function RoomDetail() {
 
               <div className={styles.roomDescription}>
                 <h2>Mô tả</h2>
-                <p>{room.moTa}</p>
+                <p>{room.moTa || 'Đang tải mô tả...'}</p>
               </div>
 
               <div className={styles.roomFeatures}>

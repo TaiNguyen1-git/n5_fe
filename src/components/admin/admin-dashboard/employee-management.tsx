@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Modal, Form, Input, InputNumber, Select, message, Typography, Card, Row, Col, Statistic, Spin, Alert, Divider } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, TeamOutlined, UserOutlined, DollarOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, TeamOutlined, UserOutlined, DollarOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { Employee, employeeService } from '../../../services/employeeService';
+import { Employee, employeeService, PaginatedEmployeeResponse } from '../../../services/employeeService';
 import { Position, positionService } from '../../../services/positionService';
 import axios from 'axios';
 
@@ -20,12 +20,34 @@ const EmployeeManagement = () => {
   const [shiftsLoading, setShiftsLoading] = useState(false);
   const [form] = Form.useForm();
 
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total: number, range: [number, number]) =>
+      `${range[0]}-${range[1]} của ${total} nhân viên`,
+  });
+
   // Fetch employees, positions, and shifts when component mounts
   useEffect(() => {
-    fetchEmployees();
+    fetchEmployees(pagination.current, pagination.pageSize);
     fetchPositions();
     fetchShifts();
   }, []);
+
+  // Handle table pagination change
+  const handleTableChange = (page: number, pageSize?: number) => {
+    const newPagination = {
+      ...pagination,
+      current: page,
+      pageSize: pageSize || pagination.pageSize,
+    };
+    setPagination(newPagination);
+    fetchEmployees(page, pageSize || pagination.pageSize);
+  };
 
 
 
@@ -69,12 +91,20 @@ const EmployeeManagement = () => {
   };
 
   // Function to fetch employees from API
-  const fetchEmployees = async (retryCount = 0) => {
+  const fetchEmployees = async (pageNumber: number = 1, pageSize: number = 10, retryCount = 0) => {
     setLoading(true);
     try {
-      // Lấy danh sách nhân viên
-      const data = await employeeService.getAllEmployees();
-      console.log('Fetched employees data:', data);
+      // Lấy danh sách nhân viên với phân trang
+      const response: PaginatedEmployeeResponse = await employeeService.getAllEmployees(pageNumber, pageSize);
+      console.log('Fetched employees data:', response);
+
+      // Cập nhật thông tin phân trang
+      setPagination(prev => ({
+        ...prev,
+        current: response.pageNumber,
+        pageSize: response.pageSize,
+        total: response.totalItems,
+      }));
 
       // Lấy danh sách chức vụ nếu chưa có
       if (positions.length === 0) {
@@ -85,7 +115,7 @@ const EmployeeManagement = () => {
       const formattedEmployees = [];
 
       // Xử lý từng nhân viên
-      for (const item of data) {
+      for (const item of response.items) {
         console.log('Processing employee data:', item);
 
         // Lấy thông tin cơ bản của nhân viên
@@ -174,7 +204,7 @@ const EmployeeManagement = () => {
       if (retryCount < 3) {
         message.warning(`Đang thử kết nối lại... (${retryCount + 1}/3)`);
         setTimeout(() => {
-          fetchEmployees(retryCount + 1);
+          fetchEmployees(pageNumber, pageSize, retryCount + 1);
         }, 2000 * (retryCount + 1)); // Exponential backoff
         return;
       }
@@ -262,6 +292,8 @@ const EmployeeManagement = () => {
       email: email,
       phone: phone,
       luong: employee.luong || employee.luongCoBan || 0,
+      caLam: employee.caLamId || 6,
+      maVaiTro: employee.maVaiTro || 2,
       trangThai: employee.trangThai !== undefined ? employee.trangThai : true
     });
     setIsModalVisible(true);
@@ -292,6 +324,8 @@ const EmployeeManagement = () => {
       }
     });
   };
+
+
 
   // Handle add new employee
   const handleAdd = () => {
@@ -364,7 +398,7 @@ const EmployeeManagement = () => {
           message.success('Cập nhật nhân viên thành công');
         } else {
           // Tạo nhân viên mới kèm tài khoản
-          console.log('Creating new employee with account...');
+          console.log('Creating new employee with account using User/Create API...');
 
           try {
             setLoading(true);
@@ -381,71 +415,125 @@ const EmployeeManagement = () => {
               console.log(`Position not found: ${values.chucVu}, using default ID: ${chucVuId}`);
             }
 
-            // Chuẩn bị dữ liệu để tạo nhân viên
-            const employeeData = {
-              hoTen: values.hoTen,
-              chucVuId: Number(chucVuId),
-              caLamId: Number(values.caLam) || 6, // Lấy từ form hoặc mặc định là ca 6
-              luongCoBan: Number(values.luong) || 0,
-              maVaiTro: 2, // Luôn là 2 (nhân viên) khi tạo mới
-              trangThai: values.trangThai !== undefined ? values.trangThai : true
+            // Bước 1: Tạo tài khoản người dùng bằng API User/Create
+            console.log('Step 1: Creating user account...');
+            const userAccountData = {
+              TenTK: values.taiKhoan,
+              MatKhau: values.matKhau,
+              TenHienThi: values.hoTen,
+              Email: values.email || '',
+              Phone: values.phone || '',
+              CreateAt: new Date().toISOString(),
+              LoaiTK: 2 // Nhân viên
             };
 
-            console.log('Employee data before sending:', JSON.stringify(employeeData));
+            console.log('User account data:', userAccountData);
 
-            // Gọi API proxy để tạo nhân viên
-            const response = await axios.post('/api/create-employee', employeeData);
-            console.log('Employee creation response:', response.data);
+            // Gọi API proxy User/Create để tạo tài khoản
+            const userResponse = await axios.post('/api/User/Create', userAccountData, {
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              timeout: 30000
+            });
 
-            if (response.data && response.data.success) {
-              const newEmployee = {
-                maNV: response.data?.data?.maNV || Date.now(),
+            console.log('User account creation response:', userResponse.data);
+
+            // Kiểm tra xem tài khoản có được tạo thành công không
+            if (userResponse.data && userResponse.data.success) {
+              console.log('User account created successfully, proceeding to create employee...');
+
+              // Bước 2: Tạo nhân viên
+              console.log('Step 2: Creating employee...');
+              const employeeData = {
                 hoTen: values.hoTen,
-                chucVu: values.chucVu,
-                taiKhoan: values.taiKhoan,
-                luong: Number(values.luong) || 0,
+                chucVuId: Number(chucVuId),
+                caLamId: Number(values.caLam) || 6,
+                luongCoBan: Number(values.luong) || 0,
+                maVaiTro: 2, // Luôn là 2 (nhân viên) khi tạo mới
                 trangThai: values.trangThai !== undefined ? values.trangThai : true
               };
 
-              setEmployees([...employees, newEmployee]);
-              Modal.success({
-                title: 'Thêm nhân viên thành công',
-                content: (
-                  <div>
-                    <p>Nhân viên mới đã được tạo với thông tin:</p>
-                    <p><strong>Họ tên:</strong> {values.hoTen}</p>
-                    <p><strong>Chức vụ:</strong> {values.chucVu}</p>
-                    <p><strong>Ca làm việc:</strong> {(() => {
-                      const caLamId = Number(values.caLam);
-                      // Tìm ca làm trong danh sách từ API
-                      const selectedShift = shifts.find(s => s.id === caLamId);
-                      if (selectedShift && selectedShift.tenCa) {
-                        return selectedShift.tenCa;
-                      }
+              console.log('Employee data:', employeeData);
 
-                      // Fallback nếu không tìm thấy trong API
-                      switch (caLamId) {
-                        case 1: return 'Ca sáng (6h-14h)';
-                        case 2: return 'Ca chiều (14h-22h)';
-                        case 3: return 'Ca đêm (22h-6h)';
-                        case 4: return 'Ca hành chính (8h-17h)';
-                        case 5: return 'Ca linh hoạt';
-                        case 6: return 'Ca toàn thời gian';
-                        default: return `Ca ${caLamId}`;
-                      }
-                    })()}</p>
-                    <p><strong>Vai trò:</strong> Nhân viên</p>
-                    <p><strong>Lương:</strong> {Number(values.luong).toLocaleString('vi-VN')} VNĐ</p>
-                    <p><strong>Trạng thái:</strong> {values.trangThai ? 'Đang làm việc' : 'Đã nghỉ việc'}</p>
-                    <div style={{ marginTop: 15, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                      <p style={{ color: '#52c41a', fontWeight: 'bold' }}>Nhân viên đã được tạo thành công!</p>
-                    </div>
-                  </div>
-                ),
-                width: 500
+              // Gọi API proxy tạo nhân viên
+              const employeeResponse = await axios.post('/api/create-employee', employeeData, {
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                timeout: 30000
               });
+
+              console.log('Employee creation response:', employeeResponse.data);
+
+              // Kiểm tra response từ API create-employee
+              const isEmployeeCreated = employeeResponse.data &&
+                (employeeResponse.data.success ||
+                 (employeeResponse.data.data && employeeResponse.data.data.statusCode === 200));
+
+              if (isEmployeeCreated) {
+                console.log('✅ Both user and employee created successfully! Showing success modal...');
+
+                // Refresh the current page to show the new employee
+                await fetchEmployees(pagination.current, pagination.pageSize);
+
+                // Đảm bảo modal được hiển thị
+                setTimeout(() => {
+                  Modal.success({
+                  title: 'Thêm nhân viên và tài khoản thành công',
+                  content: (
+                    <div>
+                      <p>Nhân viên mới đã được tạo với thông tin:</p>
+                      <p><strong>Họ tên:</strong> {values.hoTen}</p>
+                      <p><strong>Chức vụ:</strong> {values.chucVu}</p>
+                      <p><strong>Tài khoản:</strong> {values.taiKhoan}</p>
+                      <p><strong>Ca làm việc:</strong> {(() => {
+                        const caLamId = Number(values.caLam);
+                        // Tìm ca làm trong danh sách từ API
+                        const selectedShift = shifts.find(s => s.id === caLamId);
+                        if (selectedShift && selectedShift.tenCa) {
+                          return selectedShift.tenCa;
+                        }
+
+                        // Fallback nếu không tìm thấy trong API
+                        switch (caLamId) {
+                          case 1: return 'Ca sáng (6h-14h)';
+                          case 2: return 'Ca chiều (14h-22h)';
+                          case 3: return 'Ca đêm (22h-6h)';
+                          case 4: return 'Ca hành chính (8h-17h)';
+                          case 5: return 'Ca linh hoạt';
+                          case 6: return 'Ca toàn thời gian';
+                          default: return `Ca ${caLamId}`;
+                        }
+                      })()}</p>
+                      <p><strong>Vai trò:</strong> Nhân viên</p>
+                      <p><strong>Lương:</strong> {Number(values.luong).toLocaleString('vi-VN')} VNĐ</p>
+                      <p><strong>Trạng thái:</strong> {values.trangThai ? 'Đang làm việc' : 'Đã nghỉ việc'}</p>
+                      <div style={{ marginTop: 15, padding: 10, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                        <p style={{ color: '#52c41a', fontWeight: 'bold' }}>✅ Tài khoản và nhân viên đã được tạo thành công!</p>
+                        <p style={{ fontSize: '12px', color: '#666' }}>Nhân viên có thể đăng nhập bằng tài khoản: {values.taiKhoan}</p>
+                      </div>
+                    </div>
+                  ),
+                  width: 500
+                  });
+                }, 100); // Delay nhỏ để đảm bảo modal được hiển thị
+
+                // Đóng modal form và reset loading state
+                setLoading(false);
+                setIsModalVisible(false);
+                form.resetFields();
+              } else {
+                console.error('❌ Employee creation failed:', {
+                  response: employeeResponse.data,
+                  isEmployeeCreated,
+                  hasSuccess: employeeResponse.data?.success,
+                  hasStatusCode: employeeResponse.data?.data?.statusCode
+                });
+                throw new Error(employeeResponse.data?.message || 'Không thể tạo nhân viên mới');
+              }
             } else {
-              throw new Error(response.data?.message || 'Không thể tạo nhân viên mới');
+              throw new Error(userResponse.data?.message || 'Không thể tạo tài khoản người dùng');
             }
           } catch (error: any) {
             console.error('Error creating employee:', error);
@@ -523,9 +611,9 @@ const EmployeeManagement = () => {
   };
 
   // Calculate statistics
-  const totalEmployees = employees.length;
-  const totalSalary = employees.reduce((sum, employee) => sum + (employee.luong || 0), 0);
-  const averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
+  const totalEmployees = pagination.total; // Use total from pagination instead of current page
+  const currentPageSalary = employees.reduce((sum, employee) => sum + (employee.luong || 0), 0);
+  const averageCurrentPageSalary = employees.length > 0 ? currentPageSalary / employees.length : 0;
 
   // Define columns for the table
   const columns: ColumnsType<Employee> = [
@@ -720,8 +808,8 @@ const EmployeeManagement = () => {
         <Col span={8}>
           <Card>
             <Statistic
-              title="Tổng lương"
-              value={totalSalary}
+              title="Tổng lương (trang hiện tại)"
+              value={currentPageSalary}
               valueStyle={{ color: '#1890ff' }}
               suffix="VNĐ"
             />
@@ -730,8 +818,8 @@ const EmployeeManagement = () => {
         <Col span={8}>
           <Card>
             <Statistic
-              title="Lương trung bình"
-              value={averageSalary}
+              title="Lương TB (trang hiện tại)"
+              value={averageCurrentPageSalary}
               precision={0}
               valueStyle={{ color: '#3f8600' }}
               suffix="VNĐ"
@@ -751,7 +839,7 @@ const EmployeeManagement = () => {
               // Tải lại dữ liệu
               Promise.all([
                 fetchPositions(),
-                fetchEmployees()
+                fetchEmployees(pagination.current, pagination.pageSize)
               ])
                 .then(() => {
                   message.success({ content: 'Đã làm mới dữ liệu thành công!', key: 'refreshData', duration: 2 });
@@ -781,7 +869,11 @@ const EmployeeManagement = () => {
         rowKey={(record) => record.maNV?.toString() || Math.random().toString()}
         loading={loading}
         bordered
-        pagination={{ pageSize: 10 }}
+        pagination={{
+          ...pagination,
+          onChange: handleTableChange,
+          onShowSizeChange: handleTableChange,
+        }}
       />
 
       <Modal
@@ -875,7 +967,59 @@ const EmployeeManagement = () => {
             </Col>
           </Row>
 
+          <Divider orientation="left">Thông tin tài khoản</Divider>
 
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="taiKhoan"
+                label="Tên tài khoản"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập tên tài khoản' },
+                  { min: 3, message: 'Tên tài khoản phải có ít nhất 3 ký tự' }
+                ]}
+              >
+                <Input placeholder="Nhập tên tài khoản" prefix={<UserOutlined />} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="matKhau"
+                label="Mật khẩu"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập mật khẩu' },
+                  { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' }
+                ]}
+              >
+                <Input.Password placeholder="Nhập mật khẩu" prefix={<LockOutlined />} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[
+                  { type: 'email', message: 'Email không hợp lệ' }
+                ]}
+              >
+                <Input placeholder="Nhập email (tùy chọn)" prefix={<MailOutlined />} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="phone"
+                label="Số điện thoại"
+                rules={[
+                  { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại phải có 10-11 chữ số' }
+                ]}
+              >
+                <Input placeholder="Nhập số điện thoại (tùy chọn)" prefix={<PhoneOutlined />} />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Divider orientation="left">Thông tin công việc</Divider>
 

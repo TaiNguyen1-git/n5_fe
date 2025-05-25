@@ -51,26 +51,41 @@ export interface ApiResponse<T> {
 
 const BASE_URL = 'https://ptud-web-1.onrender.com/api';
 
+// Define interface for paginated response
+export interface PaginatedRoomResponse {
+  items: Room[];
+  totalItems: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 /**
- * Get all rooms with optional filtering
+ * Get all rooms with optional filtering and pagination
  */
 export const getRooms = async (
-  filters?: { giaMin?: number; giaMax?: number; soLuongKhach?: number }
-): Promise<ApiResponse<Room[]>> => {
+  filters?: { giaMin?: number; giaMax?: number; soLuongKhach?: number },
+  pageNumber: number = 1,
+  pageSize: number = 10
+): Promise<ApiResponse<PaginatedRoomResponse>> => {
   try {
     let url = '/api/rooms';
 
-    // Add query parameters if filters exist
+    // Add query parameters for pagination and filters
+    const params = new URLSearchParams();
+
+    // Add pagination parameters
+    params.append('pageNumber', pageNumber.toString());
+    params.append('pageSize', pageSize.toString());
+
+    // Add filter parameters if they exist
     if (filters) {
-      const params = new URLSearchParams();
       if (filters.giaMin) params.append('giaMin', filters.giaMin.toString());
       if (filters.giaMax) params.append('giaMax', filters.giaMax.toString());
       if (filters.soLuongKhach) params.append('soLuongKhach', filters.soLuongKhach.toString());
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
     }
+
+    url += `?${params.toString()}`;
 
     // Không sử dụng cache
 
@@ -86,7 +101,7 @@ export const getRooms = async (
 
       return data;
     } catch (error) {
-      console.warn('Frontend proxy API failed, trying direct backend call:', error);
+
 
       // Nếu không thành công, thử gọi trực tiếp đến backend
       const response = await axios.get(`${BASE_URL}/Phong/GetAll`, {
@@ -133,6 +148,38 @@ export const getRooms = async (
 };
 
 /**
+ * Get all rooms without pagination (for backward compatibility)
+ */
+export const getRoomsNoPagination = async (
+  filters?: { giaMin?: number; giaMax?: number; soLuongKhach?: number }
+): Promise<ApiResponse<Room[]>> => {
+  try {
+    console.log('Fetching all rooms without pagination...');
+    const response = await getRooms(filters, 1, 1000); // Get a large page
+
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: response.data.items
+      };
+    }
+
+    return {
+      success: false,
+      message: response.message || 'Failed to fetch rooms',
+      data: []
+    };
+  } catch (error) {
+    console.error('Error fetching rooms without pagination:', error);
+    return {
+      success: false,
+      message: 'Không thể lấy danh sách phòng',
+      data: []
+    };
+  }
+};
+
+/**
  * Get a room by ID
  */
 export const getRoomById = async (id: string) => {
@@ -161,7 +208,6 @@ export const getRoomById = async (id: string) => {
   while (retryCount < maxRetries) {
     try {
       // Sử dụng mã phòng nguyên bản
-      console.log(`Gọi API với mã phòng: ${id}`);
 
       // Sử dụng API route trung gian để tránh lỗi CORS
       const response = await fetchWithTimeout(`/api/room-detail?roomNumber=${id}`, {
@@ -177,19 +223,22 @@ export const getRoomById = async (id: string) => {
 
       const roomData = await response.json();
 
+      // API trả về có cấu trúc { success: true, data: {...} }
+      const actualRoomData = roomData.data || roomData;
+
       // Chuyển đổi dữ liệu từ backend sang định dạng frontend cần
       const formattedData = {
-        id: roomData.maPhong?.toString() || '0',
-        maPhong: roomData.maPhong || 0,
-        tenPhong: roomData.ten || '',
-        moTa: roomData.moTa || '',
-        hinhAnh: roomData.hinhAnh || '',
-        giaTien: roomData.giaTien || 0,
-        soLuongKhach: roomData.soLuongKhach || 1,
-        trangThai: roomData.trangThai || 0,
-        loaiPhong: roomData.loaiPhong || '',
-        images: roomData.hinhAnh ? [roomData.hinhAnh] : [],
-        features: roomData.moTa ? roomData.moTa.split(',').map((item: string) => item.trim()) : []
+        id: actualRoomData.maPhong?.toString() || actualRoomData.id?.toString() || '0',
+        maPhong: actualRoomData.maPhong || actualRoomData.id || 0,
+        tenPhong: actualRoomData.tenPhong || actualRoomData.ten || '',
+        moTa: actualRoomData.moTa || '',
+        hinhAnh: actualRoomData.hinhAnh || '/images/rooms/default-room.jpg',
+        giaTien: actualRoomData.giaTien || 0,
+        soLuongKhach: actualRoomData.soLuongKhach || 1,
+        trangThai: actualRoomData.trangThai || 0,
+        loaiPhong: actualRoomData.loaiPhong || '',
+        images: actualRoomData.hinhAnh ? [actualRoomData.hinhAnh] : ['/images/rooms/default-room.jpg'],
+        features: actualRoomData.features || (actualRoomData.moTa ? actualRoomData.moTa.split(',').map((item: string) => item.trim()) : [])
       };
 
       // Không lưu cache
@@ -199,7 +248,6 @@ export const getRoomById = async (id: string) => {
         data: formattedData
       };
     } catch (error) {
-      console.error(`Attempt ${retryCount + 1} failed:`, error);
       retryCount++;
 
       if (retryCount < maxRetries) {
@@ -209,12 +257,9 @@ export const getRoomById = async (id: string) => {
     }
   }
 
-  console.log('All fetch attempts failed, trying axios as fallback');
-
   // Thử sử dụng axios với API route trung gian
   try {
     // Sử dụng mã phòng nguyên bản
-    console.log(`Fallback: Gọi API với mã phòng: ${id}`);
 
     // Sử dụng API route trung gian để tránh lỗi CORS
     const axiosResponse = await axios.get(`/api/room-detail?roomNumber=${id}`, {
@@ -222,21 +267,28 @@ export const getRoomById = async (id: string) => {
     });
 
     const roomData = axiosResponse.data;
+    console.log('Axios raw API response:', roomData);
+
+    // API trả về có cấu trúc { success: true, data: {...} }
+    const actualRoomData = roomData.data || roomData;
+    console.log('Axios actual room data:', actualRoomData);
 
     // Chuyển đổi dữ liệu từ backend sang định dạng frontend cần
     const formattedData = {
-      id: roomData.maPhong.toString(),
-      maPhong: roomData.maPhong,
-      tenPhong: roomData.ten,
-      moTa: roomData.moTa,
-      hinhAnh: roomData.hinhAnh,
-      giaTien: roomData.giaTien,
-      soLuongKhach: roomData.soLuongKhach,
-      trangThai: roomData.trangThai,
-      loaiPhong: roomData.loaiPhong,
-      images: [roomData.hinhAnh],
-      features: roomData.moTa.split(',').map((item: string) => item.trim())
+      id: actualRoomData.maPhong?.toString() || actualRoomData.id?.toString() || '0',
+      maPhong: actualRoomData.maPhong || actualRoomData.id || 0,
+      tenPhong: actualRoomData.tenPhong || actualRoomData.ten || '',
+      moTa: actualRoomData.moTa || '',
+      hinhAnh: actualRoomData.hinhAnh || '/images/rooms/default-room.jpg',
+      giaTien: actualRoomData.giaTien || 0,
+      soLuongKhach: actualRoomData.soLuongKhach || 1,
+      trangThai: actualRoomData.trangThai || 0,
+      loaiPhong: actualRoomData.tenLoaiPhong || actualRoomData.loaiPhong?.tenLoai || actualRoomData.loaiPhong || '',
+      images: actualRoomData.hinhAnh ? [actualRoomData.hinhAnh] : ['/images/rooms/default-room.jpg'],
+      features: actualRoomData.features || (actualRoomData.moTa ? actualRoomData.moTa.split(',').map((item: string) => item.trim()) : [])
     };
+
+    console.log('Axios formatted data:', formattedData);
 
     // Không lưu cache
 
@@ -245,7 +297,6 @@ export const getRoomById = async (id: string) => {
       data: formattedData
     };
   } catch (axiosError) {
-    console.error('Direct backend call also failed:', axiosError);
 
     // Không sử dụng cache fallback
 

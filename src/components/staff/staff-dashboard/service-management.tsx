@@ -3,7 +3,7 @@ import { Table, Button, Tag, Space, Modal, Input, Card, Row, Col, message, Form,
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import axios from 'axios';
-import { DichVu, serviceApi } from '../../../services/serviceApi';
+import { DichVu, serviceApi, PaginatedResponse, ApiResponse } from '../../../services/serviceApi';
 import type { UploadProps, UploadFile } from 'antd/es/upload/interface';
 
 const { Option } = Select;
@@ -31,29 +31,90 @@ const ServiceManagement: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<number | null>(null);
 
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total: number, range: [number, number]) =>
+      `${range[0]}-${range[1]} của ${total} dịch vụ`,
+  });
+
   useEffect(() => {
-    fetchServices();
+    fetchServices(pagination.current, pagination.pageSize);
   }, []);
 
-  // Fetch dịch vụ từ API
-  const fetchServices = async () => {
+  // Handle table pagination change
+  const handleTableChange = (page: number, pageSize?: number) => {
+    const newPagination = {
+      ...pagination,
+      current: page,
+      pageSize: pageSize || pagination.pageSize,
+    };
+    setPagination(newPagination);
+    fetchServices(page, pageSize || pagination.pageSize);
+  };
+
+  // Fetch dịch vụ từ API với phân trang
+  const fetchServices = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoading(true);
     try {
-      const data = await serviceApi.getAllServices();
-      // Chuyển đổi dữ liệu từ API sang định dạng Service
-      const formattedData: Service[] = data.map((item: any) => ({
-        maDichVu: item.maDichVu,
-        ten: item.ten,
-        gia: item.gia || 0,
-        moTa: item.moTa || '',
-        hinhAnh: item.hinhAnh || '',
-        trangThai: item.trangThai || 0
-      }));
-      setServices(formattedData);
-      message.success('Tải dữ liệu dịch vụ thành công');
+      console.log(`Fetching services with pagination: page ${pageNumber}, size ${pageSize}`);
+
+      const response = await serviceApi.getAllServices(pageNumber, pageSize);
+
+      if (response.success && response.data) {
+        const paginatedData = response.data as PaginatedResponse<DichVu>;
+
+        // Chuyển đổi dữ liệu từ API sang định dạng Service
+        const formattedData: Service[] = paginatedData.items.map((item: any) => ({
+          maDichVu: item.maDichVu,
+          ten: item.ten,
+          gia: item.gia || 0,
+          moTa: item.moTa || '',
+          hinhAnh: item.hinhAnh || '',
+          trangThai: item.trangThai || 0
+        }));
+
+        setServices(formattedData);
+        setPagination(prev => ({
+          ...prev,
+          current: paginatedData.pageNumber,
+          pageSize: paginatedData.pageSize,
+          total: paginatedData.totalItems,
+        }));
+
+        console.log('Services loaded successfully with pagination:', formattedData.length);
+        message.success('Tải dữ liệu dịch vụ thành công');
+      } else {
+        throw new Error(response.message || 'Failed to fetch services');
+      }
     } catch (error) {
-      console.error("Lỗi khi lấy dữ liệu dịch vụ:", error);
+      console.error("Error fetching services:", error);
       message.error("Không thể tải dữ liệu dịch vụ. Vui lòng thử lại sau.");
+
+      // Fallback: try to get services without pagination
+      try {
+        const fallbackData = await serviceApi.getAllServicesNoPagination();
+        const formattedData: Service[] = fallbackData.map((item: any) => ({
+          maDichVu: item.maDichVu,
+          ten: item.ten,
+          gia: item.gia || 0,
+          moTa: item.moTa || '',
+          hinhAnh: item.hinhAnh || '',
+          trangThai: item.trangThai || 0
+        }));
+        setServices(formattedData);
+        setPagination(prev => ({
+          ...prev,
+          total: formattedData.length,
+        }));
+        message.warning('Đã tải dữ liệu dịch vụ với phương thức dự phòng');
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+      }
     } finally {
       setLoading(false);
     }
@@ -71,7 +132,7 @@ const ServiceManagement: React.FC = () => {
 
   // Làm mới dữ liệu
   const handleRefresh = () => {
-    fetchServices();
+    fetchServices(pagination.current, pagination.pageSize);
     message.info('Đang làm mới dữ liệu...');
   };
 
@@ -181,7 +242,7 @@ const ServiceManagement: React.FC = () => {
     try {
       await serviceApi.deleteService(service.maDichVu);
       message.success('Xóa dịch vụ thành công');
-      fetchServices();
+      fetchServices(pagination.current, pagination.pageSize);
     } catch (error) {
       console.error("Lỗi khi xóa dịch vụ:", error);
       message.error("Không thể xóa dịch vụ. Vui lòng thử lại sau.");
@@ -203,7 +264,7 @@ const ServiceManagement: React.FC = () => {
       setUploadLoading(true);
       return;
     }
-    
+
     if (info.file.status === 'done') {
       // Lấy URL từ response
       const imageUrl = info.file.response?.url || '';
@@ -238,9 +299,9 @@ const ServiceManagement: React.FC = () => {
         await serviceApi.createService(serviceData);
         message.success('Thêm dịch vụ mới thành công');
       }
-      
+
       setIsModalVisible(false);
-      fetchServices();
+      fetchServices(pagination.current, pagination.pageSize);
     } catch (error) {
       console.error("Lỗi khi lưu dịch vụ:", error);
       message.error("Không thể lưu dịch vụ. Vui lòng kiểm tra lại thông tin.");
@@ -252,14 +313,14 @@ const ServiceManagement: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h2 style={{ margin: 0 }}>Quản lý dịch vụ</h2>
         <Space>
-          <Button 
+          <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAdd}
           >
             Thêm dịch vụ
           </Button>
-          <Button 
+          <Button
             type="default"
             icon={<ReloadOutlined />}
             onClick={handleRefresh}
@@ -271,19 +332,24 @@ const ServiceManagement: React.FC = () => {
 
       {/* Thống kê */}
       <Row gutter={16} style={{ marginBottom: '24px' }}>
-        <Col span={8}>
+        <Col span={6}>
           <Card>
-            <div>Tổng số dịch vụ: {services.length}</div>
+            <div>Tổng số dịch vụ: {pagination.total}</div>
           </Card>
         </Col>
-        <Col span={8}>
+        <Col span={6}>
           <Card>
-            <div>Dịch vụ khả dụng: {services.filter(s => s.trangThai === 1).length}</div>
+            <div>Dịch vụ khả dụng (trang hiện tại): {services.filter(s => s.trangThai === 1).length}</div>
           </Card>
         </Col>
-        <Col span={8}>
+        <Col span={6}>
           <Card>
-            <div>Dịch vụ tạm ngưng: {services.filter(s => s.trangThai === 0).length}</div>
+            <div>Dịch vụ tạm ngưng (trang hiện tại): {services.filter(s => s.trangThai === 0).length}</div>
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <div>Trang hiện tại: {pagination.current}/{Math.ceil(pagination.total / pagination.pageSize)}</div>
           </Card>
         </Col>
       </Row>
@@ -313,7 +379,11 @@ const ServiceManagement: React.FC = () => {
         columns={columns}
         dataSource={filteredServices}
         rowKey="maDichVu"
-        pagination={{ pageSize: 10 }}
+        pagination={{
+          ...pagination,
+          onChange: handleTableChange,
+          onShowSizeChange: handleTableChange,
+        }}
         loading={loading}
       />
 
@@ -345,7 +415,7 @@ const ServiceManagement: React.FC = () => {
             label="Giá dịch vụ (VNĐ)"
             rules={[{ required: true, message: 'Vui lòng nhập giá dịch vụ' }]}
           >
-            <InputNumber 
+            <InputNumber
               placeholder="Nhập giá dịch vụ"
               style={{ width: '100%' }}
               formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}

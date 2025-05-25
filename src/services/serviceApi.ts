@@ -14,6 +14,13 @@ export interface DichVu {
 
 // Interface cho response từ API
 interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+}
+
+// Interface cho paginated response
+interface PaginatedResponse<T> {
   items: T[];
   totalItems: number;
   pageNumber: number;
@@ -23,29 +30,69 @@ interface ApiResponse<T> {
 
 // API services cho dịch vụ
 export const serviceApi = {
-  // Lấy tất cả dịch vụ
-  getAllServices: async (): Promise<DichVu[]> => {
+  // Lấy tất cả dịch vụ với phân trang
+  getAllServices: async (pageNumber: number = 1, pageSize: number = 10): Promise<ApiResponse<PaginatedResponse<DichVu>>> => {
     try {
-      const response = await axios.get<ApiResponse<DichVu>>(`${BASE_URL}/DichVu/GetAll`, {
-        timeout: 15000 // Tăng timeout lên 15 giây
+      console.log(`Fetching services with pagination: page ${pageNumber}, size ${pageSize}`);
+
+      const response = await axios.get('/api/services', {
+        params: {
+          pageNumber,
+          pageSize
+        },
+        timeout: 15000 // 15 second timeout
       });
-      // Trả về mảng items từ response
-      return response.data.items || [];
+
+      console.log('Services API response:', response.data);
+
+      if (response.data && response.data.success && response.data.data) {
+        return {
+          success: true,
+          data: response.data.data
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || 'Failed to fetch services',
+          data: {
+            items: [],
+            totalItems: 0,
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            totalPages: 0
+          }
+        };
+      }
     } catch (error: any) {
       console.error('Error fetching services:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Không thể lấy danh sách dịch vụ',
+        data: {
+          items: [],
+          totalItems: 0,
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+          totalPages: 0
+        }
+      };
+    }
+  },
 
-      if (error.code === 'ECONNABORTED') {
-        throw new Error('Kết nối tới máy chủ quá thời gian. Vui lòng thử lại sau.');
-      } else if (error.response) {
-        // Lỗi từ phía server
-        throw new Error(`Lỗi server: ${error.response.status} - ${error.response.data?.message || 'Không xác định'}`);
-      } else if (error.request) {
-        // Không nhận được phản hồi từ server
-        throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.');
-      } else {
-        // Lỗi khác
-        throw new Error('Có lỗi xảy ra khi tải dữ liệu dịch vụ.');
+  // Lấy tất cả dịch vụ không phân trang (cho backward compatibility)
+  getAllServicesNoPagination: async (): Promise<DichVu[]> => {
+    try {
+      console.log('Fetching all services without pagination...');
+      const response = await serviceApi.getAllServices(1, 1000); // Get a large page
+
+      if (response.success && response.data) {
+        return response.data.items;
       }
+
+      return [];
+    } catch (error) {
+      console.error('Error fetching services without pagination:', error);
+      return [];
     }
   },
 
@@ -104,7 +151,6 @@ export const serviceApi = {
       // Thử từng endpoint cho đến khi thành công
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying API endpoint: ${endpoint.url}`);
           const response = await axios({
             method: endpoint.method,
             url: endpoint.url,
@@ -116,10 +162,8 @@ export const serviceApi = {
             timeout: 10000 // 10 giây timeout
           });
 
-          console.log('API response:', response);
           return response.data;
         } catch (apiError: any) {
-          console.error(`Error with endpoint ${endpoint.url}:`, apiError.response?.data || apiError.message);
           lastError = apiError;
           // Tiếp tục thử endpoint tiếp theo
         }
@@ -184,5 +228,8 @@ export const serviceApi = {
     }
   }
 };
+
+// Export types for use in components
+export type { PaginatedResponse, ApiResponse };
 
 export default serviceApi;

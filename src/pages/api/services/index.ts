@@ -17,11 +17,60 @@ export default async function handler(
 ) {
   if (req.method === 'GET') {
     try {
-      // Get services from backend API
-      const response = await axios.get(`${BACKEND_API_URL}/DichVu/GetAll`);
-      
-      // Transform data for frontend
-      const services = response.data.map((service: any) => ({
+      // Get pagination parameters from query
+      const { pageNumber = '1', pageSize = '10' } = req.query;
+
+      console.log(`Fetching services with pagination: page ${pageNumber}, size ${pageSize}`);
+
+      // Get services from backend API with pagination
+      const response = await axios.get(`${BACKEND_API_URL}/DichVu/GetAll`, {
+        params: {
+          PageNumber: Number(pageNumber),
+          PageSize: Number(pageSize)
+        },
+        timeout: 15000 // 15 second timeout
+      });
+
+      // Log response for debugging
+      console.log('API DichVu/GetAll response:', JSON.stringify(response.data).substring(0, 500) + '...');
+
+      // Transform data for frontend if needed
+      let services: any[] = [];
+      let paginationInfo = {
+        totalItems: 0,
+        pageNumber: Number(pageNumber),
+        pageSize: Number(pageSize),
+        totalPages: 0
+      };
+
+      if (response.data) {
+        // Check if response has pagination structure
+        if (response.data.items && Array.isArray(response.data.items)) {
+          services = response.data.items;
+          paginationInfo = {
+            totalItems: response.data.totalItems || response.data.items.length,
+            pageNumber: response.data.pageNumber || Number(pageNumber),
+            pageSize: response.data.pageSize || Number(pageSize),
+            totalPages: response.data.totalPages || Math.ceil((response.data.totalItems || response.data.items.length) / Number(pageSize))
+          };
+        } else if (Array.isArray(response.data)) {
+          // If response is directly an array (fallback)
+          services = response.data;
+          paginationInfo = {
+            totalItems: response.data.length,
+            pageNumber: Number(pageNumber),
+            pageSize: Number(pageSize),
+            totalPages: Math.ceil(response.data.length / Number(pageSize))
+          };
+        }
+      }
+
+      // Log processed services
+      console.log(`Processed ${services.length} services`);
+      console.log('Pagination info:', paginationInfo);
+
+      // Transform services data for frontend
+      const formattedServices = services.map((service: any) => ({
         id: service.maDichVu,
         maDichVu: service.maDichVu,
         ten: service.ten,
@@ -30,10 +79,15 @@ export default async function handler(
         gia: service.gia,
         trangThai: service.trangThai
       }));
-      
+
+      console.log('Formatted services sample:', formattedServices.length > 0 ? formattedServices[0] : 'No services');
+
       return res.status(200).json({
         success: true,
-        data: services
+        data: {
+          items: formattedServices,
+          ...paginationInfo
+        }
       });
     } catch (error: any) {
       console.error('Error fetching services:', error);
@@ -46,14 +100,14 @@ export default async function handler(
     try {
       // Check for required fields
       const { ten, moTa, hinhAnh, gia } = req.body;
-      
+
       if (!ten || !moTa || !gia) {
         return res.status(400).json({
           success: false,
           message: 'Vui lòng cung cấp đầy đủ thông tin dịch vụ'
         });
       }
-      
+
       // Prepare service data
       const serviceData = {
         ten,
@@ -62,10 +116,10 @@ export default async function handler(
         gia: Number(gia),
         trangThai: 1 // 1 = Active
       };
-      
+
       // Create service through backend API
       const response = await axios.post(`${BACKEND_API_URL}/DichVu/Create`, serviceData);
-      
+
       return res.status(201).json({
         success: true,
         message: 'Tạo dịch vụ thành công',
@@ -85,4 +139,4 @@ export default async function handler(
       message: `Phương thức ${req.method} không được hỗ trợ`
     });
   }
-} 
+}

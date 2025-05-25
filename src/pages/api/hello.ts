@@ -18,13 +18,13 @@ export default async function handler(
   try {
     // Kết nối với API health check của backend
     const response = await axios.get(`${BACKEND_API_URL}/health`);
-    
+
     res.status(200).json({
       success: true,
       data: response.data
     });
   } catch (error) {
-    console.error('API health check error:', error);
+
     res.status(500).json({
       success: false,
       message: 'Không thể kết nối đến hệ thống backend'

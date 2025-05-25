@@ -22,7 +22,7 @@ export const revenueService = {
         timeout: 15000 // 15 second timeout
       });
 
-      console.log('Total revenue API response:', response.data);
+
 
       if (response.data && response.data.value && response.data.value.tongDoanhThu !== undefined) {
         return response.data.value.tongDoanhThu;

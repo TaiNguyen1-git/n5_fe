@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Tag, Space, Modal, Input, Card, Statistic, Row, Col, Avatar, Tabs, message, Select, Form, Switch } from 'antd';
 import { EyeOutlined, UserOutlined, HistoryOutlined, ReloadOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { getAllCustomers, PaginatedCustomerResponse } from '../../../services/customerService';
 import dayjs from 'dayjs';
 import axios from 'axios';
 
@@ -149,9 +150,31 @@ const CustomerManagement = () => {
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total: number, range: [number, number]) =>
+      `${range[0]}-${range[1]} của ${total} khách hàng`,
+  });
+
   useEffect(() => {
-    fetchCustomers();
+    fetchCustomers(pagination.current, pagination.pageSize);
   }, []);
+
+  // Handle table pagination change
+  const handleTableChange = (page: number, pageSize?: number) => {
+    const newPagination = {
+      ...pagination,
+      current: page,
+      pageSize: pageSize || pagination.pageSize,
+    };
+    setPagination(newPagination);
+    fetchCustomers(page, pageSize || pagination.pageSize);
+  };
 
   // Format dữ liệu khách hàng từ API response
   const formatCustomerData = (data: any[]): Customer[] => {
@@ -164,21 +187,58 @@ const CustomerManagement = () => {
     }));
   };
 
-  // Fetch khách hàng từ API với cơ chế fallback
-  const fetchCustomers = async () => {
+  // Fetch khách hàng từ API với phân trang
+  const fetchCustomers = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoading(true);
     setError('');
-    console.log('Bắt đầu tải dữ liệu khách hàng...');
+    console.log(`Bắt đầu tải dữ liệu khách hàng với phân trang: page ${pageNumber}, size ${pageSize}`);
 
-    // 1. Thử sử dụng fetch API với proxy Next.js (ưu tiên nhất)
+    // 1. Thử sử dụng service mới với pagination
     try {
-      console.log('Thử fetch với proxy Next.js...');
+      console.log('Thử fetch với customer service và pagination...');
+      const response = await getAllCustomers(pageNumber, pageSize);
+
+      if (response.success && response.data) {
+        const paginatedData = response.data as PaginatedCustomerResponse;
+
+        // Format customer data
+        const formattedCustomers = formatCustomerData(paginatedData.items);
+
+        // Update customers and pagination info
+        setCustomers(formattedCustomers);
+        setPagination(prev => ({
+          ...prev,
+          current: paginatedData.pageNumber,
+          pageSize: paginatedData.pageSize,
+          total: paginatedData.totalItems,
+        }));
+
+        console.log('Tải dữ liệu khách hàng thành công với pagination:', formattedCustomers);
+        message.success('Tải dữ liệu khách hàng thành công');
+        setLoading(false);
+        return; // Thành công, thoát khỏi hàm
+      } else {
+        throw new Error(response.message || 'Failed to fetch customers');
+      }
+    } catch (serviceErr) {
+      console.error('Lỗi khi sử dụng customer service:', serviceErr);
+      // Tiếp tục với phương thức fallback
+    }
+
+    // 2. Fallback: Thử sử dụng fetch API với proxy Next.js (ưu tiên nhất)
+    try {
+      console.log('Fallback: Thử fetch với proxy Next.js...');
       const response = await fetch('/api/KhachHang/GetAll');
       const data = await response.json();
       console.log('Fetch API response:', data);
-      
+
       if (data && data.items && Array.isArray(data.items)) {
         setCustomers(data.items);
+        // Update pagination for fallback (client-side pagination)
+        setPagination(prev => ({
+          ...prev,
+          total: data.items.length,
+        }));
         console.log('Tải dữ liệu khách hàng thành công với fetch:', data.items);
         message.success('Tải dữ liệu khách hàng thành công');
         setLoading(false);
@@ -257,7 +317,7 @@ const CustomerManagement = () => {
         xhr.timeout = 10000; // 10 giây timeout
         xhr.send();
       });
-      
+
       if (data && data.items && Array.isArray(data.items)) {
         setCustomers(data.items);
         console.log('Tải dữ liệu khách hàng thành công với XMLHttpRequest:', data.items);
@@ -272,6 +332,11 @@ const CustomerManagement = () => {
     // 4. Nếu tất cả phương thức đều thất bại, sử dụng dữ liệu mẫu
     console.warn('Tất cả phương thức kết nối thất bại, sử dụng dữ liệu mẫu');
     setCustomers(MOCK_CUSTOMERS.items as Customer[]);
+    // Update pagination for mock data
+    setPagination(prev => ({
+      ...prev,
+      total: MOCK_CUSTOMERS.items.length,
+    }));
     message.warning('Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu.');
     setError('Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu.');
     setLoading(false);
@@ -295,16 +360,16 @@ const CustomerManagement = () => {
   const fetchCustomerBookingHistory = async (customerId: number) => {
     setLoadingHistory(true);
     console.log(`Bắt đầu tải lịch sử đặt phòng cho khách hàng ID: ${customerId}`);
-    
+
     try {
       // Thử sử dụng API đặt phòng
       console.log('Thử fetch API lịch sử đặt phòng...');
       const response = await fetch('/api/DatPhong/GetAll');
       const data = await response.json();
-      
+
       if (data && data.items && Array.isArray(data.items)) {
         console.log('API đặt phòng response:', data.items);
-        
+
         // Thông báo không có lịch sử đặt phòng hợp lệ
         setBookingHistory([]);
         message.info('Không tìm thấy lịch sử đặt phòng cho khách hàng này');
@@ -314,7 +379,7 @@ const CustomerManagement = () => {
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu đặt phòng:', err);
     }
-    
+
     // Nếu không lấy được dữ liệu, hiển thị thông báo không có lịch sử
     setBookingHistory([]);
     message.info('Không tìm thấy lịch sử đặt phòng cho khách hàng này');
@@ -343,22 +408,22 @@ const CustomerManagement = () => {
   const fetchCustomerInvoices = async (customerId: number) => {
     setLoadingInvoice(true);
     console.log(`Bắt đầu tải thông tin hóa đơn cho khách hàng ID: ${customerId}`);
-    
+
     try {
       // Thử sử dụng API hóa đơn
       console.log('Thử fetch API hóa đơn...');
       const response = await fetch('/api/HoaDon/GetAll');
       const data = await response.json();
-      
+
       if (data && data.length > 0) {
         console.log('API hóa đơn response:', data);
-        
+
         // Kiểm tra cấu trúc dữ liệu
         const formattedInvoices = formatInvoiceData(data);
-        
+
         // Lọc hóa đơn theo maKH
         const customerInvoices = formattedInvoices.filter(invoice => invoice.maKH === customerId);
-        
+
         if (customerInvoices.length > 0) {
           setInvoices(customerInvoices);
           message.success(`Tìm thấy ${customerInvoices.length} hóa đơn của khách hàng`);
@@ -399,7 +464,7 @@ const CustomerManagement = () => {
 
   // Làm mới dữ liệu
   const handleRefresh = () => {
-    fetchCustomers();
+    fetchCustomers(pagination.current, pagination.pageSize);
     message.info('Đang làm mới dữ liệu...');
   };
 
@@ -410,8 +475,8 @@ const CustomerManagement = () => {
       (customer.phone && customer.phone.includes(searchText)) ||
       (customer.email && customer.email.toLowerCase().includes(searchText.toLowerCase()));
 
-    const matchesStatus = statusFilter ? 
-      (statusFilter === 'active' ? !customer.xoa : statusFilter === 'inactive' ? customer.xoa : true) 
+    const matchesStatus = statusFilter ?
+      (statusFilter === 'active' ? !customer.xoa : statusFilter === 'inactive' ? customer.xoa : true)
       : true;
 
     return matchesSearch && matchesStatus;
@@ -640,9 +705,9 @@ const CustomerManagement = () => {
         maVaiTro: values.maVaiTro || 0,
         xoa: false
       };
-      
+
       console.log('Đang tạo khách hàng mới:', customerData);
-      
+
       // Gọi API tạo khách hàng
       const response = await fetch('/api/KhachHang/Create', {
         method: 'POST',
@@ -651,11 +716,11 @@ const CustomerManagement = () => {
         },
         body: JSON.stringify(customerData),
       });
-      
+
       if (response.ok) {
         message.success('Tạo khách hàng mới thành công');
         setIsCreateModalVisible(false);
-        fetchCustomers(); // Tải lại danh sách khách hàng
+        fetchCustomers(pagination.current, pagination.pageSize); // Tải lại danh sách khách hàng
       } else {
         const errorData = await response.json();
         message.error(`Tạo khách hàng thất bại: ${errorData.message || 'Lỗi không xác định'}`);
@@ -672,7 +737,7 @@ const CustomerManagement = () => {
   const showEditModal = (customer: Customer) => {
     setEditingCustomer(customer);
     setIsEditModalVisible(true);
-    
+
     // Thiết lập giá trị mặc định cho form
     editForm.setFieldsValue({
       tenKH: customer.tenKH,
@@ -691,7 +756,7 @@ const CustomerManagement = () => {
   // Xử lý cập nhật khách hàng
   const handleUpdateCustomer = async (values: any) => {
     if (!editingCustomer) return;
-    
+
     setUpdatingCustomer(true);
     try {
       // Chuẩn bị dữ liệu gửi lên API theo đúng cấu trúc của API HoaDon/Update
@@ -703,9 +768,9 @@ const CustomerManagement = () => {
         tongTien: 0,
         trangThai: 0
       };
-      
+
       console.log('Đang cập nhật khách hàng:', customerData);
-      
+
       // Gọi API cập nhật khách hàng
       const response = await fetch(`/api/KhachHang/Update?id=${editingCustomer.maKH}`, {
         method: 'PUT',
@@ -714,12 +779,12 @@ const CustomerManagement = () => {
         },
         body: JSON.stringify(customerData),
       });
-      
+
       if (response.ok) {
         message.success('Cập nhật khách hàng thành công');
         setIsEditModalVisible(false);
         setEditingCustomer(null);
-        fetchCustomers(); // Tải lại danh sách khách hàng
+        fetchCustomers(pagination.current, pagination.pageSize); // Tải lại danh sách khách hàng
       } else {
         const errorData = await response.json();
         message.error(`Cập nhật khách hàng thất bại: ${errorData.message || 'Lỗi không xác định'}`);
@@ -748,7 +813,7 @@ const CustomerManagement = () => {
   // Xử lý xác nhận xóa khách hàng
   const handleConfirmDelete = async () => {
     if (!customerToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       console.log('Calling delete API for customer ID:', customerToDelete.maKH);
@@ -759,11 +824,11 @@ const CustomerManagement = () => {
         },
         body: JSON.stringify({ xoa: true }),
       });
-      
+
       if (response.ok) {
         console.log('Delete API call successful');
         message.success('Xóa khách hàng thành công');
-        fetchCustomers(); // Tải lại danh sách khách hàng
+        fetchCustomers(pagination.current, pagination.pageSize); // Tải lại danh sách khách hàng
         setIsDeleteModalVisible(false);
         setCustomerToDelete(null);
       } else {
@@ -784,27 +849,14 @@ const CustomerManagement = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h2 style={{ margin: 0 }}>Quản lý khách hàng</h2>
         <Space>
-          <Button 
-            onClick={() => {
-              console.log('Test modal button clicked');
-              Modal.confirm({
-                title: 'Test Modal',
-                content: 'Đây là modal kiểm tra.',
-                okText: 'OK',
-                cancelText: 'Hủy',
-              });
-            }}
-          >
-            Kiểm tra Modal
-          </Button>
-          <Button 
+          <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={showCreateModal}
           >
             Thêm khách hàng
           </Button>
-          <Button 
+          <Button
             type="default"
             icon={<ReloadOutlined />}
             onClick={handleRefresh}
@@ -822,10 +874,19 @@ const CustomerManagement = () => {
 
       {/* Thống kê */}
       <Row gutter={16} style={{ marginBottom: '24px' }}>
-        <Col span={24}>
+        <Col span={12}>
           <Card>
             <Statistic
               title="Tổng số khách hàng"
+              value={pagination.total}
+              prefix={<UserOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={12}>
+          <Card>
+            <Statistic
+              title="Khách hàng hoạt động (trang hiện tại)"
               value={customers.filter(c => !c.xoa).length}
               prefix={<UserOutlined />}
             />
@@ -858,7 +919,11 @@ const CustomerManagement = () => {
         columns={columns}
         dataSource={filteredCustomers}
         rowKey="maKH"
-        pagination={{ pageSize: 10 }}
+        pagination={{
+          ...pagination,
+          onChange: handleTableChange,
+          onShowSizeChange: handleTableChange,
+        }}
         loading={loading}
       />
 
@@ -944,7 +1009,7 @@ const CustomerManagement = () => {
           >
             <Input placeholder="Nhập tên khách hàng" />
           </Form.Item>
-          
+
           <Form.Item
             name="email"
             label="Email"
@@ -955,14 +1020,14 @@ const CustomerManagement = () => {
           >
             <Input placeholder="Nhập địa chỉ email" />
           </Form.Item>
-          
+
           <Form.Item
             name="phone"
             label="Số điện thoại"
           >
             <Input placeholder="Nhập số điện thoại" />
           </Form.Item>
-          
+
           <Form.Item
             name="maVaiTro"
             label="Vai trò"
@@ -973,7 +1038,7 @@ const CustomerManagement = () => {
               <Select.Option value={1}>Khách hàng VIP</Select.Option>
             </Select>
           </Form.Item>
-          
+
           <Form.Item>
             <div style={{ textAlign: 'right' }}>
               <Button onClick={handleCreateCancel} style={{ marginRight: 8 }}>
@@ -1013,7 +1078,7 @@ const CustomerManagement = () => {
             >
               <Input placeholder="Nhập tên khách hàng" />
             </Form.Item>
-            
+
             <Form.Item
               name="email"
               label="Email"
@@ -1024,25 +1089,25 @@ const CustomerManagement = () => {
             >
               <Input placeholder="Nhập địa chỉ email" />
             </Form.Item>
-            
+
             <Form.Item
               name="phone"
               label="Số điện thoại"
             >
               <Input placeholder="Nhập số điện thoại" />
             </Form.Item>
-            
+
             <Form.Item
               name="xoa"
               label="Trạng thái"
               valuePropName="checked"
             >
-              <Switch 
-                checkedChildren="Đã xóa" 
-                unCheckedChildren="Hoạt động" 
+              <Switch
+                checkedChildren="Đã xóa"
+                unCheckedChildren="Hoạt động"
               />
             </Form.Item>
-            
+
             <Form.Item>
               <div style={{ textAlign: 'right' }}>
                 <Button onClick={handleEditCancel} style={{ marginRight: 8 }}>
@@ -1066,10 +1131,10 @@ const CustomerManagement = () => {
           <Button key="cancel" onClick={handleDeleteCancel}>
             Hủy
           </Button>,
-          <Button 
-            key="delete" 
-            type="primary" 
-            danger 
+          <Button
+            key="delete"
+            type="primary"
+            danger
             loading={isDeleting}
             onClick={handleConfirmDelete}
           >

@@ -50,7 +50,7 @@ const Dashboard = () => {
     setStatsLoading(true);
     try {
       const data = await dashboardService.getDashboardStats();
-      console.log('Dashboard stats:', data);
+
       setStats(data);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -65,7 +65,7 @@ const Dashboard = () => {
     setBookingsLoading(true);
     try {
       const data = await dashboardService.getRecentBookings();
-      console.log('Recent bookings:', data);
+
       setRecentBookings(data);
     } catch (error) {
       console.error('Error fetching recent bookings:', error);

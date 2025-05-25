@@ -18,12 +18,19 @@ export default async function handler(
   if (req.method === 'GET') {
     try {
       // Parse query parameters
-      const { giaMin, giaMax, soLuongKhach } = req.query;
+      const { giaMin, giaMax, soLuongKhach, pageNumber = '1', pageSize = '10' } = req.query;
 
-      // Build query string for filtering
+
+
+      // Build query string for filtering and pagination
       let url = `${BACKEND_API_URL}/Phong/GetAll`;
       const params = new URLSearchParams();
 
+      // Add pagination parameters
+      params.append('PageNumber', pageNumber.toString());
+      params.append('PageSize', pageSize.toString());
+
+      // Add filtering parameters
       if (giaMin && typeof giaMin === 'string') {
         params.append('giaMin', giaMin);
       }
@@ -36,11 +43,8 @@ export default async function handler(
         params.append('soLuongKhach', soLuongKhach);
       }
 
-      // Add params to URL if they exist
-      const queryString = params.toString();
-      if (queryString) {
-        url += `?${queryString}`;
-      }
+      // Add params to URL
+      url += `?${params.toString()}`;
 
       // Make the request to the backend
       const response = await axios.get(url, {
@@ -54,19 +58,35 @@ export default async function handler(
         throw new Error(`API returned status code ${response.status}`);
       }
 
-      // Handle the API response format with "items" array
+      // Handle the API response format with pagination
       let items = [];
+      let paginationInfo = {
+        totalItems: 0,
+        pageNumber: Number(pageNumber),
+        pageSize: Number(pageSize),
+        totalPages: 0
+      };
 
       if (response.data && response.data.items && Array.isArray(response.data.items)) {
         items = response.data.items;
+        paginationInfo = {
+          totalItems: response.data.totalItems || response.data.items.length,
+          pageNumber: response.data.pageNumber || Number(pageNumber),
+          pageSize: response.data.pageSize || Number(pageSize),
+          totalPages: response.data.totalPages || Math.ceil((response.data.totalItems || response.data.items.length) / Number(pageSize))
+        };
       } else if (Array.isArray(response.data)) {
+        // If response is directly an array (fallback)
         items = response.data;
+        paginationInfo = {
+          totalItems: response.data.length,
+          pageNumber: Number(pageNumber),
+          pageSize: Number(pageSize),
+          totalPages: Math.ceil(response.data.length / Number(pageSize))
+        };
       } else {
-        console.log('Unexpected API response format:', response.data);
         items = [];
       }
-
-      console.log(`Found ${items.length} rooms in API response`);
 
       // Transform the data to match the frontend structure
       const rooms = items.map((room: any) => {
@@ -74,13 +94,20 @@ export default async function handler(
         let roomType = 'Standard';
         let roomPrice = 800000;
 
-        if (room.loaiPhong) {
+        // First try to get room type from tenLoaiPhong field
+        if (room.tenLoaiPhong) {
+          roomType = room.tenLoaiPhong;
+        } else if (room.loaiPhong) {
           if (typeof room.loaiPhong === 'string') {
             roomType = room.loaiPhong;
           } else if (typeof room.loaiPhong === 'object' && room.loaiPhong.tenLoai) {
             roomType = room.loaiPhong.tenLoai;
-            roomPrice = room.loaiPhong.giaPhong || 800000;
           }
+        }
+
+        // Get room price from loaiPhong object
+        if (room.loaiPhong && typeof room.loaiPhong === 'object' && room.loaiPhong.giaPhong) {
+          roomPrice = room.loaiPhong.giaPhong;
         }
 
         // Extract room status
@@ -124,7 +151,10 @@ export default async function handler(
 
       return res.status(200).json({
         success: true,
-        data: rooms
+        data: {
+          items: rooms,
+          ...paginationInfo
+        }
       });
     } catch (error) {
       console.error('Error fetching rooms:', error);

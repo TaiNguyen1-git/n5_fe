@@ -33,14 +33,13 @@ export const dashboardService = {
         timeout: 15000 // 15 second timeout
       });
 
-      console.log('Dashboard stats API response:', response.data);
+
 
       if (response.data && response.data.success) {
         return response.data.data;
       }
 
       // Return default values if response format is invalid
-      console.warn('Invalid response format from dashboard stats API, using default values');
       return {
         totalRooms: 0,
         availableRooms: 0,
@@ -72,14 +71,13 @@ export const dashboardService = {
         timeout: 15000 // 15 second timeout
       });
 
-      console.log('Recent bookings API response:', response.data);
+
 
       if (response.data && response.data.success) {
         return response.data.data;
       }
 
       // Return empty array if response format is invalid
-      console.warn('Invalid response format from recent bookings API, using empty array');
       return [];
     } catch (error) {
       console.error('Error fetching recent bookings:', error);

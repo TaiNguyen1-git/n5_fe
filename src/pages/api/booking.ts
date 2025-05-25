@@ -97,7 +97,7 @@ export default async function handler(
 
     try {
       const bookingData = req.body;
-      console.log('API handler: Received booking data:', bookingData);
+
 
       // Validate required fields
       const requiredFields = ['maPhong', 'tenKH', 'email', 'ngayBatDau', 'ngayKetThuc', 'soLuongKhach', 'tongTien'];
@@ -129,7 +129,7 @@ export default async function handler(
       const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 giây timeout
 
       try {
-        console.log(`API handler: Calling ${BACKEND_API_URL}/DatPhong/Create`);
+
         // Send booking data to the backend API
         const response = await axios.post(`${BACKEND_API_URL}/DatPhong/Create`, apiBookingData, {
           signal: controller.signal,
@@ -141,7 +141,7 @@ export default async function handler(
         });
 
         clearTimeout(timeoutId);
-        console.log('API handler: Booking successful, response:', response.data);
+
 
         return res.status(201).json({
           success: true,
@@ -177,13 +177,10 @@ export default async function handler(
 
       // Determine which API endpoint to call based on the provided parameters
       if (userId && typeof userId === 'string') {
-        console.log(`API handler: Fetching bookings for user ID: ${userId}`);
         url = `${BACKEND_API_URL}/DatPhong/GetByUser?id=${userId}`;
       } else if (maPhong && typeof maPhong === 'string') {
-        console.log(`API handler: Fetching bookings for room ID: ${maPhong}`);
         url = `${BACKEND_API_URL}/DatPhong/GetByRoom?id=${maPhong}`;
       } else {
-        console.log('API handler: Fetching all bookings');
         url = `${BACKEND_API_URL}/DatPhong/GetAll`;
       }
 
@@ -192,7 +189,7 @@ export default async function handler(
       const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 giây timeout
 
       try {
-        console.log(`API handler: Calling ${url}`);
+
         const response = await axios.get(url, {
           signal: controller.signal,
           timeout: 20000, // 20 giây timeout
@@ -210,7 +207,7 @@ export default async function handler(
 
         if (response.data) {
           if (Array.isArray(response.data)) {
-            console.log(`API handler: Received ${response.data.length} bookings (array)`);
+
             bookings = response.data.map((booking: any) => ({
               maHD: booking.maHD,
               maPhong: booking.maPhong,
@@ -226,7 +223,7 @@ export default async function handler(
               ngayTao: booking.ngayTao
             }));
           } else if (response.data.items && Array.isArray(response.data.items)) {
-            console.log(`API handler: Received ${response.data.items.length} bookings (items)`);
+
             bookings = response.data.items.map((booking: any) => ({
               maHD: booking.maHD,
               maPhong: booking.maPhong,
@@ -242,7 +239,7 @@ export default async function handler(
               ngayTao: booking.ngayTao
             }));
           } else {
-            console.warn('API handler: Unexpected response format:', response.data);
+
           }
         }
 

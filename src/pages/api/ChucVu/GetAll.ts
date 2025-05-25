@@ -17,15 +17,10 @@ export default async function handler(
 ) {
   if (req.method === 'GET') {
     try {
-      console.log('Fetching all positions from backend API...');
-      
       // Get positions from backend API
       const response = await axios.get(`${BACKEND_API_URL}/ChucVu/GetAll`, {
         timeout: 15000 // 15 second timeout
       });
-
-      // Log response for debugging
-      console.log('API ChucVu/GetAll response:', JSON.stringify(response.data).substring(0, 500) + '...');
 
       // Transform data for frontend if needed
       let positions = [];
@@ -38,8 +33,7 @@ export default async function handler(
         }
       }
 
-      // Log processed positions
-      console.log(`Processed ${positions.length} positions`);
+
 
       return res.status(200).json({
         success: true,

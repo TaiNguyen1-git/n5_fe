@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import axios from 'axios';
 import AddBooking from './add-booking';
 import EditBooking from './edit-booking';
+import { getAllCustomers, type Customer } from '../../../services/customerService';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -59,6 +60,10 @@ const BookingManagement = () => {
   const [searchText, setSearchText] = useState('');
   const [dateRange, setDateRange] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
   // Các state này được giữ lại để tương thích với các hàm đã có
   // nhưng không còn được sử dụng trong modal chi tiết đơn giản hóa
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -73,17 +78,57 @@ const BookingManagement = () => {
   const [roomNumbersMap, setRoomNumbersMap] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
 
-  // Fetch bookings on component mount
+  // Customer data states for real-time customer name lookup
+  const [customers, setCustomers] = useState<Record<number, Customer>>({});
+  const [customerDataLoading, setCustomerDataLoading] = useState(false);
+
+  // Fetch customer data
+  const fetchCustomers = async () => {
+    setCustomerDataLoading(true);
+    try {
+      console.log('Fetching all customers for admin booking management...');
+      const response = await getAllCustomers(1, 1000); // Get a large number to get all customers
+
+      if (response.success && response.data?.items) {
+        // Create a map of customer ID to customer data
+        const customerMap: Record<number, Customer> = {};
+        response.data.items.forEach((customer: Customer) => {
+          if (customer.maKH) {
+            customerMap[customer.maKH] = customer;
+          }
+        });
+        setCustomers(customerMap);
+        console.log('Customer data loaded for admin:', customerMap);
+      } else {
+        console.warn('Failed to fetch customers for admin:', response.message);
+      }
+    } catch (error) {
+      console.error('Error fetching customers for admin:', error);
+    } finally {
+      setCustomerDataLoading(false);
+    }
+  };
+
+  // Fetch bookings on component mount and when pagination changes
   useEffect(() => {
     fetchBookings();
+  }, [currentPage, pageSize]);
+
+  // Fetch customers on component mount
+  useEffect(() => {
+    fetchCustomers();
   }, []);
 
   // Fetch bookings from backend with retry logic
   const fetchBookings = async (retryCount = 0) => {
     setLoading(true);
     try {
-      // Use the API proxy endpoint to avoid CORS issues
+      // Use the API proxy endpoint to avoid CORS issues with pagination
       const response = await axios.get(`/api/bookings`, {
+        params: {
+          PageNumber: currentPage,
+          PageSize: pageSize
+        },
         timeout: 15000, // 15 second timeout
       });
 
@@ -92,27 +137,46 @@ const BookingManagement = () => {
         throw new Error('Invalid response format');
       }
 
+      // Set total count for pagination - use totalItems if available
+      const totalCount = response.data.totalItems || response.data.totalCount || response.data.items.length;
+      console.log('Pagination info:', {
+        totalItems: response.data.totalItems,
+        totalCount: response.data.totalCount,
+        totalPages: response.data.totalPages,
+        currentPage: response.data.pageNumber || currentPage,
+        pageSize: response.data.pageSize || pageSize,
+        itemsLength: response.data.items.length,
+        finalTotal: totalCount
+      });
+      setTotal(totalCount);
+
       // First, create the basic booking objects
-      const initialBookings = response.data.items.map((booking: any) => ({
-        id: booking.maDatPhong || Math.floor(Math.random() * 1000),
-        roomId: booking.maPhong?.toString() || '',
-        roomNumber: booking.maPhong?.toString() || '', // Initially set to room ID, will be updated
-        customerName: booking.tenKH || 'Khách hàng',
-        customerId: booking.maKH,
-        phone: booking.phone || '',
-        email: booking.email || '',
-        checkIn: booking.checkIn || dayjs().format('YYYY-MM-DD'),
-        checkOut: booking.checkOut || dayjs().add(1, 'day').format('YYYY-MM-DD'),
-        status: booking.trangThai === 1 ? 'pending' : // Mã 1 là "Chờ xác nhận"
-                booking.trangThai === 2 ? 'confirmed' : // Mã 2 là "Đã xác nhận"
-                booking.trangThai === 3 ? 'checked_in' : // Mã 3 là "Đã nhận phòng"
-                booking.trangThai === 4 ? 'checked_out' : // Mã 4 là "Đã trả phòng"
-                booking.trangThai === 5 ? 'cancelled' : // Mã 5 là "Đã huỷ"
-                booking.trangThai === 6 ? 'no_show' : 'pending', // Mã 6 là "Không đến"
-        totalPrice: booking.tongTien || 0,
-        createdAt: booking.ngayTao || dayjs().format('YYYY-MM-DD'),
-        guestCount: booking.soLuongKhach || 1
-      }));
+      const initialBookings = response.data.items.map((booking: any) => {
+        // Get customer name from our customer data map if available
+        const customer = customers[booking.maKH];
+        const customerName = customer?.tenKH || booking.tenKH || `Khách hàng ${booking.maKH}`;
+
+        return {
+          id: booking.maDatPhong || Math.floor(Math.random() * 1000),
+          roomId: booking.maPhong?.toString() || '',
+          roomNumber: booking.maPhong?.toString() || '', // Initially set to room ID, will be updated
+          customerName: customerName,
+          customerId: booking.maKH,
+          phone: booking.phone || '',
+          email: booking.email || '',
+          checkIn: booking.checkIn || dayjs().format('YYYY-MM-DD'),
+          checkOut: booking.checkOut || dayjs().add(1, 'day').format('YYYY-MM-DD'),
+          status: booking.trangThai === 1 ? 'pending' : // Mã 1 là "Chờ xác nhận"
+                  booking.trangThai === 2 ? 'confirmed' : // Mã 2 là "Đã xác nhận"
+                  booking.trangThai === 3 ? 'checked_in' : // Mã 3 là "Đã nhận phòng"
+                  booking.trangThai === 4 ? 'checked_out' : // Mã 4 là "Đã trả phòng"
+                  booking.trangThai === 5 ? 'cancelled' : // Mã 5 là "Đã huỷ"
+                  booking.trangThai === 6 ? 'no_show' : 'pending', // Mã 6 là "Không đến"
+          totalPrice: booking.tongTien || 0,
+          createdAt: booking.ngayTao || dayjs().format('YYYY-MM-DD'),
+          guestCount: booking.soLuongKhach || 1
+        };
+      });
 
       // Set initial bookings
       setBookings(initialBookings);
@@ -552,6 +616,7 @@ const BookingManagement = () => {
   // Handle refresh
   const handleRefresh = () => {
     fetchBookings();
+    fetchCustomers();
   };
 
   // Handle search
@@ -569,9 +634,9 @@ const BookingManagement = () => {
     setStatusFilter(value);
   };
 
-  // Filter bookings based on search, date range, and status
+  // Filter bookings based on search, date range, and status (client-side filtering for current page)
   const filteredBookings = bookings.filter(booking => {
-    const matchesSearch =
+    const matchesSearch = !searchText ||
       booking.customerName.toLowerCase().includes(searchText.toLowerCase()) ||
       booking.phone.includes(searchText) ||
       booking.roomNumber.includes(searchText);
@@ -591,6 +656,15 @@ const BookingManagement = () => {
 
     return matchesSearch && matchesStatus && matchesDateRange;
   });
+
+  // Handle pagination change
+  const handlePageChange = (page: number, size?: number) => {
+    setCurrentPage(page);
+    if (size && size !== pageSize) {
+      setPageSize(size);
+      setCurrentPage(1); // Reset to first page when page size changes
+    }
+  };
 
   // Calculate statistics
   const totalBookings = bookings.length;
@@ -895,7 +969,21 @@ const BookingManagement = () => {
                 columns={columns}
                 dataSource={filteredBookings}
                 rowKey="id"
-                pagination={{ pageSize: 10 }}
+                pagination={{
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: total,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} của ${total} đặt phòng`,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  onChange: handlePageChange,
+                  onShowSizeChange: handlePageChange,
+                  hideOnSinglePage: false, // Always show pagination
+                  simple: false, // Use full pagination controls
+                  responsive: true, // Make pagination responsive
+                }}
                 loading={{
                   spinning: loading,
                   tip: 'Đang tải dữ liệu đặt phòng...',

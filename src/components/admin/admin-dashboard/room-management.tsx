@@ -118,12 +118,12 @@ const callApi = async (
   retries: number = 2
 ): Promise<{ success: boolean; data?: any; status?: number; error?: any; message?: string }> => {
   let lastError: any = null;
-  
+
   // Try with Axios first
   for (let i = 0; i <= retries; i++) {
     try {
       console.log(`API call (attempt ${i+1}/${retries+1}): ${method} ${url}`);
-      
+
       let response;
       if (method === 'GET') {
         response = await axios.get(url, {
@@ -146,33 +146,33 @@ const callApi = async (
           headers: { 'Content-Type': 'application/json' }
         });
       }
-      
+
       if (response) {
         return { success: true, data: response.data, status: response.status };
       }
     } catch (error) {
       console.error(`API call failed (attempt ${i+1}/${retries+1}):`, error);
       lastError = error;
-      
+
       // Wait before retrying (exponential backoff)
       if (i < retries) {
         await new Promise(r => setTimeout(r, 1000 * (i + 1)));
       }
     }
   }
-  
+
   // Try with fetch as fallback
   try {
     console.log(`Trying with fetch API as fallback: ${method} ${url}`);
-    
+
     const options: RequestInit = {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: data ? JSON.stringify(data) : undefined
     };
-    
+
     const response = await fetch(url, options);
-    
+
     if (response.ok) {
       const responseData = await response.json();
       return { success: true, data: responseData, status: response.status };
@@ -180,11 +180,11 @@ const callApi = async (
   } catch (error) {
     console.error('Fetch API fallback failed:', error);
   }
-  
+
   // Return failure if all attempts failed
-  return { 
-    success: false, 
-    error: lastError, 
+  return {
+    success: false,
+    error: lastError,
     message: lastError?.message || 'Network Error'
   };
 };
@@ -209,7 +209,7 @@ const RoomManagement = () => {
   const fetchRooms = async () => {
     setLoading(true);
     setError(null);
-    
+
     // Always use mock data in development for testing if API is unreliable
     if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true') {
       setTimeout(() => {
@@ -219,13 +219,13 @@ const RoomManagement = () => {
       }, 1000);
       return;
     }
-    
+
     // Regular API call with fallbacks
     try {
       // First try: Using axios with proxy option if enabled
       const url = USE_PROXY ? `${PROXY_URL}/Phong/GetAll` : `${BACKEND_API_URL}/Phong/GetAll`;
       console.log(`Attempting to fetch from: ${url}`);
-      
+
       const response = await axios.get(url, {
         timeout: 15000,
         headers: {
@@ -234,7 +234,7 @@ const RoomManagement = () => {
           'Cache-Control': 'no-cache'
         }
       });
-      
+
       if (response.data && response.data.items) {
         console.log('Data fetched successfully');
         setRooms(response.data.items);
@@ -244,7 +244,7 @@ const RoomManagement = () => {
     } catch (error) {
       console.error('Primary API request failed:', error);
     }
-    
+
     // Second try: Try alternative URLs directly
     for (const directUrl of DIRECT_API_URLS) {
       try {
@@ -257,7 +257,7 @@ const RoomManagement = () => {
             'Cache-Control': 'no-cache'
           }
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data && data.items) {
@@ -271,9 +271,8 @@ const RoomManagement = () => {
         console.error(`Failed with URL ${directUrl}:`, error);
       }
     }
-    
+
     // Use mock data as last resort
-    console.log('All API attempts failed, using mock data');
     setRooms(MOCK_ROOMS);
     setError('API không khả dụng - đang hiển thị dữ liệu mẫu');
     message.warning('API không khả dụng, đang hiển thị dữ liệu mẫu');
@@ -401,12 +400,12 @@ const RoomManagement = () => {
   const deleteStats = async (maPhong: number) => {
     try {
       // Using the exact format from the screenshot: /api/Phong/Delete/{id}
-      const url = USE_PROXY 
-        ? `${PROXY_URL}/Phong/Delete/${maPhong}` 
+      const url = USE_PROXY
+        ? `${PROXY_URL}/Phong/Delete/${maPhong}`
         : `${BACKEND_API_URL}/Phong/Delete/${maPhong}`;
-        
+
       const result = await callApi('DELETE', url);
-      
+
       if (result.success) {
         console.log('Deletion successful');
         setRooms(rooms.filter(room => room.maPhong !== maPhong));
@@ -414,7 +413,7 @@ const RoomManagement = () => {
       } else {
         console.error('All delete attempts failed');
         message.error(`Lỗi khi xóa phòng: ${result.message}`);
-        
+
         // Optimistic UI update even if server call failed
         if (window.confirm('Máy chủ không phản hồi. Bạn có muốn cập nhật giao diện không?')) {
           setRooms(rooms.filter(room => room.maPhong !== maPhong));
@@ -426,7 +425,7 @@ const RoomManagement = () => {
       message.error('Lỗi khi xóa phòng');
     }
   };
-  
+
   // Xử lý xóa phòng
   const handleDelete = (maPhong: number) => {
     Modal.confirm({
@@ -450,7 +449,7 @@ const RoomManagement = () => {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      
+
       if (editingRoom) {
         // Cập nhật phòng hiện có
         const updatedRoom = {
@@ -461,14 +460,14 @@ const RoomManagement = () => {
           maLoaiPhong: values.maLoaiPhong || editingRoom.maLoaiPhong,
           maTT: values.maTT || editingRoom.trangThaiPhong.maTT
         };
-        
+
         // Using the exact format from the screenshot: /api/Phong/Update/{SoPhong}
-        const updateUrl = USE_PROXY 
-          ? `${PROXY_URL}/Phong/Update/${updatedRoom.soPhong}` 
+        const updateUrl = USE_PROXY
+          ? `${PROXY_URL}/Phong/Update/${updatedRoom.soPhong}`
           : `${BACKEND_API_URL}/Phong/Update/${updatedRoom.soPhong}`;
-          
+
         const result = await callApi('PUT', updateUrl, updatedRoom);
-        
+
         if (result.success) {
           message.success('Cập nhật phòng thành công');
           fetchRooms(); // Tải lại danh sách phòng
@@ -485,14 +484,14 @@ const RoomManagement = () => {
           maLoaiPhong: values.maLoaiPhong,
           maTT: values.maTT || 1 // Mặc định là Available
         };
-        
+
         // Using the exact format from the screenshot: /api/Phong/Create
-        const createUrl = USE_PROXY 
-          ? `${PROXY_URL}/Phong/Create` 
+        const createUrl = USE_PROXY
+          ? `${PROXY_URL}/Phong/Create`
           : `${BACKEND_API_URL}/Phong/Create`;
-          
+
         const result = await callApi('POST', createUrl, newRoom);
-        
+
         if (result.success) {
           message.success('Thêm phòng mới thành công');
           fetchRooms(); // Tải lại danh sách phòng

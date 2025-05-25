@@ -434,36 +434,29 @@ export const isAuthenticated = (): boolean => {
 
   // Kiểm tra token từ cookie
   const token = getAuthCookie(AUTH_TOKEN_KEY);
-  console.log('isAuthenticated - Token from cookie:', token ? 'Found' : 'Not found');
 
   // Kiểm tra token từ localStorage (fallback)
   const localToken = localStorage.getItem(AUTH_TOKEN_KEY);
-  console.log('isAuthenticated - Token from localStorage:', localToken ? 'Found' : 'Not found');
 
   // Kiểm tra user data từ localStorage
   const localUser = localStorage.getItem(USER_DATA_KEY);
-  console.log('isAuthenticated - User data from localStorage:', localUser ? 'Found' : 'Not found');
 
   // Nếu không có token trong cookie nhưng có trong localStorage, khôi phục vào cookie
   if (!token && localToken) {
-    console.log('isAuthenticated - Restoring token from localStorage to cookie');
     setAuthCookie(AUTH_TOKEN_KEY, localToken);
 
     // Cũng khôi phục dữ liệu người dùng
     if (localUser) {
       setAuthCookie(USER_DATA_KEY, localUser);
-      console.log('isAuthenticated - Restored user data from localStorage to cookie');
     }
   }
 
   // Kiểm tra xem có token và user data không
   if (!token && !localToken) {
-    console.log('isAuthenticated - No token found in cookie or localStorage');
     return false;
   }
 
   if (!localUser) {
-    console.log('isAuthenticated - No user data found in localStorage');
     return false;
   }
 
@@ -475,33 +468,27 @@ export const isAuthenticated = (): boolean => {
     // Thử phân tích token (có thể thêm logic kiểm tra hết hạn nếu cần)
     // JWT thường có 3 phần cách nhau bởi dấu chấm
     if (activeToken && activeToken.includes('admin-token-')) {
-      console.log('isAuthenticated - Admin token detected');
       // Admin token đặc biệt - luôn hợp lệ
       return true;
     }
 
     if (activeToken && activeToken.includes('mock-token-')) {
-      console.log('isAuthenticated - Mock token detected');
       // Mock token đặc biệt - luôn hợp lệ
       return true;
     }
 
     // Kiểm tra xem token có phải là JWT hợp lệ không
     if (activeToken && activeToken.split('.').length === 3) {
-      console.log('isAuthenticated - Valid JWT token found');
       return true;
     }
 
     // Kiểm tra xem token có giá trị không
     if (activeToken && activeToken.length > 10) {
-      console.log('isAuthenticated - Valid token found');
       return true;
     }
 
-    console.log('isAuthenticated - Invalid token format');
     return false;
   } catch (e) {
-    console.error('Error checking token validity', e);
     return false;
   }
 };
@@ -517,19 +504,16 @@ export const getCurrentUser = (): User | null => {
 
   // Nếu không có trong cookie, thử lấy từ localStorage
   if (!userStr) {
-    console.log('getCurrentUser - User data not found in cookie, trying localStorage');
     const localUserStr = localStorage.getItem(USER_DATA_KEY);
 
     // Nếu tìm thấy trong localStorage, khôi phục vào cookie
     if (localUserStr) {
-      console.log('getCurrentUser - Restoring user data from localStorage to cookie');
       setAuthCookie(USER_DATA_KEY, localUserStr);
       userStr = localUserStr;
     }
   }
 
   if (!userStr) {
-    console.log('getCurrentUser - No user data found in cookie or localStorage');
     return null;
   }
 
@@ -538,7 +522,6 @@ export const getCurrentUser = (): User | null => {
 
     // Xử lý đặc biệt cho tài khoản nhanvien2
     if (userData.username === 'nhanvien2' || userData.tenTK === 'nhanvien2') {
-      console.log('AuthService - Đã phát hiện tài khoản nhanvien2, đảm bảo loaiTK=2 và role=staff');
       userData.loaiTK = 2;
       userData.vaiTro = 2;
       userData.role = 'staff';
@@ -546,7 +529,6 @@ export const getCurrentUser = (): User | null => {
 
     // Xử lý đặc biệt cho tài khoản demo
     if (userData.username === 'staff_demo' || userData.tenTK === 'staff_demo') {
-      console.log('AuthService - Đã phát hiện tài khoản demo, đảm bảo loaiTK=2 và role=staff');
       userData.loaiTK = 2;
       userData.vaiTro = 2;
       userData.role = 'staff';
@@ -564,7 +546,7 @@ export const getCurrentUser = (): User | null => {
             userData.loaiTK = loaiTKValue;
           }
         } catch (e) {
-          console.error('Error parsing loaiTK:', e);
+          // Error parsing loaiTK
         }
       }
     }
@@ -581,7 +563,7 @@ export const getCurrentUser = (): User | null => {
             userData.vaiTro = vaiTroValue;
           }
         } catch (e) {
-          console.error('Error parsing vaiTro:', e);
+          // Error parsing vaiTro
         }
       }
     }
@@ -589,17 +571,14 @@ export const getCurrentUser = (): User | null => {
     // Đảm bảo role luôn khớp với loaiTK
     if (userData.loaiTK === 1) {
       if (userData.role !== 'admin') {
-        console.log('AuthService - Cập nhật role thành admin cho tài khoản loaiTK=1');
         userData.role = 'admin';
       }
     } else if (userData.loaiTK === 2) {
       if (userData.role !== 'staff') {
-        console.log('AuthService - Cập nhật role thành staff cho tài khoản loaiTK=2');
         userData.role = 'staff';
       }
     } else {
       if (userData.role !== 'customer') {
-        console.log('AuthService - Cập nhật role thành customer cho tài khoản loaiTK khác 1,2');
         userData.role = 'customer';
       }
     }
@@ -610,7 +589,6 @@ export const getCurrentUser = (): User | null => {
       // Lưu lại thông tin người dùng đã cập nhật
       setAuthCookie(USER_DATA_KEY, JSON.stringify(userData));
       localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-      console.log('AuthService - Đã lưu lại dữ liệu người dùng với role và loaiTK đồng bộ');
     }
 
     // Chuẩn hóa dữ liệu người dùng để đảm bảo có cả 2 cách đặt tên
@@ -627,7 +605,6 @@ export const getCurrentUser = (): User | null => {
 
     return userData;
   } catch (e) {
-    console.error('Error parsing user data from cookie', e);
     return null;
   }
 };
@@ -639,8 +616,6 @@ export const logout = (): void => {
   if (typeof window === 'undefined') return;
 
   try {
-    console.log('Logging out user...');
-
     // Xóa tất cả dữ liệu người dùng khỏi cookies
     removeAuthCookie(AUTH_TOKEN_KEY);
     removeAuthCookie(USER_DATA_KEY);
@@ -653,14 +628,12 @@ export const logout = (): void => {
     sessionStorage.removeItem(AUTH_TOKEN_KEY);
     sessionStorage.removeItem(USER_DATA_KEY);
 
-    console.log('Đã đăng xuất và xóa dữ liệu người dùng');
-
     // Kích hoạt sự kiện để thông báo cho Header
     try {
       const logoutEvent = new Event('user-logout');
       window.dispatchEvent(logoutEvent);
     } catch (eventError) {
-      console.error('Error dispatching logout event:', eventError);
+      // Error dispatching logout event
     }
 
     // Show an alert to confirm logout
@@ -673,8 +646,6 @@ export const logout = (): void => {
       window.location.href = '/login';
     }, 500);
   } catch (error) {
-    console.error('Error during logout:', error);
-
     // Force redirect to login as a last resort
     if (typeof window !== 'undefined') {
       window.alert('Đã xảy ra lỗi khi đăng xuất. Đang chuyển hướng đến trang đăng nhập.');
@@ -689,7 +660,6 @@ export const logout = (): void => {
 export const redirectToLoginIfNotAuthenticated = (redirectPath?: string): boolean => {
   if (!isAuthenticated() && typeof window !== 'undefined') {
     const path = redirectPath ? `/login?redirect=${encodeURIComponent(redirectPath)}` : '/login';
-    console.log('User not authenticated, redirecting to login page:', path);
     window.location.href = path;
     return true;
   }
@@ -746,14 +716,12 @@ export async function changePassword(currentPassword: string, newPassword: strin
         throw new Error(response.data.message || 'Đổi mật khẩu thất bại');
       }
     } catch (apiError) {
-      console.error('Error changing password:', apiError);
       return {
         success: false,
         message: 'Không thể đổi mật khẩu. Vui lòng kiểm tra kết nối mạng và thử lại sau.'
       };
     }
   } catch (error) {
-    console.error('Change password error:', error);
     return {
       success: false,
       message: 'Đổi mật khẩu thất bại. Vui lòng thử lại sau.'
@@ -800,14 +768,12 @@ export const deleteUser = async (): Promise<AuthResponse> => {
         throw new Error(response.data.message || 'Xóa tài khoản thất bại');
       }
     } catch (apiError) {
-      console.error('Error deleting account:', apiError);
       return {
         success: false,
         message: 'Không thể xóa tài khoản. Vui lòng kiểm tra kết nối mạng và thử lại sau.'
       };
     }
   } catch (error) {
-    console.error('Delete account error:', error);
     return {
       success: false,
       message: 'Xóa tài khoản thất bại. Vui lòng thử lại sau.'
@@ -834,7 +800,6 @@ export const forgotPassword = async (email: string): Promise<AuthResponse> => {
       throw new Error(response.data.message || 'Có lỗi xảy ra khi gửi yêu cầu');
     }
   } catch (error: any) {
-    console.error('Forgot password error:', error);
     return {
       success: false,
       message: error.response?.data?.message || error.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.'
@@ -862,7 +827,6 @@ export const resetPassword = async (resetToken: string, password: string): Promi
       throw new Error(response.data.message || 'Có lỗi xảy ra khi đặt lại mật khẩu');
     }
   } catch (error: any) {
-    console.error('Reset password error:', error);
     return {
       success: false,
       message: error.response?.data?.message || error.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.'

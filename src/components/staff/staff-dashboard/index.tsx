@@ -130,7 +130,7 @@ const StaffDashboard = () => {
       // Try to get data from the dashboard service
       try {
         const response = await dashboardService.getDashboardStats();
-        console.log('Dashboard stats:', response);
+
 
         // Calculate booked rooms (rooms that are reserved but not yet occupied)
         const bookedRooms = response.totalBookings - response.occupiedRooms;
@@ -240,7 +240,7 @@ const StaffDashboard = () => {
       // Try each endpoint until one succeeds
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying to fetch bookings from ${endpoint}...`);
+
           const response = await fetch(endpoint);
 
           if (response.ok) {

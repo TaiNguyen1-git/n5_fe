@@ -17,8 +17,17 @@ export default async function handler(
 ) {
   if (req.method === 'GET') {
     try {
-      // Get employees from backend API
+      // Get pagination parameters from query
+      const { pageNumber = '1', pageSize = '10' } = req.query;
+
+      console.log(`Fetching employees with pagination: page ${pageNumber}, size ${pageSize}`);
+
+      // Get employees from backend API with pagination
       const response = await axios.get(`${BACKEND_API_URL}/NhanVien/GetAll`, {
+        params: {
+          PageNumber: Number(pageNumber),
+          PageSize: Number(pageSize)
+        },
         timeout: 15000 // 15 second timeout
       });
 
@@ -27,12 +36,32 @@ export default async function handler(
 
       // Transform data for frontend if needed
       let employees = [];
+      let paginationInfo = {
+        totalItems: 0,
+        pageNumber: Number(pageNumber),
+        pageSize: Number(pageSize),
+        totalPages: 0
+      };
 
       if (response.data) {
-        if (Array.isArray(response.data)) {
-          employees = response.data;
-        } else if (response.data.items && Array.isArray(response.data.items)) {
+        // Check if response has pagination structure
+        if (response.data.items && Array.isArray(response.data.items)) {
           employees = response.data.items;
+          paginationInfo = {
+            totalItems: response.data.totalItems || response.data.items.length,
+            pageNumber: response.data.pageNumber || Number(pageNumber),
+            pageSize: response.data.pageSize || Number(pageSize),
+            totalPages: response.data.totalPages || Math.ceil((response.data.totalItems || response.data.items.length) / Number(pageSize))
+          };
+        } else if (Array.isArray(response.data)) {
+          // If response is directly an array (fallback)
+          employees = response.data;
+          paginationInfo = {
+            totalItems: response.data.length,
+            pageNumber: Number(pageNumber),
+            pageSize: Number(pageSize),
+            totalPages: Math.ceil(response.data.length / Number(pageSize))
+          };
         }
       }
 
@@ -60,10 +89,14 @@ export default async function handler(
       }));
 
       console.log('Formatted employees sample:', formattedEmployees.length > 0 ? formattedEmployees[0] : 'No employees');
+      console.log('Pagination info:', paginationInfo);
 
       return res.status(200).json({
         success: true,
-        data: formattedEmployees
+        data: {
+          items: formattedEmployees,
+          ...paginationInfo
+        }
       });
     } catch (error: any) {
       console.error('Error fetching employees:', error);

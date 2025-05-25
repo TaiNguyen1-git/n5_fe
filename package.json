@@ -19,6 +19,7 @@
     "antd": "^5.24.7",
     "axios": "^1.8.4",
     "date-fns": "^4.1.0",
+    "form-data": "4.0.2",
     "formidable": "^3.5.4",
     "js-cookie": "^3.0.5",
     "next": "^15.2.4",

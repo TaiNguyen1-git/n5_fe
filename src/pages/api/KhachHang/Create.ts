@@ -39,13 +39,10 @@ export default async function handler(
         xoa: false
       };
 
-      console.log('Sending customer data to API:', customerData);
+
 
       // Gọi API backend để tạo khách hàng
       try {
-        console.log('Sending customer data to backend API:', JSON.stringify(customerData, null, 2));
-        console.log('API URL:', `${BACKEND_API_URL}/KhachHang/Create`);
-
         const response = await axios.post(`${BACKEND_API_URL}/KhachHang/Create`, customerData, {
           timeout: 20000, // 20s timeout
           headers: {
@@ -54,12 +51,9 @@ export default async function handler(
           }
         });
 
-        console.log('Customer API response status:', response.status);
-        console.log('Customer API response data:', JSON.stringify(response.data, null, 2));
-
         // Kiểm tra xem response có chứa dữ liệu khách hàng không
         if (!response.data || !response.data.maKH) {
-          console.warn('API response does not contain customer ID (maKH):', response.data);
+          console.warn('API response does not contain customer ID');
         }
 
         // Trả về kết quả từ API backend

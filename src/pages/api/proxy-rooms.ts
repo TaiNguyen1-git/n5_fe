@@ -10,9 +10,9 @@ export default async function handler(
 ) {
   // Chỉ chấp nhận phương thức GET
   if (req.method !== 'GET') {
-    return res.status(405).json({ 
-      success: false, 
-      message: 'Method Not Allowed' 
+    return res.status(405).json({
+      success: false,
+      message: 'Method Not Allowed'
     });
   }
 
@@ -28,11 +28,11 @@ export default async function handler(
     // Trả về dữ liệu từ API backend
     return res.status(200).json(response.data);
   } catch (error) {
-    console.error('Error fetching rooms from API:', error);
-    
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.' 
+
+
+    return res.status(500).json({
+      success: false,
+      message: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.'
     });
   }
-} 
+}

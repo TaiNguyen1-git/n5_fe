@@ -4,6 +4,7 @@ import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, PrinterOutline
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import axios from 'axios';
+import { getAllCustomers, type Customer } from '../../../services/customerService';
 
 const { Option } = Select;
 const { Step } = Steps;
@@ -26,13 +27,45 @@ const BillManagement = () => {
   const [paymentStatuses, setPaymentStatuses] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
 
+  // Customer data states for real-time customer name lookup
+  const [customerMap, setCustomerMap] = useState<Record<number, Customer>>({});
+  const [customerDataLoading, setCustomerDataLoading] = useState(false);
+
   useEffect(() => {
     fetchBills();
     fetchCustomers();
     fetchPaymentMethods();
     fetchPaymentStatuses();
     fetchServices();
+    fetchCustomerData();
   }, []);
+
+  // Fetch customer data using customerService
+  const fetchCustomerData = async () => {
+    setCustomerDataLoading(true);
+    try {
+      console.log('Fetching all customers for bill management...');
+      const response = await getAllCustomers(1, 1000); // Get a large number to get all customers
+
+      if (response.success && response.data?.items) {
+        // Create a map of customer ID to customer data
+        const customerMapData: Record<number, Customer> = {};
+        response.data.items.forEach((customer: Customer) => {
+          if (customer.maKH) {
+            customerMapData[customer.maKH] = customer;
+          }
+        });
+        setCustomerMap(customerMapData);
+        console.log('Customer data loaded for bill management:', customerMapData);
+      } else {
+        console.warn('Failed to fetch customers for bill management:', response.message);
+      }
+    } catch (error) {
+      console.error('Error fetching customers for bill management:', error);
+    } finally {
+      setCustomerDataLoading(false);
+    }
+  };
 
   // Helper function để lấy phương thức thanh toán dựa vào mã
   const getPaymentMethod = (maPhuongThuc: number | null | undefined): string => {
@@ -174,8 +207,12 @@ const BillManagement = () => {
 
             // Lấy thông tin khách hàng từ maKH
             const maKH = bill.maKH;
-            const khachHang = customers.find(c => c.maKH === maKH) || bill.khachHang || {};
-            const customerName = khachHang.tenKH || phongThue?.tenKH || 'Khách hàng';
+            // Use customerMap for real-time customer name lookup
+            const customer = customerMap[maKH];
+            const customerName = customer?.tenKH ||
+                                customers.find(c => c.maKH === maKH)?.tenKH ||
+                                phongThue?.tenKH ||
+                                `Khách hàng ${maKH}`;
 
             // Lấy thông tin phòng
             const roomNumber = phongThue?.maPhong || bill.maPhong || 'N/A';
@@ -983,14 +1020,20 @@ const BillManagement = () => {
       dataIndex: 'customerName',
       key: 'customerName',
       render: (text, record) => {
-        const customer = customers.find(c => c.maKH === record.maKH);
+        // Use customerMap for real-time customer name lookup
+        const customer = customerMap[record.maKH] || customers.find(c => c.maKH === record.maKH);
+        const displayName = customer?.tenKH || text || `Khách hàng ${record.maKH}`;
+
         return (
           <div>
-            <div>{text}</div>
+            <div>{displayName}</div>
             {customer && (
               <small style={{ color: '#888' }}>
-                {customer.soDT} | {customer.email}
+                {customer.phone || customer.soDT} | {customer.email}
               </small>
+            )}
+            {customerDataLoading && (
+              <small style={{ color: '#1890ff' }}>Đang tải...</small>
             )}
           </div>
         );
@@ -1276,13 +1319,19 @@ const BillManagement = () => {
           <div>
             <Row gutter={[16, 16]}>
               <Col span={12}>
-                <p><strong>Khách hàng:</strong> {viewBill.customerName}</p>
-                {customers.find(c => c.maKH === viewBill.maKH) && (
-                  <>
-                    <p><strong>SĐT:</strong> {customers.find(c => c.maKH === viewBill.maKH)?.soDT}</p>
-                    <p><strong>Email:</strong> {customers.find(c => c.maKH === viewBill.maKH)?.email}</p>
-                  </>
-                )}
+                <p><strong>Khách hàng:</strong> {(() => {
+                  const customer = customerMap[viewBill.maKH] || customers.find(c => c.maKH === viewBill.maKH);
+                  return customer?.tenKH || viewBill.customerName || `Khách hàng ${viewBill.maKH}`;
+                })()}</p>
+                {(() => {
+                  const customer = customerMap[viewBill.maKH] || customers.find(c => c.maKH === viewBill.maKH);
+                  return customer && (
+                    <>
+                      <p><strong>SĐT:</strong> {customer.phone || customer.soDT}</p>
+                      <p><strong>Email:</strong> {customer.email}</p>
+                    </>
+                  );
+                })()}
 
               </Col>
               <Col span={12}>

@@ -17,6 +17,15 @@ interface ApiResponse<T> {
   data?: T;
 }
 
+// Define interface for paginated response
+export interface PaginatedCustomerResponse {
+  items: Customer[];
+  totalItems: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 /**
  * Create a new customer
  * API tạo khách hàng: POST /api/KhachHang/Create
@@ -40,11 +49,7 @@ export const createCustomer = async (customerData: Customer): Promise<ApiRespons
       xoa: false
     };
 
-    // Log thông tin khách hàng để debug
-    console.log('Sending customer data to API:', serverData);
-
     // Gọi API với nhiều URL khác nhau
-    console.log('Calling customer creation API with data:', JSON.stringify(serverData, null, 2));
 
     // Danh sách các URL API để thử
     const API_URLS = [
@@ -59,7 +64,6 @@ export const createCustomer = async (customerData: Customer): Promise<ApiRespons
     // Thử từng URL cho đến khi thành công
     for (const url of API_URLS) {
       try {
-        console.log(`Trying to create customer with URL: ${url}`);
         response = await axios.post(url, serverData, {
           timeout: 15000, // 15 giây timeout
           headers: {
@@ -70,11 +74,9 @@ export const createCustomer = async (customerData: Customer): Promise<ApiRespons
 
         // Nếu thành công, thoát khỏi vòng lặp
         if (response && response.status >= 200 && response.status < 300) {
-          console.log(`Successfully created customer with URL: ${url}`);
           break;
         }
       } catch (err: any) {
-        console.error(`Error creating customer with URL ${url}:`, err.message);
         error = err;
         // Tiếp tục thử URL tiếp theo
       }
@@ -126,6 +128,87 @@ export const createCustomer = async (customerData: Customer): Promise<ApiRespons
 };
 
 /**
+ * Get all customers with pagination
+ */
+export const getAllCustomers = async (pageNumber: number = 1, pageSize: number = 10): Promise<ApiResponse<PaginatedCustomerResponse>> => {
+  try {
+
+
+    const response = await axios.get('/api/customers', {
+      params: {
+        pageNumber,
+        pageSize
+      },
+      timeout: 15000 // 15 second timeout
+    });
+
+    console.log('Customers API response:', response.data);
+
+    if (response.data && response.data.success && response.data.data) {
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } else {
+      return {
+        success: false,
+        message: response.data?.message || 'Failed to fetch customers',
+        data: {
+          items: [],
+          totalItems: 0,
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+          totalPages: 0
+        }
+      };
+    }
+  } catch (error: any) {
+    console.error('Error fetching customers:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Không thể lấy danh sách khách hàng',
+      data: {
+        items: [],
+        totalItems: 0,
+        pageNumber: pageNumber,
+        pageSize: pageSize,
+        totalPages: 0
+      }
+    };
+  }
+};
+
+/**
+ * Get all customers without pagination (for backward compatibility)
+ */
+export const getAllCustomersNoPagination = async (): Promise<ApiResponse<Customer[]>> => {
+  try {
+
+    const response = await getAllCustomers(1, 1000); // Get a large page
+
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: response.data.items
+      };
+    }
+
+    return {
+      success: false,
+      message: response.message || 'Failed to fetch customers',
+      data: []
+    };
+  } catch (error) {
+    console.error('Error fetching customers without pagination:', error);
+    return {
+      success: false,
+      message: 'Không thể lấy danh sách khách hàng',
+      data: []
+    };
+  }
+};
+
+/**
  * Get customer by ID
  * API lấy thông tin khách hàng: GET /api/KhachHang/GetById?id={customerId}
  */
@@ -150,5 +233,7 @@ export const getCustomerById = async (customerId: number): Promise<ApiResponse<C
 
 export default {
   createCustomer,
+  getAllCustomers,
+  getAllCustomersNoPagination,
   getCustomerById
 };

@@ -5,9 +5,9 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import styles from '../../styles/Services.module.css';
 import Link from 'next/link';
-import { Button, Spin } from 'antd';
+import { Button, Spin, Pagination } from 'antd';
 import Layout from '../../components/Layout';
-import { serviceApi, DichVu } from '../../services/serviceApi';
+import { serviceApi, DichVu, PaginatedResponse, ApiResponse } from '../../services/serviceApi';
 
 interface Service {
   id: number;
@@ -121,49 +121,77 @@ const Services = memo(() => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Lấy dữ liệu từ API khi component được mount
-  useEffect(() => {
-    // Kiểm tra cache trước khi gọi API
-    const cachedServices = localStorage.getItem('cachedServices');
-    const cacheTime = localStorage.getItem('servicesCacheTime');
-    
-    if (cachedServices && cacheTime) {
-      const now = new Date().getTime();
-      const cacheAge = now - parseInt(cacheTime);
-      
-      // Sử dụng cache nếu chưa quá 30 phút
-      if (cacheAge < 30 * 60 * 1000) {
-        try {
-          const parsedServices = JSON.parse(cachedServices);
-          setServices(parsedServices);
-          setLoading(false);
-          return;
-        } catch (e) {
-          console.error('Lỗi khi parse cache:', e);
-        }
-      }
-    }
-    
-    const fetchServices = async () => {
-      try {
-        setLoading(true);
-        const apiData = await serviceApi.getAllServices();
-        const mappedServices = mapApiToServiceData(apiData);
-        setServices(mappedServices);
-        setError(null);
-        
-        // Lưu vào cache
-        localStorage.setItem('cachedServices', JSON.stringify(mappedServices));
-        localStorage.setItem('servicesCacheTime', new Date().getTime().toString());
-      } catch (err: any) {
-        console.error('Lỗi khi lấy dữ liệu dịch vụ:', err);
-        setError(err?.message || 'Không thể tải dữ liệu dịch vụ. Vui lòng thử lại sau.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 12, // 12 services per page for better grid layout
+    total: 0,
+  });
 
-    fetchServices();
+  // Fetch services with pagination
+  const fetchServices = async (pageNumber: number = 1, pageSize: number = 12) => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log(`Fetching services: page ${pageNumber}, size ${pageSize}`);
+
+      const response = await serviceApi.getAllServices(pageNumber, pageSize);
+
+      if (response.success && response.data) {
+        const paginatedData = response.data as PaginatedResponse<DichVu>;
+
+        // Map API data to Service interface
+        const mappedServices = mapApiToServiceData(paginatedData.items);
+
+        // Update services and pagination info
+        setServices(mappedServices);
+        setPagination(prev => ({
+          ...prev,
+          current: paginatedData.pageNumber,
+          pageSize: paginatedData.pageSize,
+          total: paginatedData.totalItems,
+        }));
+
+        console.log('Services loaded successfully:', mappedServices.length);
+      } else {
+        throw new Error(response.message || 'Failed to fetch services');
+      }
+    } catch (err: any) {
+      console.error('Error fetching services:', err);
+      setError(err?.message || 'Không thể tải dữ liệu dịch vụ. Vui lòng thử lại sau.');
+
+      // Fallback: try to get services without pagination
+      try {
+        const fallbackData = await serviceApi.getAllServicesNoPagination();
+        const mappedServices = mapApiToServiceData(fallbackData);
+        setServices(mappedServices);
+        setPagination(prev => ({
+          ...prev,
+          total: mappedServices.length,
+        }));
+        setError(null);
+      } catch (fallbackErr) {
+        console.error('Fallback also failed:', fallbackErr);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle pagination change
+  const handlePaginationChange = (page: number, pageSize?: number) => {
+    const newPageSize = pageSize || pagination.pageSize;
+    setPagination(prev => ({
+      ...prev,
+      current: page,
+      pageSize: newPageSize,
+    }));
+    fetchServices(page, newPageSize);
+  };
+
+  // Load initial data
+  useEffect(() => {
+    fetchServices(pagination.current, pagination.pageSize);
   }, []);
 
   const categories = Array.from(new Set(services.map(service => service.category)));
@@ -253,49 +281,69 @@ const Services = memo(() => {
             </div>
 
             {filteredServices.length > 0 ? (
-              <div className={styles.serviceGrid}>
-                {filteredServices.map(service => (
-                  <div key={service.id} className={styles.serviceCard}>
-                    <div className={styles.serviceImageContainer}>
-                      <Image
-                        src={service.imageUrl || '/images/restaurant.jpg'}
-                        alt={service.title}
-                        width={300}
-                        height={200}
-                        className={styles.serviceImage}
-                        unoptimized
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.target as any).src = '/images/restaurant.jpg';
-                        }}
-                      />
-                      <div className={styles.serviceCategory}>{service.category}</div>
-                      {service.badge && (
-                        <div className={styles.serviceBadge}>{service.badge}</div>
-                      )}
-                    </div>
-                    <div className={styles.serviceContent}>
-                      <h3 className={styles.serviceTitle}>{service.title}</h3>
-                      <p className={styles.serviceDescription}>{service.description}</p>
+              <>
+                <div className={styles.serviceGrid}>
+                  {filteredServices.map(service => (
+                    <div key={service.id} className={styles.serviceCard}>
+                      <div className={styles.serviceImageContainer}>
+                        <Image
+                          src={service.imageUrl || '/images/restaurant.jpg'}
+                          alt={service.title}
+                          width={300}
+                          height={200}
+                          className={styles.serviceImage}
+                          unoptimized
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.target as any).src = '/images/restaurant.jpg';
+                          }}
+                        />
+                        <div className={styles.serviceCategory}>{service.category}</div>
+                        {service.badge && (
+                          <div className={styles.serviceBadge}>{service.badge}</div>
+                        )}
+                      </div>
+                      <div className={styles.serviceContent}>
+                        <h3 className={styles.serviceTitle}>{service.title}</h3>
+                        <p className={styles.serviceDescription}>{service.description}</p>
 
-                      {service.details && service.details.length > 0 && (
-                        <ul className={styles.serviceDetailsList}>
-                          {service.details.map((detail, index) => (
-                            <li key={index} className={styles.serviceDetailItem}>{detail}</li>
-                          ))}
-                        </ul>
-                      )}
+                        {service.details && service.details.length > 0 && (
+                          <ul className={styles.serviceDetailsList}>
+                            {service.details.map((detail, index) => (
+                              <li key={index} className={styles.serviceDetailItem}>{detail}</li>
+                            ))}
+                          </ul>
+                        )}
 
-                      <div className={styles.servicePriceRow}>
-                        <span className={styles.servicePrice}>{formatPrice(service.price)}</span>
+                        <div className={styles.servicePriceRow}>
+                          <span className={styles.servicePrice}>{formatPrice(service.price)}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
+                  <Pagination
+                    current={pagination.current}
+                    pageSize={pagination.pageSize}
+                    total={pagination.total}
+                    showSizeChanger
+                    showQuickJumper
+                    showTotal={(total, range) =>
+                      `${range[0]}-${range[1]} của ${total} dịch vụ`
+                    }
+                    onChange={handlePaginationChange}
+                    onShowSizeChange={handlePaginationChange}
+                    pageSizeOptions={['6', '12', '24', '48']}
+                  />
+                </div>
+              </>
             ) : (
               <div className={styles.noResults}>
                 <p>Không tìm thấy dịch vụ nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
+                <Button onClick={() => fetchServices(1, pagination.pageSize)}>Thử lại</Button>
               </div>
             )}
           </div>

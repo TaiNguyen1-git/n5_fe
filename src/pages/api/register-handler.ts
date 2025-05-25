@@ -21,7 +21,7 @@ export default async function handler(
 
   try {
     const { userName, password, confirmPassword, email, fullName, phone } = req.body;
-    
+
     // Định dạng dữ liệu đúng cho API
     const registerData = {
       MaTK: 0,                 // MaTK sẽ được tạo tự động bởi server
@@ -74,7 +74,7 @@ export default async function handler(
     // Kiểm tra cả status và nội dung phản hồi
     if (!response.ok || response.status >= 400 || (data && data.statusCode >= 400)) {
       let errorMessage = 'Đăng ký thất bại';
-      
+
       // Xử lý thông báo từ data.value (format thường dùng trong ASP.NET)
       if (data) {
         if (typeof data.value === 'string') {
@@ -85,13 +85,9 @@ export default async function handler(
           errorMessage = data.title;
         }
       }
-      
-      console.error('Register handler - Lỗi từ server:', {
-        status: response.status,
-        statusText: response.statusText,
-        data: data
-      });
-      
+
+      console.error('Registration failed:', response.status, response.statusText);
+
       // QUAN TRỌNG: Trả về status 400 và success: false
       return res.status(400).json({
         success: false,
@@ -113,4 +109,4 @@ export default async function handler(
       message: 'Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại sau.'
     });
   }
-} 
+}
