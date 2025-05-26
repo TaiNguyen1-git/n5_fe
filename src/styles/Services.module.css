@@ -570,6 +570,16 @@
   margin-top: 10px;
 }
 
+.paginationContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 40px auto;
+  padding: 20px;
+  max-width: 1200px;
+  width: 100%;
+}
+
 .servicePrice {
   font-size: 18px;
   font-weight: bold;
@@ -609,7 +619,7 @@
   .servicesContainer {
     flex-direction: column;
   }
-  
+
   .filterSection {
     width: 100%;
     margin-bottom: 20px;
@@ -622,15 +632,15 @@
     align-items: stretch;
     gap: 15px;
   }
-  
+
   .searchBar, .categoryFilter {
     margin-right: 0;
   }
-  
+
   .cartButton {
     align-self: flex-end;
   }
-  
+
   .servicesGrid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
@@ -640,7 +650,7 @@
   .servicesGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .servicesContainer {
     padding: 0 20px;
   }

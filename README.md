@@ -1,40 +1,124 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Hotel Management System - Frontend
 
-## Getting Started
+This is a [Next.js](https://nextjs.org) hotel management system with optimized performance and modern development practices.
 
-First, run the development server:
+## 🚀 Performance Optimizations
 
+This project has been optimized for:
+- **Fast build times** with SWC minifier and optimized webpack configuration
+- **Reduced bundle size** with tree-shaking and code splitting
+- **Improved loading performance** with lazy loading and dynamic imports
+- **Better user experience** with optimized images and caching
+
+## 📋 Prerequisites
+
+- Node.js 18+
+- npm, yarn, pnpm, or bun
+
+## 🛠️ Getting Started
+
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd n5_fe
+```
+
+2. **Install dependencies**
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+3. **Set up environment variables**
+```bash
+cp .env.example .env.local
+```
+
+4. **Run the development server**
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# or with Turbopack (faster)
+npm run dev:turbo
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## 📜 Available Scripts
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+- `npm run dev` - Start development server
+- `npm run dev:turbo` - Start development server with Turbopack (faster)
+- `npm run build` - Build for production
+- `npm run build:analyze` - Build with bundle analyzer
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Run ESLint with auto-fix
+- `npm run type-check` - Run TypeScript type checking
+- `npm run clean` - Clean build artifacts and cache
+- `npm run optimize` - Clean and build optimized version
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+## 🏗️ Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── components/          # Reusable UI components
+│   ├── admin/          # Admin-specific components
+│   ├── staff/          # Staff-specific components
+│   └── ...
+├── pages/              # Next.js pages and API routes
+│   ├── api/           # API routes
+│   └── ...
+├── services/          # API service functions
+├── stores/            # State management (Zustand)
+├── styles/            # CSS modules and global styles
+└── utils/             # Utility functions
+```
 
-## Learn More
+## 🔧 Key Features
 
-To learn more about Next.js, take a look at the following resources:
+- **Hotel Room Management** - Browse and manage hotel rooms
+- **Booking System** - Create and manage room bookings
+- **User Authentication** - Login/register functionality
+- **Admin Dashboard** - Administrative interface
+- **Staff Management** - Employee management system
+- **Revenue Analytics** - Financial reporting and analytics
+- **Responsive Design** - Mobile-friendly interface
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+## 🚀 Performance Features
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Optimized Images** - WebP/AVIF format support with lazy loading
+- **Code Splitting** - Automatic bundle splitting for better performance
+- **Tree Shaking** - Unused code elimination
+- **SWC Minification** - Fast JavaScript/TypeScript compilation
+- **Dynamic Imports** - Lazy loading of components
+- **API Optimization** - Centralized API utilities with retry logic
 
-## Deploy on Vercel
+## 🔗 API Integration
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The frontend connects to a backend API at `https://ptud-web-1.onrender.com/api`.
+API calls are optimized with:
+- Automatic retry logic
+- Fallback URL support
+- Centralized error handling
+- Response caching
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+## 📱 Browser Support
+
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## 📄 License
+
+This project is private and proprietary.

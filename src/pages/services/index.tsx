@@ -281,71 +281,71 @@ const Services = memo(() => {
             </div>
 
             {filteredServices.length > 0 ? (
-              <>
-                <div className={styles.serviceGrid}>
-                  {filteredServices.map(service => (
-                    <div key={service.id} className={styles.serviceCard}>
-                      <div className={styles.serviceImageContainer}>
-                        <Image
-                          src={service.imageUrl || '/images/restaurant.jpg'}
-                          alt={service.title}
-                          width={300}
-                          height={200}
-                          className={styles.serviceImage}
-                          unoptimized
-                          loading="lazy"
-                          onError={(e) => {
-                            (e.target as any).src = '/images/restaurant.jpg';
-                          }}
-                        />
-                        <div className={styles.serviceCategory}>{service.category}</div>
-                        {service.badge && (
-                          <div className={styles.serviceBadge}>{service.badge}</div>
-                        )}
-                      </div>
-                      <div className={styles.serviceContent}>
-                        <h3 className={styles.serviceTitle}>{service.title}</h3>
-                        <p className={styles.serviceDescription}>{service.description}</p>
+              <div className={styles.serviceGrid}>
+                {filteredServices.map(service => (
+                  <div key={service.id} className={styles.serviceCard}>
+                    <div className={styles.serviceImageContainer}>
+                      <Image
+                        src={service.imageUrl || '/images/restaurant.jpg'}
+                        alt={service.title}
+                        width={300}
+                        height={200}
+                        className={styles.serviceImage}
+                        unoptimized
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as any).src = '/images/restaurant.jpg';
+                        }}
+                      />
+                      <div className={styles.serviceCategory}>{service.category}</div>
+                      {service.badge && (
+                        <div className={styles.serviceBadge}>{service.badge}</div>
+                      )}
+                    </div>
+                    <div className={styles.serviceContent}>
+                      <h3 className={styles.serviceTitle}>{service.title}</h3>
+                      <p className={styles.serviceDescription}>{service.description}</p>
 
-                        {service.details && service.details.length > 0 && (
-                          <ul className={styles.serviceDetailsList}>
-                            {service.details.map((detail, index) => (
-                              <li key={index} className={styles.serviceDetailItem}>{detail}</li>
-                            ))}
-                          </ul>
-                        )}
+                      {service.details && service.details.length > 0 && (
+                        <ul className={styles.serviceDetailsList}>
+                          {service.details.map((detail, index) => (
+                            <li key={index} className={styles.serviceDetailItem}>{detail}</li>
+                          ))}
+                        </ul>
+                      )}
 
-                        <div className={styles.servicePriceRow}>
-                          <span className={styles.servicePrice}>{formatPrice(service.price)}</span>
-                        </div>
+                      <div className={styles.servicePriceRow}>
+                        <span className={styles.servicePrice}>{formatPrice(service.price)}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
-                  <Pagination
-                    current={pagination.current}
-                    pageSize={pagination.pageSize}
-                    total={pagination.total}
-                    showSizeChanger
-                    showQuickJumper
-                    showTotal={(total, range) =>
-                      `${range[0]}-${range[1]} của ${total} dịch vụ`
-                    }
-                    onChange={handlePaginationChange}
-                    onShowSizeChange={handlePaginationChange}
-                    pageSizeOptions={['6', '12', '24', '48']}
-                  />
-                </div>
-              </>
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className={styles.noResults}>
                 <p>Không tìm thấy dịch vụ nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
                 <Button onClick={() => fetchServices(1, pagination.pageSize)}>Thử lại</Button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pagination - Outside of servicesContainer for proper layout */}
+        {!loading && !error && filteredServices.length > 0 && (
+          <div className={styles.paginationContainer}>
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              showSizeChanger
+              showQuickJumper
+              showTotal={(total, range) =>
+                `${range[0]}-${range[1]} của ${total} dịch vụ`
+              }
+              onChange={handlePaginationChange}
+              onShowSizeChange={handlePaginationChange}
+              pageSizeOptions={['6', '12', '24', '48']}
+            />
           </div>
         )}
       </div>

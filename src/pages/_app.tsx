@@ -1,13 +1,13 @@
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { useRouter } from "next/router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import "../styles/nprogress.css";
 import NProgress from "nprogress";
 import dynamic from "next/dynamic";
 import Head from "next/head";
 
-// Lazy load LoadingSpinner để giảm kích thước bundle ban đầu
+// Lazy load LoadingSpinner với tối ưu hóa
 const LoadingSpinner = dynamic(() => import("../components/LoadingSpinner"), {
   ssr: false,
   loading: () => null
@@ -24,7 +24,7 @@ export default function App({ Component, pageProps }: AppProps) {
   // Tối ưu hóa hiệu suất bằng cách giới hạn số lần hiển thị loading spinner
   const [showSpinner, setShowSpinner] = useState(false);
 
-  // Cấu hình NProgress một lần duy nhất
+  // Cấu hình NProgress một lần duy nhất với useMemo
   useMemo(() => {
     NProgress.configure({
       showSpinner: false,
@@ -35,50 +35,62 @@ export default function App({ Component, pageProps }: AppProps) {
     });
   }, []);
 
+  // Tối ưu hóa event handlers với useCallback
+  const handleStart = useCallback(() => {
+    setLoadStartTime(Date.now());
+
+    // Chỉ hiển thị spinner nếu tải trang mất hơn 300ms
+    const timeout = setTimeout(() => {
+      setShowSpinner(true);
+    }, 300);
+
+    setLoading(true);
+    NProgress.start();
+
+    return timeout;
+  }, []);
+
+  const handleComplete = useCallback(() => {
+    setLoading(false);
+    setShowSpinner(false);
+    NProgress.done();
+  }, []);
+
   useEffect(() => {
     let loadingTimeout: NodeJS.Timeout;
 
-    const handleStart = () => {
-      // Ghi lại thời điểm bắt đầu tải
-      setLoadStartTime(Date.now());
-
-      // Chỉ hiển thị spinner nếu tải trang mất hơn 300ms
-      loadingTimeout = setTimeout(() => {
-        setShowSpinner(true);
-      }, 300);
-
-      setLoading(true);
-      NProgress.start();
+    const onStart = () => {
+      loadingTimeout = handleStart();
     };
 
-    const handleComplete = () => {
-      clearTimeout(loadingTimeout);
-
-      // Tính toán thời gian tải
-      const loadTime = Date.now() - loadStartTime;
-      console.log(`Page loaded in ${loadTime}ms`);
-
-      setLoading(false);
-      setShowSpinner(false);
-      NProgress.done();
+    const onComplete = () => {
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+      handleComplete();
     };
 
-    router.events.on("routeChangeStart", handleStart);
-    router.events.on("routeChangeComplete", handleComplete);
-    router.events.on("routeChangeError", handleComplete);
+    router.events.on("routeChangeStart", onStart);
+    router.events.on("routeChangeComplete", onComplete);
+    router.events.on("routeChangeError", onComplete);
 
     return () => {
-      clearTimeout(loadingTimeout);
-      router.events.off("routeChangeStart", handleStart);
-      router.events.off("routeChangeComplete", handleComplete);
-      router.events.off("routeChangeError", handleComplete);
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+      router.events.off("routeChangeStart", onStart);
+      router.events.off("routeChangeComplete", onComplete);
+      router.events.off("routeChangeError", onComplete);
     };
-  }, [router, loadStartTime]);
+  }, [router, handleStart, handleComplete]);
 
   return (
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta name="theme-color" content="#1890ff" />
+        <link rel="preconnect" href="https://ptud-web-1.onrender.com" />
+        <link rel="dns-prefetch" href="https://ptud-web-1.onrender.com" />
       </Head>
       {loading && showSpinner && <LoadingSpinner size="medium" />}
       <Component {...pageProps} />

@@ -3,9 +3,10 @@ const nextConfig = {
   // Cấu hình thư mục pages
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
 
-  // Cấu hình đường dẫn
+  // Cấu hình đường dẫn - tối ưu hóa và gộp từ cả 2 file config
   async rewrites() {
     return [
+      // API proxy chung - ưu tiên cao nhất
       {
         source: '/api/:path*',
         destination: 'https://ptud-web-1.onrender.com/api/:path*',
@@ -14,7 +15,7 @@ const nextConfig = {
     ]
   },
 
-  // Cấu hình hình ảnh
+  // Cấu hình hình ảnh - tối ưu hóa
   images: {
     domains: [
       'images.unsplash.com',
@@ -28,26 +29,49 @@ const nextConfig = {
         hostname: '**',
       },
     ],
+    // Tối ưu hóa hình ảnh
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Cấu hình cơ bản
-  reactStrictMode: false,
+  // API configuration - từ next.config.ts
+  api: {
+    bodyParser: {
+      sizeLimit: '1mb',
+    },
+    responseLimit: '4mb',
+    externalResolver: true,
+  },
+
+  // Cấu hình cơ bản - tối ưu hóa
+  reactStrictMode: false, // Giữ false để tránh double rendering
   eslint: {
-    // Disable ESLint during build
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Disable TypeScript errors during build
     ignoreBuildErrors: true,
   },
-  // Increase build timeout
+
+  // Tối ưu hóa build performance
   staticPageGenerationTimeout: 180,
-  // Optimize bundle size
+  swcMinify: true, // Sử dụng SWC minifier nhanh hơn
+
+  // Tối ưu hóa bundle size
   experimental: {
-    optimizePackageImports: ['antd'],
+    optimizePackageImports: ['antd', 'react-icons', 'date-fns'],
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
 
-  // Add transpile packages to fix module resolution issues
+  // Tối ưu hóa transpile packages
   transpilePackages: [
     'rc-util',
     'rc-picker',
@@ -63,12 +87,36 @@ const nextConfig = {
     'rc-virtual-list'
   ],
 
-  // Add environment variables that can be accessed client-side
+  // Environment variables
   publicRuntimeConfig: {
     apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://ptud-web-1.onrender.com/api',
     useProxy: process.env.NEXT_PUBLIC_USE_PROXY || 'true',
     useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA || 'false',
-  }
+  },
+
+  // Webpack tối ưu hóa
+  webpack: (config, { dev, isServer }) => {
+    // Tối ưu hóa bundle splitting
+    if (!dev && !isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+          antd: {
+            test: /[\\/]node_modules[\\/]antd[\\/]/,
+            name: 'antd',
+            chunks: 'all',
+          },
+        },
+      };
+    }
+
+    return config;
+  },
 }
 
 module.exports = nextConfig
