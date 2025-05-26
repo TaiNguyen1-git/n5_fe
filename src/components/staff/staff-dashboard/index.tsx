@@ -14,7 +14,10 @@ import {
   CreditCardOutlined,
   SettingOutlined,
   BookOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  DollarOutlined,
+  ClockCircleOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
 import { Layout, Menu, Typography, Button, Avatar, Card, Row, Col, Statistic, Table, Tag, Spin, message } from 'antd';
 import { isAuthenticated, logout, getCurrentUser } from '../../../services/authService';
@@ -24,6 +27,13 @@ import CustomerManagement from './customer-management';
 import BillManagement from './bill-management';
 import ReportManagement from './report-management';
 import SettingsManagement from './settings-management';
+import RevenueCharts from '../../shared/RevenueCharts';
+import RoomStatusDashboard from '../../shared/RoomStatusDashboard';
+import CustomerAnalyticsDashboard from '../../shared/CustomerAnalyticsDashboard';
+import AdvancedSearchDashboard from '../../shared/AdvancedSearchDashboard';
+import NotificationBell from '../../shared/NotificationBell';
+import NotificationPanel from '../../shared/NotificationPanel';
+
 import ServiceManagement from './service-management';
 import { dashboardService } from '../../../services/dashboardService';
 import dayjs from 'dayjs';
@@ -366,10 +376,16 @@ const StaffDashboard = () => {
           items={[
             { key: 'dashboard', icon: <DashboardOutlined />, label: 'Tổng quan' },
             { key: 'rooms', icon: <HomeOutlined />, label: 'Quản lý phòng' },
+            { key: 'room-status', icon: <DashboardOutlined />, label: 'Dashboard trạng thái phòng' },
+            { key: 'customer-analytics', icon: <TeamOutlined />, label: 'Phân tích khách hàng' },
+            { key: 'advanced-search', icon: <SearchOutlined />, label: 'Tìm kiếm nâng cao' },
+            { key: 'notifications', icon: <BellOutlined />, label: 'Thông báo' },
             { key: 'bookings', icon: <CalendarOutlined />, label: 'Đặt phòng' },
             { key: 'customers', icon: <TeamOutlined />, label: 'Khách hàng' },
             { key: 'services', icon: <BellOutlined />, label: 'Dịch vụ' },
             { key: 'bills', icon: <CreditCardOutlined />, label: 'Hóa đơn' },
+            { key: 'revenue', icon: <DollarOutlined />, label: 'Doanh thu' },
+            { key: 'shifts', icon: <ClockCircleOutlined />, label: 'Ca làm việc' },
             { key: 'reports', icon: <BookOutlined />, label: 'Báo cáo' },
             { key: 'settings', icon: <SettingOutlined />, label: 'Cài đặt' },
             { key: 'logout', icon: <LogoutOutlined />, label: 'Đăng xuất' },
@@ -386,6 +402,7 @@ const StaffDashboard = () => {
           />
           <div className={styles.headerRight}>
             <div className={styles.userInfo}>
+              <NotificationBell size="small" />
               <Avatar icon={<UserOutlined />} />
               <span className={styles.userName}>{userData?.fullName || userData?.username || 'Nhân viên'}</span>
             </div>
@@ -518,6 +535,18 @@ const StaffDashboard = () => {
           {selectedMenu === 'rooms' && (
             <RoomManagement />
           )}
+          {selectedMenu === 'room-status' && (
+            <RoomStatusDashboard />
+          )}
+          {selectedMenu === 'customer-analytics' && (
+            <CustomerAnalyticsDashboard />
+          )}
+          {selectedMenu === 'advanced-search' && (
+            <AdvancedSearchDashboard />
+          )}
+          {selectedMenu === 'notifications' && (
+            <NotificationPanel />
+          )}
           {selectedMenu === 'bookings' && (
             <BookingManagement />
           )}
@@ -529,6 +558,15 @@ const StaffDashboard = () => {
           )}
           {selectedMenu === 'bills' && (
             <BillManagement />
+          )}
+          {selectedMenu === 'revenue' && (
+            <RevenueCharts />
+          )}
+          {selectedMenu === 'shifts' && (
+            <div>
+              <h2>Quản lý ca làm việc</h2>
+              <p>Tính năng đang được phát triển...</p>
+            </div>
           )}
           {selectedMenu === 'reports' && (
             <ReportManagement />

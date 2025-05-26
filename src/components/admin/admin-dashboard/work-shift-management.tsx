@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, DatePicker, TimePicker, Select, message, Typography, Card, Row, Col, Statistic, Tabs, Calendar, Badge, Tag, Tooltip } from 'antd';
+import { Table, Button, Space, Modal, Form, Input, DatePicker, TimePicker, Select, message, Typography, Card, Row, Col, Statistic, Tabs, Calendar, Badge, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, ScheduleOutlined, UserOutlined, SearchOutlined, FilterOutlined, CalendarOutlined, TableOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { WorkShift, workShiftService } from '../../../services/workShiftService';
@@ -137,17 +137,43 @@ const WorkShiftManagement: React.FC = () => {
     }
   };
 
-  // Function to fetch employees for dropdown
+  // Function to fetch ALL employees for dropdown (handle pagination)
   const fetchEmployees = async () => {
     try {
-      const data = await employeeService.getAllEmployees();
-      // Kiểm tra dữ liệu nhân viên
-      if (data && data.length > 0) {
-      } else {
+      let allEmployees: Employee[] = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+
+      // Loop through all pages to get all employees
+      while (hasMorePages) {
+        try {
+          // Try to get employees with pagination
+          const data = await employeeService.getAllEmployees(currentPage, 100); // Large page size
+
+          if (data && Array.isArray(data.items)) {
+            allEmployees = [...allEmployees, ...data.items];
+
+            // Check if there are more pages
+            const totalPages = Math.ceil(data.totalItems / data.pageSize);
+            hasMorePages = currentPage < totalPages;
+            currentPage++;
+          } else if (Array.isArray(data)) {
+            // Fallback nếu API trả về array trực tiếp (không có pagination)
+            allEmployees = data;
+            hasMorePages = false;
+          } else {
+            hasMorePages = false;
+          }
+        } catch (pageError) {
+          console.error(`Error fetching page ${currentPage}:`, pageError);
+          hasMorePages = false;
+        }
       }
 
-      setEmployees(data);
+      console.log(`Loaded ${allEmployees.length} employees total`);
+      setEmployees(allEmployees);
     } catch (error) {
+      console.error('Error fetching employees:', error);
       message.error('Không thể tải danh sách nhân viên.');
       setEmployees([]);
     }
@@ -417,11 +443,15 @@ const WorkShiftManagement: React.FC = () => {
                   allowClear
                   onChange={value => setEmployeeFilter(value)}
                 >
-                  {employees.map(employee => (
-                    <Option key={employee.maNV} value={employee.maNV}>
-                      {employee.hoTen || employee.hoTen_}
-                    </Option>
-                  ))}
+                  {Array.isArray(employees) && employees.length > 0 ? (
+                    employees.map(employee => (
+                      <Option key={employee.maNV} value={employee.maNV}>
+                        {employee.hoTen || employee.hoTen_}
+                      </Option>
+                    ))
+                  ) : (
+                    <Option value={null} disabled>Đang tải danh sách nhân viên...</Option>
+                  )}
                 </Select>
               </Form.Item>
             </Col>
@@ -561,32 +591,47 @@ const WorkShiftManagement: React.FC = () => {
             label="Nhân viên"
           >
             <Select
-              placeholder="Chọn nhân viên"
+              placeholder="Gõ để tìm nhân viên..."
               showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
-              }
-              loading={employees.length === 0}
-              onFocus={() => {
-                if (employees.length === 0) {
-                  fetchEmployees();
+              filterOption={false}
+              onSearch={async (value) => {
+                if (value && value.length >= 2) {
+                  try {
+                    const data = await employeeService.getAllEmployees(1, 20);
+                    if (data && Array.isArray(data.items)) {
+                      const filtered = data.items.filter(emp =>
+                        (emp.hoTen || emp.hoTen_ || '').toLowerCase().includes(value.toLowerCase())
+                      );
+                      setEmployees(filtered);
+                    }
+                  } catch (error) {
+                    console.error('Error searching employees:', error);
+                  }
+                } else if (value.length === 0) {
+                  setEmployees([]);
                 }
               }}
+              onFocus={() => {
+                if (employees.length === 0) {
+                  // Load first 20 employees on focus
+                  employeeService.getAllEmployees(1, 20).then(data => {
+                    if (data && Array.isArray(data.items)) {
+                      setEmployees(data.items);
+                    }
+                  }).catch(console.error);
+                }
+              }}
+              notFoundContent={employees.length === 0 ? "Gõ tên để tìm nhân viên" : "Không tìm thấy"}
             >
               <Option value={null}>Chưa phân công</Option>
-              {employees.length > 0 ? (
-                employees.map(employee => (
-                  <Option
-                    key={employee.maNV || employee.id}
-                    value={employee.maNV || employee.id}
-                  >
-                    {employee.hoTen || employee.hoTen_ || 'Nhân viên không tên'}
-                  </Option>
-                ))
-              ) : (
-                <Option value={null} disabled>Đang tải danh sách nhân viên...</Option>
-              )}
+              {employees.map(employee => (
+                <Option
+                  key={employee.maNV || employee.id}
+                  value={employee.maNV || employee.id}
+                >
+                  {employee.hoTen || employee.hoTen_ || 'Nhân viên không tên'}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 

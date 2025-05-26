@@ -38,9 +38,9 @@ export async function apiCall<T = any>(
   useProxy: boolean = true
 ): Promise<ApiResponse<T>> {
   const { method = 'GET', data, headers = {}, ...restOptions } = options;
-  
+
   // Determine URLs to try
-  const urlsToTry = useProxy 
+  const urlsToTry = useProxy
     ? [`/api/${endpoint.replace(/^\//, '')}`] // Use Next.js proxy
     : API_CONFIG.FALLBACK_URLS.map(baseUrl => `${baseUrl}/${endpoint.replace(/^\//, '')}`);
 
@@ -63,14 +63,14 @@ export async function apiCall<T = any>(
         };
 
         const response: AxiosResponse = await axios(config);
-        
+
         // Handle different response formats
         if (response.data) {
           // If response has success field, use it
           if (typeof response.data.success !== 'undefined') {
             return response.data;
           }
-          
+
           // If response has statusCode and value (common pattern)
           if (response.data.statusCode === 200 && response.data.value) {
             return {
@@ -79,7 +79,7 @@ export async function apiCall<T = any>(
               statusCode: response.data.statusCode
             };
           }
-          
+
           // If response is direct data
           return {
             success: true,
@@ -96,12 +96,12 @@ export async function apiCall<T = any>(
 
       } catch (error: any) {
         lastError = error;
-        
+
         // If it's the last attempt with this URL, don't delay
         if (attempt === API_CONFIG.RETRY_ATTEMPTS) {
           break;
         }
-        
+
         // Delay before retry
         await delay(API_CONFIG.RETRY_DELAY * attempt);
       }
@@ -109,10 +109,10 @@ export async function apiCall<T = any>(
   }
 
   // All attempts failed
-  const errorMessage = lastError?.response?.data?.message || 
-                      lastError?.message || 
+  const errorMessage = lastError?.response?.data?.message ||
+                      lastError?.message ||
                       'Không thể kết nối đến server';
-  
+
   return {
     success: false,
     message: errorMessage,
@@ -123,10 +123,10 @@ export async function apiCall<T = any>(
 // Specific API methods
 export const apiMethods = {
   // GET request
-  get: <T = any>(endpoint: string, config?: AxiosRequestConfig) => 
+  get: <T = any>(endpoint: string, config?: AxiosRequestConfig) =>
     apiCall<T>(endpoint, { ...config, method: 'GET' }),
 
-  // POST request  
+  // POST request
   post: <T = any>(endpoint: string, data?: any, config?: AxiosRequestConfig) =>
     apiCall<T>(endpoint, { ...config, method: 'POST', data }),
 
@@ -148,10 +148,10 @@ export const API_ENDPOINTS = {
   // Authentication
   AUTH: {
     LOGIN: 'Auth/Login',
-    REGISTER: 'Auth/Register', 
-    CHANGE_PASSWORD: 'Auth/ChangePassword',
+    REGISTER: 'Auth/Register',
+    CHANGE_PASSWORD: 'Auth/ChangePassword', // Legacy endpoint
   },
-  
+
   // Users
   USER: {
     GET_ALL: 'User/GetAll',
@@ -159,8 +159,9 @@ export const API_ENDPOINTS = {
     CREATE: 'User/Create',
     UPDATE: 'User/Update',
     DELETE: (id: string | number) => `User/Delete?id=${id}`,
+    CHANGE_PASSWORD: (tenTK: string) => `User/DoiMatKhau/${encodeURIComponent(tenTK)}`, // New password change endpoint
   },
-  
+
   // Rooms
   ROOM: {
     GET_ALL: 'Phong/GetAll',
@@ -169,7 +170,7 @@ export const API_ENDPOINTS = {
     UPDATE: 'Phong/Update',
     DELETE: (id: string | number) => `Phong/Delete?id=${id}`,
   },
-  
+
   // Bookings
   BOOKING: {
     GET_ALL: 'DatPhong/GetAll',
@@ -178,7 +179,7 @@ export const API_ENDPOINTS = {
     UPDATE: 'DatPhong/Update',
     DELETE: (id: string | number) => `DatPhong/Delete?id=${id}`,
   },
-  
+
   // Services
   SERVICE: {
     GET_ALL: 'DichVu/GetAll',
@@ -187,7 +188,7 @@ export const API_ENDPOINTS = {
     UPDATE: 'DichVu/Update',
     DELETE: (id: string | number) => `DichVu/Delete?id=${id}`,
   },
-  
+
   // Customers
   CUSTOMER: {
     GET_ALL: 'KhachHang/GetAll',
@@ -196,7 +197,7 @@ export const API_ENDPOINTS = {
     UPDATE: 'KhachHang/Update',
     DELETE: (id: string | number) => `KhachHang/Delete?id=${id}`,
   },
-  
+
   // Employees
   EMPLOYEE: {
     GET_ALL: 'NhanVien/GetAll',
@@ -205,17 +206,17 @@ export const API_ENDPOINTS = {
     UPDATE: 'NhanVien/Update',
     DELETE: (id: string | number) => `NhanVien/Delete?id=${id}`,
   },
-  
+
   // Positions
   POSITION: {
     GET_ALL: 'ChucVu/GetAll',
     GET_BY_ID: (id: string | number) => `ChucVu/GetById?id=${id}`,
   },
-  
+
   // Revenue
   REVENUE: {
     BY_DAY: 'DoanhThu/TheoNgay',
-    BY_MONTH: 'DoanhThu/TheoThang', 
+    BY_MONTH: 'DoanhThu/TheoThang',
     BY_YEAR: 'DoanhThu/TheoNam',
     TOTAL: 'DoanhThu/TongDoanhThu',
   },
@@ -224,13 +225,13 @@ export const API_ENDPOINTS = {
 // Helper function to build query string
 export function buildQueryString(params: Record<string, any>): string {
   const searchParams = new URLSearchParams();
-  
+
   Object.entries(params).forEach(([key, value]) => {
     if (value !== null && value !== undefined && value !== '') {
       searchParams.append(key, String(value));
     }
   });
-  
+
   const queryString = searchParams.toString();
   return queryString ? `?${queryString}` : '';
 }
@@ -253,7 +254,7 @@ export async function getPaginatedData<T = any>(
     pageSize,
     ...additionalParams
   };
-  
+
   const queryString = buildQueryString(params);
   return apiMethods.get(`${endpoint}${queryString}`);
 }

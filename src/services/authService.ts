@@ -641,7 +641,7 @@ export const isCheckoutPage = (): boolean => {
 /**
  * Changes user password
  */
-export async function changePassword(currentPassword: string, newPassword: string): Promise<AuthResponse> {
+export async function changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<AuthResponse> {
   try {
     const currentUser = getCurrentUser();
     if (!currentUser) {
@@ -659,31 +659,53 @@ export async function changePassword(currentPassword: string, newPassword: strin
       };
     }
 
+    // Kiểm tra mật khẩu xác nhận
+    if (newPassword !== confirmPassword) {
+      return {
+        success: false,
+        message: 'Mật khẩu xác nhận không khớp'
+      };
+    }
+
     try {
-      // Gọi API đổi mật khẩu thực tế
-      const response = await axiosInstance.post('/Auth/ChangePassword', {
-        maTK: currentUser.id,
+      // Gọi API đổi mật khẩu mới: /api/User/DoiMatKhau/{TenTK}
+      const username = currentUser.username || currentUser.tenTK;
+      const response = await axiosInstance.put(`/User/DoiMatKhau/${encodeURIComponent(username)}`, {
         matKhauCu: currentPassword,
-        matKhauMoi: newPassword
+        matKhauMoi: newPassword,
+        reMatKhau: confirmPassword
       }, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
-      if (response.data && response.data.success) {
+      if (response.status === 200) {
         return {
           success: true,
           message: 'Đổi mật khẩu thành công'
         };
       } else {
-        throw new Error(response.data.message || 'Đổi mật khẩu thất bại');
+        throw new Error('Đổi mật khẩu thất bại');
       }
-    } catch (apiError) {
-      return {
-        success: false,
-        message: 'Không thể đổi mật khẩu. Vui lòng kiểm tra kết nối mạng và thử lại sau.'
-      };
+    } catch (apiError: any) {
+      if (apiError.response?.status === 400) {
+        return {
+          success: false,
+          message: 'Mật khẩu hiện tại không chính xác hoặc dữ liệu không hợp lệ'
+        };
+      } else if (apiError.response?.status === 404) {
+        return {
+          success: false,
+          message: 'Không tìm thấy tài khoản người dùng'
+        };
+      } else {
+        return {
+          success: false,
+          message: apiError.response?.data?.message || 'Không thể đổi mật khẩu. Vui lòng thử lại sau.'
+        };
+      }
     }
   } catch (error) {
     return {

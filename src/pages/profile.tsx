@@ -6,6 +6,7 @@ import styles from '../styles/Auth.module.css';
 import { getCurrentUser, deleteUser } from '../services/authService';
 import { updateUserProfile, getUserProfile } from '../services/userService';
 import Layout from '../components/Layout';
+import EnhancedBookingHistory from '../components/user/EnhancedBookingHistory';
 
 export default function Profile() {
   const router = useRouter();
@@ -278,47 +279,7 @@ export default function Profile() {
             )}
 
             {activeTab === 'bookings' && (
-              <div className={styles.bookingHistory}>
-                <h2>Lịch sử đặt phòng</h2>
-
-                {bookingHistory.length === 0 ? (
-                  <p>Bạn chưa có lịch sử đặt phòng nào.</p>
-                ) : (
-                  <div className={styles.bookingTable}>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Phòng</th>
-                          <th>Ngày nhận</th>
-                          <th>Ngày trả</th>
-                          <th>Tổng tiền</th>
-                          <th>Trạng thái</th>
-                          <th>Hành động</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {bookingHistory.map(booking => (
-                          <tr key={booking.id}>
-                            <td>{booking.roomNumber}</td>
-                            <td>{new Date(booking.checkIn).toLocaleDateString('vi-VN')}</td>
-                            <td>{new Date(booking.checkOut).toLocaleDateString('vi-VN')}</td>
-                            <td>{booking.totalAmount.toLocaleString('vi-VN')} VNĐ</td>
-                            <td>
-                              <span className={`${styles.bookingStatus} ${styles[booking.status]}`}>
-                                {booking.status === 'completed' ? 'Đã hoàn thành' :
-                                 booking.status === 'upcoming' ? 'Sắp tới' : booking.status}
-                              </span>
-                            </td>
-                            <td>
-                              <button className={styles.viewButton}>Xem chi tiết</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+              <EnhancedBookingHistory />
             )}
 
             {activeTab === 'security' && (

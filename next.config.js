@@ -36,15 +36,6 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // API configuration - từ next.config.ts
-  api: {
-    bodyParser: {
-      sizeLimit: '1mb',
-    },
-    responseLimit: '4mb',
-    externalResolver: true,
-  },
-
   // Cấu hình cơ bản - tối ưu hóa
   reactStrictMode: false, // Giữ false để tránh double rendering
   eslint: {
@@ -56,7 +47,6 @@ const nextConfig = {
 
   // Tối ưu hóa build performance
   staticPageGenerationTimeout: 180,
-  swcMinify: true, // Sử dụng SWC minifier nhanh hơn
 
   // Tối ưu hóa bundle size
   experimental: {

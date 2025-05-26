@@ -12,7 +12,9 @@ import {
   HomeOutlined,
   FileTextOutlined,
   CalendarOutlined,
-  BellOutlined
+  BellOutlined,
+  SearchOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import { logout, getCurrentUser } from '../../../services/authService';
@@ -25,12 +27,18 @@ import BookingManagement from './booking-management';
 import EmployeeManagement from './employee-management';
 import ServiceManagement from './service-management';
 import Dashboard from './dashboard';
+import RoomStatusDashboard from '../../shared/RoomStatusDashboard';
+import CustomerAnalyticsDashboard from '../../shared/CustomerAnalyticsDashboard';
+import AdvancedSearchDashboard from '../../shared/AdvancedSearchDashboard';
+import RevenueReportExport from '../../shared/RevenueReportExport';
+import NotificationBell from '../../shared/NotificationBell';
+import NotificationPanel from '../../shared/NotificationPanel';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 const AdminDashboard = () => {
-  const [tab, setTab] = useState<'dashboard' | 'staff' | 'user' | 'workshift' | 'room' | 'bill' | 'booking' | 'employee' | 'service'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'staff' | 'user' | 'workshift' | 'room' | 'bill' | 'booking' | 'employee' | 'service' | 'room-status' | 'customer-analytics' | 'advanced-search' | 'revenue-report' | 'notifications'>('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const router = useRouter();
@@ -81,6 +89,31 @@ const AdminDashboard = () => {
               label: 'Quản lý phòng',
             },
             {
+              key: 'room-status',
+              icon: <DashboardOutlined />,
+              label: 'Dashboard trạng thái phòng',
+            },
+            {
+              key: 'customer-analytics',
+              icon: <TeamOutlined />,
+              label: 'Phân tích khách hàng',
+            },
+            {
+              key: 'advanced-search',
+              icon: <SearchOutlined />,
+              label: 'Tìm kiếm nâng cao',
+            },
+            {
+              key: 'revenue-report',
+              icon: <BarChartOutlined />,
+              label: 'Báo cáo doanh thu',
+            },
+            {
+              key: 'notifications',
+              icon: <BellOutlined />,
+              label: 'Thông báo',
+            },
+            {
               key: 'booking',
               icon: <CalendarOutlined />,
               label: 'Quản lý đặt phòng',
@@ -120,6 +153,7 @@ const AdminDashboard = () => {
           />
           <span style={{ float: 'right', marginRight: 24 }}>
             <Space>
+              <NotificationBell />
               <Avatar icon={<UserOutlined />} />
               <span>{userData?.fullName || 'Admin'}</span>
             </Space>
@@ -132,6 +166,11 @@ const AdminDashboard = () => {
             {tab === 'staff' && <StaffManagement />}
             {tab === 'user' && <UserManagement />}
             {tab === 'room' && <RoomManagement />}
+            {tab === 'room-status' && <RoomStatusDashboard />}
+            {tab === 'customer-analytics' && <CustomerAnalyticsDashboard />}
+            {tab === 'advanced-search' && <AdvancedSearchDashboard />}
+            {tab === 'revenue-report' && <RevenueReportExport />}
+            {tab === 'notifications' && <NotificationPanel />}
             {tab === 'booking' && <BookingManagement />}
             {tab === 'bill' && <BillManagement />}
             {tab === 'workshift' && <WorkShiftManagement />}

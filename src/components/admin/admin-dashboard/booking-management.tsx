@@ -28,6 +28,7 @@ interface Booking {
   totalPrice: number;
   createdAt: string;
   guestCount?: number;
+  xoa?: boolean; // Trường để đánh dấu đặt phòng đã bị xóa
 }
 
 // Interface for customer data
@@ -161,7 +162,8 @@ const BookingManagement = () => {
                   booking.trangThai === 6 ? 'no_show' : 'pending', // Mã 6 là "Không đến"
           totalPrice: booking.tongTien || 0,
           createdAt: booking.ngayTao || dayjs().format('YYYY-MM-DD'),
-          guestCount: booking.soLuongKhach || 1
+          guestCount: booking.soLuongKhach || 1,
+          xoa: booking.xoa || false // Thêm trường xoa từ API
         };
       });
 
@@ -569,15 +571,16 @@ const BookingManagement = () => {
     }
   };
 
+  // Handle search
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+  };
+
   // Handle refresh
   const handleRefresh = () => {
     fetchBookings();
     fetchCustomers();
-  };
-
-  // Handle search
-  const handleSearch = (value: string) => {
-    setSearchText(value);
+    message.info('Đang làm mới dữ liệu...');
   };
 
   // Handle date range change
@@ -592,6 +595,11 @@ const BookingManagement = () => {
 
   // Filter bookings based on search, date range, and status (client-side filtering for current page)
   const filteredBookings = bookings.filter(booking => {
+    // Ẩn các đặt phòng có xoa = true khỏi giao diện
+    if (booking.xoa === true) {
+      return false;
+    }
+
     const matchesSearch = !searchText ||
       booking.customerName.toLowerCase().includes(searchText.toLowerCase()) ||
       booking.phone.includes(searchText) ||

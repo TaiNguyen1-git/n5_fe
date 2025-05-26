@@ -19,7 +19,7 @@ export default function ChangePassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
       setError('Vui lòng nhập đầy đủ thông tin');
@@ -35,12 +35,12 @@ export default function ChangePassword() {
       setError('Mật khẩu mới không khớp');
       return;
     }
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
-      await changePassword(formData.currentPassword, formData.newPassword);
+      await changePassword(formData.currentPassword, formData.newPassword, formData.confirmPassword);
       router.push('/profile');
     } catch (err: any) {
       setError(err.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.');
@@ -60,12 +60,12 @@ export default function ChangePassword() {
         <div className={styles.logo}>
           <h1>Đổi mật khẩu</h1>
         </div>
-        
+
         <div className={styles.formContainer}>
           <p className={styles.subtitle}>Nhập thông tin để đổi mật khẩu của bạn</p>
-          
+
           {error && <div className={styles.errorMessage}>{error}</div>}
-          
+
           <form onSubmit={handleSubmit}>
             <div className={styles.formGroup}>
               <label htmlFor="currentPassword">Nhập mật khẩu hiện tại</label>
@@ -79,8 +79,8 @@ export default function ChangePassword() {
                   className={styles.input}
                   placeholder="Nhập mật khẩu hiện tại"
                 />
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={styles.passwordToggle}
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                   aria-label={showCurrentPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
@@ -99,7 +99,7 @@ export default function ChangePassword() {
                 </button>
               </div>
             </div>
-            
+
             <div className={styles.formGroup}>
               <label htmlFor="newPassword">Nhập mật khẩu mới</label>
               <div className={styles.passwordContainer}>
@@ -112,8 +112,8 @@ export default function ChangePassword() {
                   className={styles.input}
                   placeholder="Nhập mật khẩu mới"
                 />
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={styles.passwordToggle}
                   onClick={() => setShowNewPassword(!showNewPassword)}
                   aria-label={showNewPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
@@ -145,8 +145,8 @@ export default function ChangePassword() {
                   className={styles.input}
                   placeholder="Nhập lại mật khẩu mới"
                 />
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={styles.passwordToggle}
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
@@ -165,16 +165,16 @@ export default function ChangePassword() {
                 </button>
               </div>
             </div>
-            
-            <button 
-              type="submit" 
+
+            <button
+              type="submit"
               className={styles.submitButton}
               disabled={loading}
             >
               {loading ? 'Đang xử lý...' : 'Xác nhận'}
             </button>
           </form>
-          
+
           <div className={styles.createAccount}>
             <Link href="/profile">
               <button className={styles.backButton}>
@@ -186,4 +186,4 @@ export default function ChangePassword() {
       </div>
     </div>
   );
-} 
+}

@@ -438,6 +438,11 @@ const CustomerManagement = () => {
 
   // Lọc danh sách khách hàng
   const filteredCustomers = customers.filter(customer => {
+    // Ẩn các khách hàng có xoa = true khỏi giao diện
+    if (customer.xoa === true) {
+      return false;
+    }
+
     const matchesSearch =
       (customer.tenKH && customer.tenKH.toLowerCase().includes(searchText.toLowerCase())) ||
       (customer.phone && customer.phone.includes(searchText)) ||

@@ -92,10 +92,101 @@ button {
   pointer-events: none;
 }
 
-/* Responsive utilities */
+/* Mobile-first responsive utilities */
+.container-mobile {
+  padding: 0 16px;
+}
+
+.hide-mobile {
+  display: block;
+}
+
+.show-mobile {
+  display: none;
+}
+
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 576px) {
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .show-mobile {
+    display: block !important;
+  }
+
+  .container-mobile {
+    padding: 0 12px;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  /* Touch-friendly spacing */
+  .ant-btn {
+    min-height: 44px;
+    padding: 8px 16px;
+  }
+
+  .ant-input {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+
+  .ant-select-selector {
+    min-height: 44px !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Table responsive */
+  .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .ant-table {
+    min-width: 600px;
+  }
+}
+
 @media (max-width: 768px) {
   body {
     font-size: 14px;
+  }
+
+  /* Card spacing */
+  .ant-card {
+    margin-bottom: 16px;
+  }
+
+  .ant-card-body {
+    padding: 16px;
+  }
+
+  /* Form responsive */
+  .ant-form-item {
+    margin-bottom: 16px;
+  }
+
+  .ant-col {
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 992px) {
+  /* Medium screens adjustments */
+  .ant-layout-sider {
+    position: fixed !important;
+    z-index: 1000;
+    height: 100vh;
   }
 }
 

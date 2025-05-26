@@ -541,6 +541,11 @@ const BookingManagement = () => {
 
   // Lọc danh sách đặt phòng (client-side filtering for current page)
   const filteredBookings = bookings.filter(booking => {
+    // Ẩn các đặt phòng có xoa = true khỏi giao diện
+    if (booking.xoa === true) {
+      return false;
+    }
+
     // Search text filter
     const matchesSearch = !searchText ||
       (booking.maKH && booking.maKH.toString().includes(searchText)) ||

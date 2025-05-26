@@ -15,6 +15,7 @@ import {
   CloseOutlined
 } from '@ant-design/icons';
 import { isAuthenticated, getCurrentUser, logout } from '../services/authService';
+import MobileNavigation from './shared/MobileNavigation';
 import styles from '../styles/Header.module.css';
 
 const Header: React.FC = () => {
@@ -116,13 +117,13 @@ const Header: React.FC = () => {
           </Link>
         </div>
 
-        <button
-          className={styles.mobileMenuButton}
-          onClick={toggleMobileMenu}
-          aria-label={showMobileMenu ? "Đóng menu" : "Mở menu"}
-        >
-          {showMobileMenu ? <CloseOutlined /> : <MenuOutlined />}
-        </button>
+        {/* Mobile Navigation */}
+        <div className={styles.mobileMenuButton}>
+          <MobileNavigation
+            userInfo={user}
+            onLogout={handleLogout}
+          />
+        </div>
 
         <nav className={`${styles.navbar} ${showMobileMenu ? styles.navbarMobileOpen : ''}`}>
           <ul className={styles.navList}>

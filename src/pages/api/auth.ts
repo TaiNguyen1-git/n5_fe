@@ -237,21 +237,33 @@ async function handleRegister(req: NextApiRequest, res: NextApiResponse<Response
 
 async function handleChangePassword(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
   try {
-    const { username, currentPassword, newPassword } = req.body;
+    const { username, currentPassword, newPassword, confirmPassword } = req.body;
 
     // Validate input
-    if (!username || !currentPassword || !newPassword) {
+    if (!username || !currentPassword || !newPassword || !confirmPassword) {
       return res.status(400).json({
         success: false,
         message: 'Vui lòng điền đầy đủ thông tin bắt buộc'
       });
     }
 
-    // Call backend API to change password
-    const response = await axios.post(`${BACKEND_API_URL}/Auth/ChangePassword`, {
-      username,
-      oldPassword: currentPassword,
-      newPassword
+    // Validate password confirmation
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu xác nhận không khớp'
+      });
+    }
+
+    // Call backend API to change password using new endpoint
+    const response = await axios.put(`${BACKEND_API_URL}/User/DoiMatKhau/${encodeURIComponent(username)}`, {
+      matKhauCu: currentPassword,
+      matKhauMoi: newPassword,
+      reMatKhau: confirmPassword
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     return res.status(200).json({
@@ -260,23 +272,23 @@ async function handleChangePassword(req: NextApiRequest, res: NextApiResponse<Re
     });
   } catch (error: any) {
     // Handle specific error responses from backend
-    if (error.response?.status === 401) {
-      return res.status(401).json({
+    if (error.response?.status === 400) {
+      return res.status(400).json({
         success: false,
-        message: 'Mật khẩu hiện tại không chính xác'
+        message: 'Mật khẩu hiện tại không chính xác hoặc dữ liệu không hợp lệ'
       });
     }
 
     if (error.response?.status === 404) {
       return res.status(404).json({
         success: false,
-        message: 'Người dùng không tồn tại'
+        message: 'Không tìm thấy tài khoản người dùng'
       });
     }
 
     return res.status(500).json({
       success: false,
-      message: 'Đã xảy ra lỗi khi đổi mật khẩu. Vui lòng thử lại sau.'
+      message: error.response?.data?.message || 'Đã xảy ra lỗi khi đổi mật khẩu. Vui lòng thử lại sau.'
     });
   }
 }
