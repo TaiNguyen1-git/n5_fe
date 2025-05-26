@@ -40,7 +40,7 @@ export default async function handler(
         data: positions
       });
     } catch (error: any) {
-      console.error('Error fetching positions:', error);
+
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy danh sách chức vụ'

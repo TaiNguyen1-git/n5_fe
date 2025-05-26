@@ -74,9 +74,6 @@ export default function Register() {
         fullName: formData.fullName,
         phone: formData.phoneNumber || ''
       };
-      
-      console.log('Register page - Sending registration data:', userData);
-      
       // Sử dụng API handler của Next.js
       const response = await fetch('/api/register-handler', {
         method: 'POST',
@@ -87,8 +84,6 @@ export default function Register() {
       });
       
       const result = await response.json();
-      console.log('Register page - Registration response:', result);
-      
       // Chỉ xử lý thành công nếu cả response.ok và result.success đều là true
       if (response.ok && result.success === true) {
         // Hiển thị thông báo thành công và chuyển hướng
@@ -118,10 +113,8 @@ export default function Register() {
         // Hiển thị thông báo lỗi từ API
         const errorMsg = result.message || 'Đăng ký thất bại. Vui lòng thử lại.';
         setError(errorMsg);
-        console.error("Register page - Registration error:", errorMsg);
       }
     } catch (err: any) {
-      console.error('Register page - Registration error:', err);
       setError('Có lỗi xảy ra khi kết nối với máy chủ. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);

@@ -26,12 +26,10 @@ const RoomStatusTag: React.FC<RoomStatusTagProps> = ({ roomId }) => {
 
         if (response.data && response.data.success && response.data.data) {
           setStatus(response.data.data);
-          console.log(`Room status for ID ${roomId}:`, response.data.data);
         } else {
           setError('Không thể lấy thông tin trạng thái phòng');
         }
       } catch (err) {
-        console.error('Error fetching room status:', err);
         setError('Lỗi khi tải trạng thái phòng');
       } finally {
         setLoading(false);

@@ -37,14 +37,12 @@ export default async function handler(
       // Return the response data
       return res.status(200).json(response.data);
     } else {
-      console.error(`API returned status code ${response.status} or empty data`);
       return res.status(response.status || 404).json({
         success: false,
         message: 'Không tìm thấy thông tin khách hàng'
       });
     }
   } catch (error: any) {
-    console.error('API proxy error:', error.message);
     return res.status(500).json({
       success: false,
       message: 'Lỗi khi kết nối đến máy chủ'

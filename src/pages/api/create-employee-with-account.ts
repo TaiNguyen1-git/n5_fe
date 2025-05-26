@@ -15,10 +15,7 @@ export default async function handler(
         chucVuId, caLamId, luongCoBan, maVaiTro, trangThai
       } = req.body;
 
-      console.log('Creating employee with account - Request data:', req.body);
-
       // Bước 1: Tạo tài khoản người dùng
-      console.log('Step 1: Creating user account...');
 
       // Kiểm tra dữ liệu đầu vào
       if (!tenTK || !tenTK.trim()) {
@@ -47,26 +44,13 @@ export default async function handler(
       };
 
       // Log dữ liệu chi tiết
-      console.log('Account data with exact field names and types:', {
-        tenTK: typeof accountData.tenTK,
-        matKhau: typeof accountData.matKhau,
-        tenHienThi: typeof accountData.tenHienThi,
-        email: typeof accountData.email,
-        phone: typeof accountData.phone,
-        loaiTK: typeof accountData.loaiTK,
-        createAt: typeof accountData.createAt
-      });
-
-      console.log('Account data:', accountData);
 
       // Kiểm tra xem tài khoản đã tồn tại chưa
       try {
-        console.log(`Checking if username ${tenTK} already exists...`);
+
         const checkUserResponse = await axios.get(`${BACKEND_API_URL}/User/GetByUsername?username=${tenTK}`, {
           timeout: 10000
         });
-
-        console.log('Check user response:', checkUserResponse.data);
 
         // Nếu API trả về dữ liệu, tài khoản đã tồn tại
         if (checkUserResponse.data && checkUserResponse.data.tenTK) {
@@ -75,7 +59,7 @@ export default async function handler(
       } catch (checkError: any) {
         // Nếu lỗi là do không tìm thấy tài khoản, đó là điều tốt
         if (checkError.response && checkError.response.status === 404) {
-          console.log(`Username ${tenTK} is available.`);
+
         }
         // Nếu lỗi là do tài khoản đã tồn tại, ném lỗi
         else if (checkError.message && checkError.message.includes('đã tồn tại')) {
@@ -88,7 +72,6 @@ export default async function handler(
       }
 
       // Gọi API tạo tài khoản
-      console.log('Sending account data to API:', JSON.stringify(accountData));
 
       const accountResponse = await axios.post(`${BACKEND_API_URL}/User/Create`, accountData, {
         headers: {
@@ -97,10 +80,7 @@ export default async function handler(
         timeout: 30000 // 30 seconds
       });
 
-      console.log('Account created successfully:', accountResponse.data);
-
       // Bước 2: Tạo nhân viên
-      console.log('Step 2: Creating employee...');
 
       // Chuẩn bị dữ liệu nhân viên theo đúng cấu trúc API
       const employeeData = {
@@ -112,8 +92,6 @@ export default async function handler(
         trangThai: trangThai !== undefined ? trangThai : true
       };
 
-      console.log('Employee data:', employeeData);
-
       // Gọi API tạo nhân viên
       const employeeResponse = await axios.post(`${BACKEND_API_URL}/NhanVien/Create`, employeeData, {
         headers: {
@@ -121,8 +99,6 @@ export default async function handler(
         },
         timeout: 30000 // 30 seconds
       });
-
-      console.log('Employee created successfully:', employeeResponse.data);
 
       return res.status(201).json({
         success: true,
@@ -133,17 +109,16 @@ export default async function handler(
         }
       });
     } catch (error: any) {
-      console.error('Error creating employee with account:', error);
 
       // Log chi tiết lỗi
       if (error.response) {
-        console.error('Error response status:', error.response.status);
-        console.error('Error response data:', error.response.data);
-        console.error('Error response headers:', error.response.headers);
+
+
+
       } else if (error.request) {
-        console.error('Error request:', error.request);
+
       } else {
-        console.error('Error message:', error.message);
+
       }
 
       // Xác định loại lỗi và trả về thông báo phù hợp

@@ -19,7 +19,7 @@ export default async function handler(
       // Get pagination parameters from query
       const { pageNumber = '1', pageSize = '10' } = req.query;
 
-      console.log(`Fetching customers with pagination: page ${pageNumber}, size ${pageSize}`);
+
 
       // Get customers from backend API with pagination
       const response = await axios.get(`${BACKEND_API_URL}/KhachHang/GetAll`, {
@@ -31,7 +31,6 @@ export default async function handler(
       });
 
       // Log response for debugging
-      console.log('API KhachHang/GetAll response:', JSON.stringify(response.data).substring(0, 500) + '...');
 
       // Transform data for frontend if needed
       let customers: any[] = [];
@@ -64,9 +63,7 @@ export default async function handler(
         }
       }
 
-      // Log processed customers
-      console.log(`Processed ${customers.length} customers`);
-      console.log('Pagination info:', paginationInfo);
+
 
       // Đảm bảo dữ liệu khách hàng có các trường cần thiết
       const formattedCustomers = customers.map((customer: any) => ({
@@ -80,8 +77,6 @@ export default async function handler(
         trangThai: customer.trangThai !== undefined ? customer.trangThai : true
       }));
 
-      console.log('Formatted customers sample:', formattedCustomers.length > 0 ? formattedCustomers[0] : 'No customers');
-
       return res.status(200).json({
         success: true,
         data: {
@@ -90,7 +85,7 @@ export default async function handler(
         }
       });
     } catch (error: any) {
-      console.error('Error fetching customers:', error);
+
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy danh sách khách hàng'

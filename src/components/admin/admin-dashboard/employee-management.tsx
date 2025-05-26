@@ -56,10 +56,8 @@ const EmployeeManagement = () => {
     setPositionsLoading(true);
     try {
       const data = await positionService.getAllPositions();
-      console.log('Fetched positions data:', data);
       setPositions(data);
     } catch (error) {
-      console.error('Error fetching positions:', error);
       message.error('Không thể tải danh sách chức vụ từ máy chủ.');
     } finally {
       setPositionsLoading(false);
@@ -73,8 +71,6 @@ const EmployeeManagement = () => {
     setShiftsLoading(true);
     try {
       const response = await axios.get('/api/get-shifts');
-      console.log('Shifts API response:', response.data);
-
       if (response.data.success) {
         setShifts(response.data.data?.items || []);
       } else {
@@ -82,7 +78,6 @@ const EmployeeManagement = () => {
         setShifts([]);
       }
     } catch (error) {
-      console.error('Error fetching shifts:', error);
       message.error('Đã xảy ra lỗi khi lấy danh sách ca làm');
       setShifts([]);
     } finally {
@@ -96,8 +91,6 @@ const EmployeeManagement = () => {
     try {
       // Lấy danh sách nhân viên với phân trang
       const response: PaginatedEmployeeResponse = await employeeService.getAllEmployees(pageNumber, pageSize);
-      console.log('Fetched employees data:', response);
-
       // Cập nhật thông tin phân trang
       setPagination(prev => ({
         ...prev,
@@ -116,8 +109,6 @@ const EmployeeManagement = () => {
 
       // Xử lý từng nhân viên
       for (const item of response.items) {
-        console.log('Processing employee data:', item);
-
         // Lấy thông tin cơ bản của nhân viên
         const employee = {
           id: item.id,
@@ -136,10 +127,8 @@ const EmployeeManagement = () => {
           if (foundPosition) {
             if (foundPosition.tenChucVu) {
               employee.chucVu = foundPosition.tenChucVu;
-              console.log(`Found position in cache for ${employee.hoTen}: ${foundPosition.tenChucVu}`);
             } else if (foundPosition.tenCV) {
               employee.chucVu = foundPosition.tenCV;
-              console.log(`Found position in cache for ${employee.hoTen}: ${foundPosition.tenCV}`);
             }
           }
         }
@@ -147,21 +136,13 @@ const EmployeeManagement = () => {
         // Nếu không tìm thấy trong cache và có chucVuId, lấy từ API
         if (item.chucVuId && employee.chucVu === 'Chưa phân công') {
           try {
-            console.log(`Fetching position details for employee ${employee.hoTen} with chucVuId: ${item.chucVuId}`);
             const positionData = await positionService.getPositionById(item.chucVuId);
-            console.log(`Position data for employee ${employee.hoTen}:`, positionData);
-
             if (positionData) {
-              console.log(`Position data structure:`, positionData);
-              console.log(`Position data keys:`, Object.keys(positionData));
-
               // Ưu tiên sử dụng tenChucVu, nếu không có thì dùng tenCV
               if (positionData.tenChucVu) {
                 employee.chucVu = positionData.tenChucVu;
-                console.log(`Updated position for employee ${employee.hoTen}: ${positionData.tenChucVu}`);
               } else if (positionData.tenCV) {
                 employee.chucVu = positionData.tenCV;
-                console.log(`Updated position for employee ${employee.hoTen}: ${positionData.tenCV}`);
               } else {
                 // Kiểm tra xem có trường nào khác chứa thông tin chức vụ không
                 const keys = Object.keys(positionData);
@@ -170,7 +151,6 @@ const EmployeeManagement = () => {
                   if (typeof positionData[key] === 'string' &&
                       (key.toLowerCase().includes('chuc') || key.toLowerCase().includes('role') || key.toLowerCase().includes('ten'))) {
                     // @ts-ignore
-                    console.log(`Found potential position name in field ${key}: ${positionData[key]}`);
                     // @ts-ignore
                     employee.chucVu = positionData[key];
                     break;
@@ -178,27 +158,21 @@ const EmployeeManagement = () => {
                 }
 
                 if (employee.chucVu === 'Chưa phân công') {
-                  console.log(`Position data for ID ${item.chucVuId} doesn't have any usable position name field`);
                 }
               }
             } else {
-              console.log(`No position data found for ID ${item.chucVuId}`);
             }
           } catch (posError) {
-            console.error(`Error fetching position for employee ${employee.hoTen}:`, posError);
           }
         } else {
-          console.log(`Using cached position data for employee ${employee.hoTen}`);
         }
 
         // Thêm nhân viên vào danh sách
         formattedEmployees.push(employee);
       }
 
-      console.log('Formatted employees with position details:', formattedEmployees);
       setEmployees(formattedEmployees);
     } catch (error: any) {
-      console.error('Error fetching employees:', error);
 
       // Implement retry logic (max 3 retries)
       if (retryCount < 3) {
@@ -218,7 +192,6 @@ const EmployeeManagement = () => {
 
   // Handle edit employee
   const handleEdit = async (employee: Employee) => {
-    console.log('Editing employee:', employee);
     setEditingEmployee(employee);
 
     // Lấy thông tin chi tiết của người dùng từ API nếu có tài khoản
@@ -237,10 +210,8 @@ const EmployeeManagement = () => {
           const userData = response.data.data;
           email = userData.email || '';
           phone = userData.phone || '';
-          console.log('Fetched user data:', userData);
         }
       } catch (error) {
-        console.error('Error fetching user details:', error);
       }
     }
 
@@ -249,20 +220,16 @@ const EmployeeManagement = () => {
       // Nếu có chucVuId, ưu tiên sử dụng chucVuId để lấy thông tin chức vụ
       if (employee.chucVuId) {
         try {
-          console.log(`Fetching position details for employee with chucVuId: ${employee.chucVuId}`);
           const positionData = await positionService.getPositionById(employee.chucVuId);
 
           if (positionData) {
             positionDetails = positionData;
-            console.log('Fetched position details by ID:', positionDetails);
-
             // Cập nhật tên chức vụ nếu chưa có
             if (!employee.chucVu && !employee.chucVu_ && positionData.tenCV) {
               employee.chucVu = positionData.tenCV;
             }
           }
         } catch (posError) {
-          console.error(`Error fetching position by ID ${employee.chucVuId}:`, posError);
         }
       }
 
@@ -275,13 +242,10 @@ const EmployeeManagement = () => {
 
         if (foundPosition) {
           positionDetails = foundPosition;
-          console.log('Found position in cache:', positionDetails);
         } else if (positionName) {
-          console.log('Position not found in cache, will use the name directly:', positionName);
         }
       }
     } catch (error) {
-      console.error('Error fetching position details:', error);
     }
 
     form.setFieldsValue({
@@ -309,16 +273,12 @@ const EmployeeManagement = () => {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
-          console.log(`Deleting employee with ID: ${id}`);
           // Gọi API xóa nhân viên
           const response = await employeeService.deleteEmployee(id);
-          console.log('Delete response:', response);
-
           // Cập nhật UI sau khi xóa thành công
           setEmployees(employees.filter(employee => employee.maNV !== id));
           message.success('Đã xóa nhân viên thành công');
         } catch (error) {
-          console.error('Error deleting employee:', error);
           message.error('Không thể xóa nhân viên. Vui lòng thử lại sau.');
         }
       }
@@ -357,9 +317,6 @@ const EmployeeManagement = () => {
             maVaiTro: editingEmployee.maVaiTro || 2, // Giữ nguyên vai trò hoặc mặc định là nhân viên
             trangThai: values.trangThai !== undefined ? values.trangThai : true
           };
-
-          console.log('Updating employee with data:', apiData);
-
           // Cập nhật thông tin người dùng nếu có thay đổi email hoặc số điện thoại
           if (values.email || values.phone) {
             try {
@@ -370,12 +327,8 @@ const EmployeeManagement = () => {
                 Phone: values.phone || '',
                 MatKhau: values.matKhau || undefined
               };
-
-              console.log('Updating user data:', userData);
               const userResponse = await axios.put('/api/User/Update', userData);
-              console.log('User update response:', userResponse.data);
             } catch (userError) {
-              console.error('Error updating user data:', userError);
               // Tiếp tục cập nhật thông tin nhân viên ngay cả khi cập nhật thông tin người dùng thất bại
             }
           }
@@ -398,8 +351,6 @@ const EmployeeManagement = () => {
           message.success('Cập nhật nhân viên thành công');
         } else {
           // Tạo nhân viên mới kèm tài khoản
-          console.log('Creating new employee with account using User/Create API...');
-
           try {
             setLoading(true);
 
@@ -410,13 +361,10 @@ const EmployeeManagement = () => {
             );
             if (selectedPosition) {
               chucVuId = selectedPosition.id || selectedPosition.maCV || 2;
-              console.log(`Found position: ${values.chucVu}, ID: ${chucVuId}`);
             } else {
-              console.log(`Position not found: ${values.chucVu}, using default ID: ${chucVuId}`);
             }
 
             // Bước 1: Tạo tài khoản người dùng bằng API User/Create
-            console.log('Step 1: Creating user account...');
             const userAccountData = {
               TenTK: values.taiKhoan,
               MatKhau: values.matKhau,
@@ -426,9 +374,6 @@ const EmployeeManagement = () => {
               CreateAt: new Date().toISOString(),
               LoaiTK: 2 // Nhân viên
             };
-
-            console.log('User account data:', userAccountData);
-
             // Gọi API proxy User/Create để tạo tài khoản
             const userResponse = await axios.post('/api/User/Create', userAccountData, {
               headers: {
@@ -436,15 +381,9 @@ const EmployeeManagement = () => {
               },
               timeout: 30000
             });
-
-            console.log('User account creation response:', userResponse.data);
-
             // Kiểm tra xem tài khoản có được tạo thành công không
             if (userResponse.data && userResponse.data.success) {
-              console.log('User account created successfully, proceeding to create employee...');
-
               // Bước 2: Tạo nhân viên
-              console.log('Step 2: Creating employee...');
               const employeeData = {
                 hoTen: values.hoTen,
                 chucVuId: Number(chucVuId),
@@ -453,9 +392,6 @@ const EmployeeManagement = () => {
                 maVaiTro: 2, // Luôn là 2 (nhân viên) khi tạo mới
                 trangThai: values.trangThai !== undefined ? values.trangThai : true
               };
-
-              console.log('Employee data:', employeeData);
-
               // Gọi API proxy tạo nhân viên
               const employeeResponse = await axios.post('/api/create-employee', employeeData, {
                 headers: {
@@ -463,17 +399,12 @@ const EmployeeManagement = () => {
                 },
                 timeout: 30000
               });
-
-              console.log('Employee creation response:', employeeResponse.data);
-
               // Kiểm tra response từ API create-employee
               const isEmployeeCreated = employeeResponse.data &&
                 (employeeResponse.data.success ||
                  (employeeResponse.data.data && employeeResponse.data.data.statusCode === 200));
 
               if (isEmployeeCreated) {
-                console.log('✅ Both user and employee created successfully! Showing success modal...');
-
                 // Refresh the current page to show the new employee
                 await fetchEmployees(pagination.current, pagination.pageSize);
 
@@ -524,19 +455,12 @@ const EmployeeManagement = () => {
                 setIsModalVisible(false);
                 form.resetFields();
               } else {
-                console.error('❌ Employee creation failed:', {
-                  response: employeeResponse.data,
-                  isEmployeeCreated,
-                  hasSuccess: employeeResponse.data?.success,
-                  hasStatusCode: employeeResponse.data?.data?.statusCode
-                });
                 throw new Error(employeeResponse.data?.message || 'Không thể tạo nhân viên mới');
               }
             } else {
               throw new Error(userResponse.data?.message || 'Không thể tạo tài khoản người dùng');
             }
           } catch (error: any) {
-            console.error('Error creating employee:', error);
             setLoading(false);
 
             // Xác định loại lỗi
@@ -548,8 +472,6 @@ const EmployeeManagement = () => {
             if (error.response && error.response.data) {
               // Lỗi từ API
               const responseData = error.response.data;
-              console.error('Error response data:', responseData);
-
               // Xác định loại lỗi dựa trên thông báo
               if (responseData.message) {
                 errorMessage = responseData.message;
@@ -604,7 +526,6 @@ const EmployeeManagement = () => {
         }
         setIsModalVisible(false);
       } catch (error) {
-        console.error('Error saving employee:', error);
         message.error('Không thể lưu thông tin nhân viên. Vui lòng thử lại sau.');
       }
     });
@@ -671,7 +592,6 @@ const EmployeeManagement = () => {
           // Nếu không tìm thấy trong danh sách, lấy từ API
           const fetchPositionInfo = async () => {
             try {
-              console.log(`Fetching position for employee ID ${record.id} with chucVuId ${record.chucVuId}`);
               const positionData = await positionService.getPositionById(record.chucVuId as number);
 
               if (positionData) {
@@ -715,7 +635,6 @@ const EmployeeManagement = () => {
                 }
               }
             } catch (error) {
-              console.error(`Error fetching position for employee ID ${record.id}:`, error);
             }
           };
 
@@ -845,7 +764,6 @@ const EmployeeManagement = () => {
                   message.success({ content: 'Đã làm mới dữ liệu thành công!', key: 'refreshData', duration: 2 });
                 })
                 .catch((error) => {
-                  console.error('Error refreshing data:', error);
                   message.error({ content: 'Không thể làm mới dữ liệu. Vui lòng thử lại!', key: 'refreshData', duration: 2 });
                 });
             }}

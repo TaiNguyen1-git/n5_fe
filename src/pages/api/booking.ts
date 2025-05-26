@@ -13,7 +13,6 @@ const BACKEND_API_URL = 'https://ptud-web-1.onrender.com/api';
 
 // Hàm xử lý lỗi từ axios
 const handleAxiosError = (error: any): ResponseData => {
-  console.error('API Error:', error);
 
   if (axios.isAxiosError(error)) {
     // Lỗi timeout
@@ -153,8 +152,6 @@ export default async function handler(
         throw axiosError;
       }
     } catch (error) {
-      console.error('Booking error:', error);
-
       // Sử dụng hàm xử lý lỗi chung
       const errorResponse = handleAxiosError(error);
       const statusCode = errorResponse.success ? 200 : 500;
@@ -252,8 +249,6 @@ export default async function handler(
         throw axiosError;
       }
     } catch (error) {
-      console.error('Error fetching bookings:', error);
-
       // Sử dụng hàm xử lý lỗi chung
       const errorResponse = handleAxiosError(error);
       const statusCode = errorResponse.success ? 200 : 500;

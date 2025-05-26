@@ -92,7 +92,6 @@ export default async function handler(
                 customerName = customerResponse.data.value.tenKH;
               }
             } catch (error) {
-              console.error(`Error fetching customer ${booking.maKH}:`, error);
               // Fallback to existing name fields
               customerName = booking.tenKH || booking.khachHang?.tenKH || `Khách hàng ${booking.maKH}`;
             }
@@ -114,7 +113,6 @@ export default async function handler(
                 roomNumber = room.soPhong || room.maPhong?.toString() || booking.maPhong.toString();
               }
             } catch (error) {
-              console.error(`Error fetching room ${booking.maPhong}:`, error);
               // Fallback to existing room fields
               roomNumber = booking.soPhong || booking.maPhong?.toString() || 'N/A';
             }
@@ -138,7 +136,6 @@ export default async function handler(
         data: recentBookings
       });
     } catch (error: any) {
-      console.error('Error fetching recent bookings:', error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy thông tin đặt phòng gần đây'

@@ -76,7 +76,6 @@ const AddBooking: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error(`Error fetching room statuses from ${url}:`, error);
       }
     }
 
@@ -86,7 +85,6 @@ const AddBooking: React.FC = () => {
       { maTT: 2, tenTT: 'Đã đặt' },
       { maTT: 3, tenTT: 'Đang sửa chữa' }
     ]);
-    console.warn('Không thể lấy danh sách trạng thái phòng từ máy chủ. Đang sử dụng dữ liệu mẫu.');
   };
 
   // Fetch rooms
@@ -120,23 +118,17 @@ const AddBooking: React.FC = () => {
               status.tenTT.toLowerCase().includes('trong') ||
               status.tenTT.toLowerCase().includes('available')
             )?.maTT || 1;
-
-            console.log(`Trạng thái phòng trống có mã: ${emptyStatusId}`);
-
             const availableRooms = roomData.filter(room => room.trangThai === emptyStatusId);
 
             if (availableRooms.length > 0) {
-              console.log(`Tìm thấy ${availableRooms.length} phòng trống`);
               setRooms(availableRooms);
             } else {
-              console.warn('Không tìm thấy phòng trống, hiển thị tất cả phòng');
               setRooms(roomData);
             }
             return;
           }
         }
       } catch (error) {
-        console.error(`Error fetching rooms from ${url}:`, error);
       }
     }
 
@@ -183,9 +175,6 @@ const AddBooking: React.FC = () => {
         trangThai: 2, // Chờ xác nhận
         xoa: false
       };
-
-      console.log('Submitting booking data:', bookingData);
-
       // Try each API endpoint
       let success = false;
 
@@ -201,11 +190,9 @@ const AddBooking: React.FC = () => {
 
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Booking created successfully:', response.data);
             break;
           }
         } catch (error) {
-          console.error(`Error creating booking with ${url}:`, error);
         }
       }
 
@@ -217,7 +204,6 @@ const AddBooking: React.FC = () => {
         form.resetFields();
       }
     } catch (error) {
-      console.error('Error submitting booking:', error);
       message.error('Có lỗi xảy ra khi đặt phòng. Vui lòng thử lại sau.');
     } finally {
       setSubmitting(false);

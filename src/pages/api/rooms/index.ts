@@ -157,7 +157,6 @@ export default async function handler(
         }
       });
     } catch (error) {
-      console.error('Error fetching rooms:', error);
       return res.status(500).json({
         success: false,
         message: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.',

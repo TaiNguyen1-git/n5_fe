@@ -72,8 +72,6 @@ const SettingsManagement = () => {
 
         // Thử lấy thông tin từ getCurrentUser trước
         const currentUser = getCurrentUser();
-        console.log('Settings - Current user from auth service:', currentUser);
-
         if (currentUser) {
           // Cập nhật form với dữ liệu cơ bản
           const basicUserData = {
@@ -91,8 +89,6 @@ const SettingsManagement = () => {
 
         // Lấy thông tin đầy đủ từ API
         const profileData = await getUserProfile();
-        console.log('Settings - User profile from API:', profileData);
-
         if (profileData) {
           const updatedUserData = {
             username: profileData.username || profileData.tenTK || '',
@@ -107,7 +103,6 @@ const SettingsManagement = () => {
           userForm.setFieldsValue(updatedUserData);
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
         message.error('Không thể tải thông tin người dùng. Vui lòng thử lại sau.');
       } finally {
         setInitialLoading(false);
@@ -138,10 +133,6 @@ const SettingsManagement = () => {
         phone: values.phone,
         email: values.email
       };
-
-      console.log('Settings - Updating user profile with data:', updateData);
-      console.log('Settings - Username for update:', username);
-
       // Gọi API cập nhật thông tin với tham số TenTK
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/User/Update?TenTK=${encodeURIComponent(username)}`, {
@@ -160,13 +151,11 @@ const SettingsManagement = () => {
 
         // Làm mới thông tin người dùng
         const updatedProfile = await getUserProfile();
-        console.log('Settings - Updated profile:', updatedProfile);
       } else {
         const errorData = await response.json().catch(() => ({}));
         message.error(errorData.message || 'Cập nhật thông tin thất bại');
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
       message.error('Có lỗi xảy ra khi cập nhật thông tin. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);

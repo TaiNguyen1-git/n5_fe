@@ -31,7 +31,6 @@ export default async function handler(
       return res.status(400).json({ success: false, message: 'Invalid action' });
     }
   } catch (error: any) {
-    console.error('Forgot password error:', error);
     return res.status(500).json({ 
       success: false, 
       message: error.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.' 
@@ -44,8 +43,6 @@ async function handleForgotPassword(req: NextApiRequest, res: NextApiResponse<Re
     const { email } = req.body;
     
     // Debug log
-    console.log('Request to forgot-password API with email:', email);
-    
     // Validate input
     if (!email) {
       return res.status(400).json({
@@ -59,17 +56,12 @@ async function handleForgotPassword(req: NextApiRequest, res: NextApiResponse<Re
       const response = await axios.post(`${BACKEND_API_URL}/ForgotPassword/forgot-password`, {
         email
       });
-      
-      console.log('Backend response for forgot-password:', response.data);
-      
       return res.status(200).json({
         success: true,
         message: 'Yêu cầu đặt lại mật khẩu đã được gửi đến email của bạn'
       });
     } catch (apiError: any) {
-      console.error('API error in forgot-password:', apiError.message);
       if (apiError.response) {
-        console.error('API response error:', apiError.response.data);
       }
       
       // Xử lý khi không thể gọi API - vẫn trả kết quả thành công cho client
@@ -80,8 +72,6 @@ async function handleForgotPassword(req: NextApiRequest, res: NextApiResponse<Re
       });
     }
   } catch (error: any) {
-    console.error('Forgot password general error:', error);
-    
     return res.status(500).json({ 
       success: false, 
       message: error.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.' 
@@ -94,8 +84,6 @@ async function handleResetPassword(req: NextApiRequest, res: NextApiResponse<Res
     const { resetToken, password } = req.body;
     
     // Debug log
-    console.log('Request to reset-password API with token length:', resetToken?.length);
-    
     // Validate input
     if (!resetToken || !password) {
       return res.status(400).json({
@@ -110,17 +98,12 @@ async function handleResetPassword(req: NextApiRequest, res: NextApiResponse<Res
         resetToken,
         password
       });
-      
-      console.log('Backend response for reset-password:', response.data);
-      
       return res.status(200).json({
         success: true,
         message: 'Đặt lại mật khẩu thành công'
       });
     } catch (apiError: any) {
-      console.error('API error in reset-password:', apiError.message);
       if (apiError.response) {
-        console.error('API response error:', apiError.response.data);
       }
       
       return res.status(500).json({
@@ -129,8 +112,6 @@ async function handleResetPassword(req: NextApiRequest, res: NextApiResponse<Res
       });
     }
   } catch (error: any) {
-    console.error('Reset password general error:', error);
-    
     return res.status(500).json({ 
       success: false, 
       message: error.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.' 

@@ -124,7 +124,6 @@ interface User {
  */
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   try {
-    console.log('Login attempt:', credentials.username);
 
     // Xóa dữ liệu cũ trước khi đăng nhập để tránh xung đột
     if (typeof window !== 'undefined') {
@@ -143,8 +142,6 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
     });
 
     const data = await response.json();
-    console.log('Login response:', data);
-
     if (response.ok && data.success) {
       // Xác định role dựa trên loaiTK chính xác
       let userRole = 'customer';
@@ -161,9 +158,6 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
       } else if (userLoaiTK === 2) {
         userRole = 'staff';
       }
-
-      console.log('Mapped role from loaiTK:', { loaiTK: userLoaiTK, role: userRole });
-
       const user: UserData = {
         id: data.data.user?.id || data.data.user?.maTK || data.data.maTK,
         tenTK: data.data.user?.username || data.data.tenTK,
@@ -178,10 +172,6 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
       };
 
       // Log detailed user information
-      console.log('User authenticated successfully');
-      console.log('User account type (loaiTK):', user.loaiTK);
-      console.log('User role:', user.role);
-
       // Store auth token and user data in cookies
       setAuthCookie(AUTH_TOKEN_KEY, data.data.token);
       setAuthCookie(USER_DATA_KEY, JSON.stringify(user));
@@ -198,11 +188,8 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
         // We'll import this dynamically to avoid circular dependencies
         setTimeout(() => {
           import('./userService').then(async ({ getUserProfile }) => {
-            console.log('Login: Đang tải profile đầy đủ...');
             const profileData = await getUserProfile();
             if (profileData) {
-              console.log('Login: Đã tải profile đầy đủ từ API:', profileData);
-
               // Kiểm tra và cập nhật lại role nếu cần
               let updatedRole = user.role;
               let updatedLoaiTK = profileData.loaiTK || user.loaiTK;
@@ -228,20 +215,11 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
                 role: updatedRole,
                 loaiTK: updatedLoaiTK
               };
-
-              console.log('Login: Cập nhật thông tin người dùng với role/loaiTK:', {
-                role: updatedRole,
-                loaiTK: updatedLoaiTK
-              });
-
               // Lưu lại vào cả cookie và localStorage
               setAuthCookie(USER_DATA_KEY, JSON.stringify(userData));
               localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-              console.log('Login: Đã cập nhật dữ liệu đầy đủ trong storage');
-
               // Nếu role thay đổi, có thể reload trang để cập nhật quyền
               if (updatedRole !== user.role) {
-                console.log('Login: Phát hiện thay đổi role, sẽ làm mới trang...');
                 if (typeof window !== 'undefined') {
                   setTimeout(() => {
                     window.location.reload();
@@ -249,14 +227,11 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
                 }
               }
             } else {
-              console.log('Login: Không lấy được dữ liệu profile từ API');
             }
           }).catch(err => {
-            console.error('Error loading user profile after login:', err);
           });
         }, 1000); // Delay 1 giây để đảm bảo token đã được lưu và có thể sử dụng
       } catch (profileError) {
-        console.error('Error fetching profile after login:', profileError);
       }
 
       return {
@@ -266,14 +241,12 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
         user
       };
     } else {
-      console.error('Login failed:', data.message);
       return {
         success: false,
         message: data.message || 'Invalid credentials',
       };
     }
   } catch (error) {
-    console.error('Login error:', error);
     return {
       success: false,
       message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.',
@@ -300,8 +273,6 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
     };
 
     // Gọi trực tiếp đến API backend để đăng ký
-    console.log('Sending registration data:', requestData);
-
     // Tăng timeout để tránh lỗi mạng
     const response = await axios.post(`${BASE_URL}/Auth/Register`, requestData, {
       timeout: 30000, // Tăng timeout lên 30 giây
@@ -310,9 +281,6 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
         'Accept': 'application/json'
       }
     });
-
-    console.log('Registration response:', response.data);
-
     if (response.data) {
       return {
         success: true,
@@ -323,8 +291,6 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
       throw new Error('Không nhận được phản hồi từ server');
     }
   } catch (error: any) {
-    console.error('Registration API error:', error.response?.data || error.message);
-
     // Xử lý cụ thể lỗi mạng
     if (error.message && error.message.includes('Network Error')) {
       return {
@@ -411,14 +377,12 @@ export const updateUserProfile = async (profileData: UpdateProfileData): Promise
         throw new Error(response.data.message || 'Cập nhật thông tin thất bại');
       }
     } catch (apiError) {
-      console.error('Error updating profile:', apiError);
       return {
         success: false,
         message: 'Không thể cập nhật thông tin. Vui lòng kiểm tra kết nối mạng và thử lại sau.'
       };
     }
   } catch (error) {
-    console.error('Update profile error:', error);
     return {
       success: false,
       message: 'Cập nhật thông tin thất bại. Vui lòng thử lại sau.'

@@ -41,7 +41,6 @@ export default async function handler(
         data: response.data
       });
     } catch (error: any) {
-      console.error(`Error fetching employee with id ${id}:`, error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy thông tin nhân viên'
@@ -50,8 +49,6 @@ export default async function handler(
   } else if (req.method === 'PUT') {
     try {
       // Log request body for debugging
-      console.log(`PUT /api/employees/${id} - Request body:`, req.body);
-
       // Update employee using API structure
       const { hoTen, chucVuId, caLamId, luongCoBan, maVaiTro, trangThai } = req.body;
 
@@ -66,9 +63,6 @@ export default async function handler(
       if (luongCoBan !== undefined) employeeData.luongCoBan = Number(luongCoBan);
       if (maVaiTro !== undefined) employeeData.maVaiTro = Number(maVaiTro);
       if (trangThai !== undefined) employeeData.trangThai = trangThai;
-
-      console.log(`Sending to API for update:`, employeeData);
-
       // Update employee through backend API - sử dụng đúng endpoint và cấu trúc API
       const response = await axios.put(`${BACKEND_API_URL}/NhanVien/Update`, employeeData);
 
@@ -78,7 +72,6 @@ export default async function handler(
         data: response.data
       });
     } catch (error: any) {
-      console.error(`Error updating employee with id ${id}:`, error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi cập nhật thông tin nhân viên'
@@ -87,7 +80,6 @@ export default async function handler(
   } else if (req.method === 'DELETE') {
     try {
       // Delete employee through backend API - sử dụng đúng endpoint với tham số query id
-      console.log(`Deleting employee with id ${id}`);
       const response = await axios.delete(`${BACKEND_API_URL}/NhanVien/Delete?id=${id}`);
 
       return res.status(200).json({
@@ -96,7 +88,6 @@ export default async function handler(
         data: response.data
       });
     } catch (error: any) {
-      console.error(`Error deleting employee with id ${id}:`, error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi xóa nhân viên'

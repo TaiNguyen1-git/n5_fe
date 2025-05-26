@@ -37,8 +37,7 @@ export default async function handler(
       // Return the response data
       return res.status(200).json(response.data);
     } catch (error: any) {
-      console.error(`Error fetching revenue for date ${ngay}:`, error);
-      
+
       // Return error response
       return res.status(500).json({
         success: false,

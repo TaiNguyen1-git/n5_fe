@@ -88,7 +88,6 @@ export default function Payment() {
           sum + (item.price * item.quantity), 0);
         setTotal(totalAmount);
       } catch (error) {
-        console.error('Error parsing cart items:', error);
         router.push('/services');
       }
     }
@@ -182,7 +181,6 @@ export default function Payment() {
         }
       });
     } catch (error) {
-      console.error('Payment error:', error);
       setErrors(prev => ({
         ...prev,
         submit: 'Có lỗi xảy ra, vui lòng thử lại'

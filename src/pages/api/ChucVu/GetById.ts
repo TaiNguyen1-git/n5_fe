@@ -38,7 +38,7 @@ export default async function handler(
         data: response.data
       });
     } catch (error: any) {
-      console.error('Error fetching position:', error);
+
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy thông tin chức vụ'

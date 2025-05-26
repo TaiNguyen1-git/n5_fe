@@ -45,8 +45,6 @@ export default function Profile() {
       const profileData = await getUserProfile();
 
       if (profileData) {
-        console.log('Thông tin người dùng từ API (chi tiết):', JSON.stringify(profileData));
-
         const phoneNumber = profileData.phone ? String(profileData.phone) : '';
 
         setFormData({
@@ -63,12 +61,9 @@ export default function Profile() {
         });
 
         // Log để debug giá trị phone
-        console.log('Số điện thoại nhận được từ API (kiểu dữ liệu):', typeof profileData.phone, profileData.phone);
-        console.log('Số điện thoại sau khi chuyển đổi:', typeof phoneNumber, phoneNumber);
         return;
       }
     } catch (error) {
-      console.error('Lỗi khi lấy thông tin từ API:', error);
     }
 
     // Fallback: Nếu không lấy được từ API, dùng dữ liệu từ cookie hoặc localStorage
@@ -91,7 +86,6 @@ export default function Profile() {
         });
       }
     } catch (err) {
-      console.error('Error loading user data:', err);
       setError('Có lỗi khi tải thông tin người dùng');
     }
   };
@@ -130,8 +124,6 @@ export default function Profile() {
         phone: formData.phoneNumber === "string" ? "" : formData.phoneNumber,
         email: formData.email.trim()
       };
-
-      console.log('Đang gửi dữ liệu cập nhật:', updateData);
       const response = await updateUserProfile(updateData);
 
       if (response.success) {
@@ -158,7 +150,6 @@ export default function Profile() {
         setError(response.message || 'Có lỗi xảy ra khi cập nhật thông tin');
       }
     } catch (err) {
-      console.error('Error updating profile:', err);
       setError('Có lỗi xảy ra. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);
@@ -358,7 +349,6 @@ export default function Profile() {
                             setError(response.message || 'Có lỗi xảy ra khi xóa tài khoản');
                           }
                         }).catch(err => {
-                          console.error('Error deleting account:', err);
                           setError('Có lỗi xảy ra. Vui lòng thử lại sau.');
                         });
                       }

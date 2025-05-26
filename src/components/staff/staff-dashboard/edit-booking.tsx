@@ -115,7 +115,6 @@ const EditBooking: React.FC<EditBookingProps> = ({ booking, visible, onClose, on
           }
         }
       } catch (error) {
-        console.error(`Error fetching room statuses from ${url}:`, error);
       }
     }
 
@@ -125,7 +124,6 @@ const EditBooking: React.FC<EditBookingProps> = ({ booking, visible, onClose, on
       { maTT: 2, tenTT: 'Đã đặt' },
       { maTT: 3, tenTT: 'Đang sửa chữa' }
     ]);
-    console.warn('Không thể lấy danh sách trạng thái phòng từ máy chủ. Đang sử dụng dữ liệu mẫu.');
   };
 
   // Fetch booking statuses
@@ -163,7 +161,6 @@ const EditBooking: React.FC<EditBookingProps> = ({ booking, visible, onClose, on
           }
         }
       } catch (error) {
-        console.error(`Error fetching booking statuses from ${url}:`, error);
       }
     }
 
@@ -174,7 +171,6 @@ const EditBooking: React.FC<EditBookingProps> = ({ booking, visible, onClose, on
       { maTT: 3, tenTT: 'Đã hủy', value: 3, label: 'Đã hủy' },
       { maTT: 4, tenTT: 'Đã hoàn thành', value: 4, label: 'Đã hoàn thành' }
     ]);
-    console.warn('Không thể lấy danh sách trạng thái đặt phòng từ máy chủ. Đang sử dụng dữ liệu mẫu.');
   };
 
   // Fetch rooms
@@ -206,7 +202,6 @@ const EditBooking: React.FC<EditBookingProps> = ({ booking, visible, onClose, on
           }
         }
       } catch (error) {
-        console.error(`Error fetching rooms from ${url}:`, error);
       }
     }
 
@@ -267,9 +262,6 @@ const EditBooking: React.FC<EditBookingProps> = ({ booking, visible, onClose, on
         trangThai: values.bookingStatus,
         xoa: false
       };
-
-      console.log('Updating booking data:', bookingData);
-      
       // Try each API endpoint
       let success = false;
       
@@ -286,11 +278,9 @@ const EditBooking: React.FC<EditBookingProps> = ({ booking, visible, onClose, on
           
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Booking updated successfully:', response.data);
             break;
           }
         } catch (error) {
-          console.error(`Error updating booking with ${baseUrl}:`, error);
         }
       }
       
@@ -304,7 +294,6 @@ const EditBooking: React.FC<EditBookingProps> = ({ booking, visible, onClose, on
         onClose();
       }
     } catch (error) {
-      console.error('Error updating booking:', error);
       message.error('Có lỗi xảy ra khi cập nhật đặt phòng. Vui lòng thử lại sau.');
     } finally {
       setSubmitting(false);

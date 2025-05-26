@@ -21,7 +21,6 @@ export default async function handler(
   if (req.method === 'POST') {
     try {
       // Log request body for debugging
-      console.log('POST /api/User/Create - Request body:', req.body);
 
       // Kiểm tra các trường bắt buộc
       const { TenTK, MatKhau, TenHienThi, Email, Phone, LoaiTK, CreateAt } = req.body;
@@ -53,17 +52,6 @@ export default async function handler(
       }
 
       // Log chi tiết dữ liệu
-      console.log('User data structure:', {
-        TenTK: typeof TenTK,
-        MatKhau: typeof MatKhau,
-        TenHienThi: typeof TenHienThi,
-        Email: typeof Email,
-        Phone: typeof Phone,
-        LoaiTK: typeof LoaiTK,
-        CreateAt: typeof CreateAt
-      });
-
-      console.log('Sending to API:', userData);
 
       // Tạo FormData để gửi đến backend API (backend yêu cầu multipart/form-data)
       const formData = new FormData();
@@ -79,25 +67,22 @@ export default async function handler(
         timeout: 30000
       });
 
-      console.log('API response:', response.data);
-
       return res.status(201).json({
         success: true,
         message: 'Tạo tài khoản thành công',
         data: response.data
       });
     } catch (error: any) {
-      console.error('Error creating user:', error);
 
       // Log chi tiết lỗi để debug
       if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
-        console.error('Error response headers:', error.response.headers);
+
+
+
       } else if (error.request) {
-        console.error('Error request:', error.request);
+
       } else {
-        console.error('Error message:', error.message);
+
       }
 
       // Trả về thông báo lỗi chi tiết hơn

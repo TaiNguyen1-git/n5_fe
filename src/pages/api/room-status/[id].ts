@@ -35,8 +35,6 @@ export default async function handler(
   try {
     // Gọi API đặt phòng để lấy thông tin trạng thái
     const apiEndpoint = `${BACKEND_API_URL}/DatPhong/GetAll`;
-    console.log(`Calling booking API: ${apiEndpoint}`);
-
     const response = await axios.get(apiEndpoint, {
       timeout: 10000,
       headers: { 'Accept': '*/*' }
@@ -50,9 +48,6 @@ export default async function handler(
       });
     }
 
-    // Log dữ liệu để debug
-    console.log('API response data:', JSON.stringify(response.data));
-
     // Tìm đặt phòng có mã phòng trùng với ID được yêu cầu
     const bookings = response.data.items;
     const booking = bookings.find((b: any) => b.maDatPhong.toString() === roomId);
@@ -64,11 +59,8 @@ export default async function handler(
       });
     }
 
-    console.log('Found booking:', booking);
-
     // Gọi API trạng thái đặt phòng để lấy danh sách trạng thái
     const statusApiEndpoint = `${BACKEND_API_URL}/TrangThaiDatPhong/GetAll`;
-    console.log(`Calling status API: ${statusApiEndpoint}`);
 
     const statusResponse = await axios.get(statusApiEndpoint, {
       timeout: 10000,
@@ -81,9 +73,6 @@ export default async function handler(
         message: 'Không tìm thấy danh sách trạng thái'
       });
     }
-
-    console.log('Status API response:', JSON.stringify(statusResponse.data));
-
     // Tìm trạng thái tương ứng với mã trạng thái của đặt phòng
     let statusData;
     if (Array.isArray(statusResponse.data)) {
@@ -118,17 +107,12 @@ export default async function handler(
         tenTT: tenTT
       };
     }
-
-    console.log('Final status data:', statusData);
-
     // Return the formatted data
     return res.status(200).json({
       success: true,
       data: statusData
     });
   } catch (error) {
-    console.error(`Error fetching room status with ID ${roomId}:`, error);
-
     // Check for specific errors
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 404) {
@@ -139,10 +123,7 @@ export default async function handler(
       }
 
       // Log error details for debugging
-      console.error('Error details:', error.message);
       if (error.response) {
-        console.error('Status:', error.response.status);
-        console.error('Data:', error.response.data);
       }
     }
 

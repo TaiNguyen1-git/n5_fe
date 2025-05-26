@@ -63,7 +63,6 @@ export default async function handler(
           };
         }
       } catch (error) {
-        console.log('First attempt failed:', error);
       }
 
       // Second try: GetBySoPhong endpoint
@@ -100,7 +99,6 @@ export default async function handler(
             };
           }
         } catch (error) {
-          console.log('Second attempt failed:', error);
         }
       }
 
@@ -128,19 +126,12 @@ export default async function handler(
               items = response.data;
             }
 
-            console.log(`Found ${items.length} rooms in GetAll response`);
-
             // Find room by ID or room number
             const foundRoom = items.find((r: any) => {
               // Check various possible formats for room number
               const roomIdMatch = r.maPhong?.toString() === id.toString();
               const roomNumberMatch = r.soPhong?.toString() === id.toString();
               const roomNumberPrefixMatch = r.soPhong?.toString() === `p${id}`;
-
-              // For debugging
-              if (roomIdMatch || roomNumberMatch || roomNumberPrefixMatch) {
-                console.log(`Found matching room: ${JSON.stringify(r)}`);
-              }
 
               return roomIdMatch || roomNumberMatch || roomNumberPrefixMatch;
             });
@@ -187,7 +178,6 @@ export default async function handler(
             }
           }
         } catch (error) {
-          console.log('Third attempt failed:', error);
         }
       }
 
@@ -204,7 +194,6 @@ export default async function handler(
         data: room
       });
     } catch (error) {
-      console.error(`Error fetching room with ID ${id}:`, error);
       return res.status(500).json({
         success: false,
         message: 'Lỗi khi kết nối đến máy chủ'

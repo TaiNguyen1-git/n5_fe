@@ -33,8 +33,6 @@ export const serviceApi = {
   // Lấy tất cả dịch vụ với phân trang
   getAllServices: async (pageNumber: number = 1, pageSize: number = 10): Promise<ApiResponse<PaginatedResponse<DichVu>>> => {
     try {
-      console.log(`Fetching services with pagination: page ${pageNumber}, size ${pageSize}`);
-
       const response = await axios.get('/api/services', {
         params: {
           pageNumber,
@@ -42,9 +40,6 @@ export const serviceApi = {
         },
         timeout: 15000 // 15 second timeout
       });
-
-      console.log('Services API response:', response.data);
-
       if (response.data && response.data.success && response.data.data) {
         return {
           success: true,
@@ -64,7 +59,6 @@ export const serviceApi = {
         };
       }
     } catch (error: any) {
-      console.error('Error fetching services:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Không thể lấy danh sách dịch vụ',
@@ -82,7 +76,6 @@ export const serviceApi = {
   // Lấy tất cả dịch vụ không phân trang (cho backward compatibility)
   getAllServicesNoPagination: async (): Promise<DichVu[]> => {
     try {
-      console.log('Fetching all services without pagination...');
       const response = await serviceApi.getAllServices(1, 1000); // Get a large page
 
       if (response.success && response.data) {
@@ -91,7 +84,6 @@ export const serviceApi = {
 
       return [];
     } catch (error) {
-      console.error('Error fetching services without pagination:', error);
       return [];
     }
   },
@@ -102,7 +94,6 @@ export const serviceApi = {
       const response = await axios.get(`${BASE_URL}/DichVu/GetById?id=${id}`);
       return response.data;
     } catch (error) {
-      console.error(`Error fetching service with id ${id}:`, error);
       throw error;
     }
   },
@@ -113,7 +104,6 @@ export const serviceApi = {
       const response = await axios.post(`${BASE_URL}/DichVu/Create`, service);
       return response.data;
     } catch (error) {
-      console.error('Error creating service:', error);
       throw error;
     }
   },
@@ -132,10 +122,6 @@ export const serviceApi = {
         gia: service.gia,
         trangThai: service.trangThai
       };
-
-      console.log('Updating service with ID:', id);
-      console.log('Service data:', serviceData);
-
       // Thử nhiều cách gọi API
       const apiEndpoints = [
         // 1. Thông qua Next.js API route
@@ -172,7 +158,6 @@ export const serviceApi = {
       // Nếu tất cả các endpoint đều thất bại
       throw lastError || new Error('Không thể cập nhật dịch vụ sau khi thử tất cả các endpoint');
     } catch (error) {
-      console.error(`Error updating service with id ${id}:`, error);
       throw error;
     }
   },
@@ -183,7 +168,6 @@ export const serviceApi = {
       const response = await axios.delete(`${BASE_URL}/DichVu/Delete?id=${id}`);
       return response.data;
     } catch (error) {
-      console.error(`Error deleting service with id ${id}:`, error);
       throw error;
     }
   },
@@ -201,7 +185,6 @@ export const serviceApi = {
       const response = await axios.post(`${BASE_URL}/DichVuDat/Create`, dichVuDat);
       return response.data;
     } catch (error) {
-      console.error('Error booking service:', error);
       throw error;
     }
   },
@@ -212,7 +195,6 @@ export const serviceApi = {
       const response = await axios.get(`${BASE_URL}/DichVuDat/GetByUser?id=${userId}`);
       return response.data;
     } catch (error) {
-      console.error(`Error fetching booked services for user ${userId}:`, error);
       throw error;
     }
   },
@@ -223,7 +205,6 @@ export const serviceApi = {
       const response = await axios.put(`${BASE_URL}/DichVuDat/Cancel?id=${id}`);
       return response.data;
     } catch (error) {
-      console.error(`Error canceling booked service with id ${id}:`, error);
       throw error;
     }
   }

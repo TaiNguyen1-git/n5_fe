@@ -30,7 +30,7 @@ export const revenueService = {
 
       return 0;
     } catch (error) {
-      console.error('Error fetching total revenue:', error);
+
       return 0;
     }
   },
@@ -44,15 +44,13 @@ export const revenueService = {
         timeout: 15000 // 15 second timeout
       });
 
-      console.log('Revenue by date API response:', response.data);
-
       if (response.data && response.data.value) {
         return response.data.value;
       }
 
       return { tongDoanhThu: 0 };
     } catch (error) {
-      console.error(`Error fetching revenue for date ${date.format('YYYY-MM-DD')}:`, error);
+
       return { tongDoanhThu: 0 };
     }
   },
@@ -68,15 +66,13 @@ export const revenueService = {
         timeout: 15000 // 15 second timeout
       });
 
-      console.log('Revenue by month API response:', response.data);
-
       if (response.data && response.data.value) {
         return response.data.value;
       }
 
       return { tongDoanhThu: 0, thang: month, nam: year };
     } catch (error) {
-      console.error(`Error fetching revenue for month ${month}/${year}:`, error);
+
       return { tongDoanhThu: 0, thang: month, nam: year };
     }
   },
@@ -89,15 +85,13 @@ export const revenueService = {
         timeout: 15000 // 15 second timeout
       });
 
-      console.log('Revenue by year API response:', response.data);
-
       if (response.data && response.data.value) {
         return response.data.value;
       }
 
       return { tongDoanhThu: 0, nam: year };
     } catch (error) {
-      console.error(`Error fetching revenue for year ${year}:`, error);
+
       return { tongDoanhThu: 0, nam: year };
     }
   },
@@ -162,7 +156,7 @@ export const revenueService = {
               nam: currentDate.year()
             });
           } catch (err) {
-            console.error(`Error fetching revenue for date ${currentDate.format('YYYY-MM-DD')}:`, err);
+
             // Không thêm dữ liệu mẫu nếu có lỗi
           }
           currentDate = currentDate.add(1, 'day');
@@ -178,7 +172,7 @@ export const revenueService = {
             );
             results.push(monthlyRevenue);
           } catch (err) {
-            console.error(`Error fetching revenue for month ${currentMonth.format('YYYY-MM')}:`, err);
+
             // Không thêm dữ liệu mẫu nếu có lỗi
           }
           currentMonth = currentMonth.add(1, 'month');
@@ -191,7 +185,7 @@ export const revenueService = {
             const yearlyRevenue = await revenueService.getRevenueByYear(currentYear.year());
             results.push(yearlyRevenue);
           } catch (err) {
-            console.error(`Error fetching revenue for year ${currentYear.format('YYYY')}:`, err);
+
             // Không thêm dữ liệu mẫu nếu có lỗi
           }
           currentYear = currentYear.add(1, 'year');
@@ -205,7 +199,7 @@ export const revenueService = {
           // Thêm dữ liệu từ API
           results.push(yearlyRevenue);
         } catch (err) {
-          console.error(`Error fetching revenue for this year:`, err);
+
           // Không thêm dữ liệu mẫu nếu có lỗi
         }
       }
@@ -221,7 +215,7 @@ export const revenueService = {
 
       return results;
     } catch (error) {
-      console.error('Error fetching revenue for date range:', error);
+
       return [];
     }
   }

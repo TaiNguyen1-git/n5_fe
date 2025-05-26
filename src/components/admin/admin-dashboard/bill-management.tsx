@@ -44,7 +44,6 @@ const BillManagement = () => {
   const fetchCustomerData = async () => {
     setCustomerDataLoading(true);
     try {
-      console.log('Fetching all customers for admin bill management...');
       const response = await getAllCustomers(1, 1000); // Get a large number to get all customers
 
       if (response.success && response.data?.items) {
@@ -56,12 +55,9 @@ const BillManagement = () => {
           }
         });
         setCustomerMap(customerMapData);
-        console.log('Customer data loaded for admin bill management:', customerMapData);
       } else {
-        console.warn('Failed to fetch customers for admin bill management:', response.message);
       }
     } catch (error) {
-      console.error('Error fetching customers for admin bill management:', error);
     } finally {
       setCustomerDataLoading(false);
     }
@@ -173,8 +169,6 @@ const BillManagement = () => {
   const fetchBills = async () => {
     setLoading(true);
     try {
-      console.log('Fetching bills from API...');
-
       // Thêm timeout để tránh request quá lâu
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
@@ -189,8 +183,6 @@ const BillManagement = () => {
         });
 
         clearTimeout(timeoutId);
-        console.log('API response:', response.data);
-
         // Kiểm tra xem response.data có tồn tại và là mảng không
         if (response.data) {
           // Đảm bảo response.data là mảng
@@ -270,9 +262,6 @@ const BillManagement = () => {
                 createdAt = new Date().toISOString();
               }
             }
-
-            console.log(`Hóa đơn ${bill.maHD} - Ngày lập: ${bill.ngayLapHD}, Ngày tạo: ${bill.ngayTao}, Sử dụng: ${createdAt}`);
-
             // Lưu thông tin giảm giá
             const discount = bill.giamGia !== undefined ? bill.giamGia : null;
 
@@ -311,14 +300,12 @@ const BillManagement = () => {
         clearTimeout(timeoutId);
 
         if (fetchError.name === 'AbortError') {
-          console.error('Request timed out');
           throw new Error('Yêu cầu quá thời gian, sử dụng dữ liệu mẫu');
         } else {
           throw fetchError;
         }
       }
     } catch (error: any) {
-      console.error('Error fetching bills:', error);
       message.warning('Không thể kết nối đến API, hiển thị dữ liệu mẫu');
 
       // Sử dụng dữ liệu mẫu khi không thể kết nối đến API
@@ -373,8 +360,6 @@ const BillManagement = () => {
   // Fetch phương thức thanh toán từ backend
   const fetchPaymentMethods = async () => {
     try {
-      console.log('Fetching payment methods from API...');
-
       // Thêm timeout để tránh request quá lâu
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
@@ -389,8 +374,6 @@ const BillManagement = () => {
         });
 
         clearTimeout(timeoutId);
-        console.log('Payment methods API response:', response.data);
-
         // Kiểm tra xem response.data có tồn tại không
         if (response.data) {
           // Đảm bảo response.data là mảng
@@ -407,9 +390,7 @@ const BillManagement = () => {
 
           if (formattedMethods.length > 0) {
             setPaymentMethods(formattedMethods);
-            console.log('Formatted payment methods:', formattedMethods);
           } else {
-            console.warn('Không có phương thức thanh toán nào được tìm thấy trong dữ liệu API');
             setPaymentMethods(samplePaymentMethods);
           }
         } else {
@@ -419,16 +400,12 @@ const BillManagement = () => {
         clearTimeout(timeoutId);
 
         if (fetchError.name === 'AbortError') {
-          console.error('Request timed out');
           throw new Error('Yêu cầu quá thời gian, sử dụng dữ liệu mẫu');
         } else {
           throw fetchError;
         }
       }
     } catch (error) {
-      console.error('Error fetching payment methods:', error);
-      console.warn('Không thể kết nối đến API, hiển thị dữ liệu mẫu cho phương thức thanh toán');
-
       // Sử dụng dữ liệu mẫu khi không thể kết nối đến API
       setPaymentMethods(samplePaymentMethods);
     }
@@ -437,8 +414,6 @@ const BillManagement = () => {
   // Fetch trạng thái thanh toán từ backend
   const fetchPaymentStatuses = async () => {
     try {
-      console.log('Fetching payment statuses from API...');
-
       // Thêm timeout để tránh request quá lâu
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
@@ -453,8 +428,6 @@ const BillManagement = () => {
         });
 
         clearTimeout(timeoutId);
-        console.log('Payment statuses API response:', response.data);
-
         // Kiểm tra xem response.data có tồn tại không
         if (response.data) {
           // Đảm bảo response.data là mảng
@@ -470,9 +443,7 @@ const BillManagement = () => {
 
           if (formattedStatuses.length > 0) {
             setPaymentStatuses(formattedStatuses);
-            console.log('Formatted payment statuses:', formattedStatuses);
           } else {
-            console.warn('Không có trạng thái thanh toán nào được tìm thấy trong dữ liệu API');
             setPaymentStatuses(samplePaymentStatuses);
           }
         } else {
@@ -482,16 +453,12 @@ const BillManagement = () => {
         clearTimeout(timeoutId);
 
         if (fetchError.name === 'AbortError') {
-          console.error('Request timed out');
           throw new Error('Yêu cầu quá thời gian, sử dụng dữ liệu mẫu');
         } else {
           throw fetchError;
         }
       }
     } catch (error) {
-      console.error('Error fetching payment statuses:', error);
-      console.warn('Không thể kết nối đến API, hiển thị dữ liệu mẫu cho trạng thái thanh toán');
-
       // Sử dụng dữ liệu mẫu khi không thể kết nối đến API
       setPaymentStatuses(samplePaymentStatuses);
     }
@@ -502,15 +469,11 @@ const BillManagement = () => {
   // Fetch services from backend
   const fetchServices = async () => {
     try {
-      console.log('Fetching services from API...');
-      console.log('Current services state:', services);
-
       // Thêm timeout để tránh request quá lâu
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
 
       try {
-        console.log('Calling DichVu API...');
         const response = await axios.get(`${BASE_URL}/DichVu/GetAll`, {
           signal: controller.signal,
           headers: {
@@ -520,33 +483,23 @@ const BillManagement = () => {
         });
 
         clearTimeout(timeoutId);
-        console.log('Services API response:', response.data);
-
         // Kiểm tra xem response.data có tồn tại không
         if (response.data) {
-          console.log('Raw API response:', response.data);
-
           // Kiểm tra cấu trúc dữ liệu
           let serviceItems = [];
 
           // Kiểm tra nếu response.data có thuộc tính items (cấu trúc phân trang)
           if (response.data && response.data.items && Array.isArray(response.data.items)) {
-            console.log('Found paginated data structure with items array');
             serviceItems = response.data.items;
           }
           // Nếu response.data là mảng
           else if (Array.isArray(response.data)) {
-            console.log('Found array data structure');
             serviceItems = response.data;
           }
           // Nếu response.data là object đơn lẻ
           else if (response.data) {
-            console.log('Found single object data structure');
             serviceItems = [response.data];
           }
-
-          console.log('Extracted service items:', serviceItems);
-
           // Xử lý dữ liệu dịch vụ
           const formattedServices = serviceItems
             .filter((service: any) => {
@@ -559,8 +512,6 @@ const BillManagement = () => {
               return true;
             })
             .map((service: any) => {
-              console.log('Processing service item:', service);
-
               // Tạo đối tượng dịch vụ đã định dạng
               const formattedService = {
                 maDichVu: service.maDichVu,
@@ -569,16 +520,12 @@ const BillManagement = () => {
                 moTa: service.moTa || '',
                 trangThai: service.trangThai
               };
-
-              console.log('Formatted service:', formattedService);
               return formattedService;
             });
 
           if (formattedServices.length > 0) {
             setServices(formattedServices);
-            console.log('Formatted services:', formattedServices);
           } else {
-            console.warn('Không có dịch vụ nào được tìm thấy trong dữ liệu API');
             setServices([]);
             message.warning('Không tìm thấy thông tin dịch vụ');
           }
@@ -589,22 +536,18 @@ const BillManagement = () => {
         clearTimeout(timeoutId);
 
         if (fetchError.name === 'AbortError') {
-          console.error('Request timed out');
           throw new Error('Yêu cầu quá thời gian, không thể lấy danh sách dịch vụ');
         } else {
           throw fetchError;
         }
       }
     } catch (error) {
-      console.error('Error fetching services:', error);
     }
   };
 
   // Fetch customers from backend
   const fetchCustomers = async () => {
     try {
-      console.log('Fetching customers from API...');
-
       // Thêm timeout để tránh request quá lâu
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
@@ -619,8 +562,6 @@ const BillManagement = () => {
         });
 
         clearTimeout(timeoutId);
-        console.log('Customers API response:', response.data);
-
         // Kiểm tra xem response.data có tồn tại không
         if (response.data) {
           // Đảm bảo response.data là mảng
@@ -644,9 +585,7 @@ const BillManagement = () => {
 
           if (formattedCustomers.length > 0) {
             setCustomers(formattedCustomers);
-            console.log('Formatted customers:', formattedCustomers);
           } else {
-            console.warn('Không có khách hàng nào được tìm thấy trong dữ liệu API');
             setCustomers([]);
             message.warning('Không tìm thấy thông tin khách hàng');
           }
@@ -657,16 +596,12 @@ const BillManagement = () => {
         clearTimeout(timeoutId);
 
         if (fetchError.name === 'AbortError') {
-          console.error('Request timed out');
           throw new Error('Yêu cầu quá thời gian, sử dụng dữ liệu mẫu');
         } else {
           throw fetchError;
         }
       }
     } catch (error) {
-      console.error('Error fetching customers:', error);
-      console.warn('Không thể kết nối đến API, hiển thị dữ liệu mẫu cho khách hàng');
-
       // Không sử dụng dữ liệu mẫu
       setCustomers([]);
       message.error('Không thể kết nối đến API khách hàng');
@@ -685,12 +620,8 @@ const BillManagement = () => {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
-          console.log('Deleting bill with ID:', id);
-
           // Gửi yêu cầu xóa hóa đơn đến backend
           const response = await axios.delete(`${BASE_URL}/HoaDon/Delete?id=${id}`);
-          console.log('API response for delete:', response.data);
-
           // Hiển thị thông báo thành công
           Modal.success({
             title: 'Xóa hóa đơn thành công',
@@ -704,7 +635,6 @@ const BillManagement = () => {
             }
           });
         } catch (error) {
-          console.error('Error deleting bill:', error);
           Modal.error({
             title: 'Lỗi',
             content: 'Không thể xóa hóa đơn. Vui lòng thử lại sau.'
@@ -766,9 +696,6 @@ const BillManagement = () => {
           giamGia: discount || 0,
           trangThai: 0 // Trạng thái ban đầu
         };
-
-        console.log('Dữ liệu hóa đơn mới:', newBillData);
-
         try {
           // Bước 1: Tạo hóa đơn mới
           const billResponse = await fetch(`${BASE_URL}/HoaDon/Create`, {
@@ -785,8 +712,6 @@ const BillManagement = () => {
           }
 
           const billData = await billResponse.json();
-          console.log('API response for create bill:', billData);
-
           let hasServiceError = false;
 
           // Nếu có chi tiết dịch vụ, thêm chi tiết hóa đơn dịch vụ
@@ -809,14 +734,11 @@ const BillManagement = () => {
                 });
 
                 if (!serviceResponse.ok) {
-                  console.error(`Error creating service detail: ${serviceResponse.status}`);
                   hasServiceError = true;
                 }
 
                 const serviceData = await serviceResponse.json();
-                console.log('API response for create service detail:', serviceData);
               } catch (serviceError) {
-                console.error('Error creating service detail:', serviceError);
                 hasServiceError = true;
               }
             }
@@ -851,8 +773,6 @@ const BillManagement = () => {
             });
           }
         } catch (apiError: any) {
-          console.error('API Error:', apiError);
-
           // Hiển thị thông báo lỗi chi tiết
           let errorMessage = 'Không thể tạo hóa đơn mới. Vui lòng thử lại sau.';
 
@@ -866,14 +786,12 @@ const BillManagement = () => {
           });
         }
       } catch (error) {
-        console.error('Error creating bill:', error);
         Modal.error({
           title: 'Lỗi',
           content: 'Không thể tạo hóa đơn mới. Vui lòng thử lại sau.'
         });
       }
     }).catch(errorInfo => {
-      console.error('Form validation failed:', errorInfo);
       message.error('Vui lòng điền đầy đủ thông tin');
     });
   };
@@ -890,7 +808,6 @@ const BillManagement = () => {
   const handleSaveEdit = () => {
     form.validateFields().then(async values => {
       try {
-        console.log('Form values for edit:', values);
         const { paymentMethod } = values;
 
         // Chuẩn bị dữ liệu cập nhật theo cấu trúc API
@@ -902,13 +819,8 @@ const BillManagement = () => {
           giamGia: editingBill.discount || 0,
           trangThai: editingBill.status === 'paid' ? 1 : editingBill.status === 'cancelled' ? 0 : 2
         };
-
-        console.log('Update data to be sent:', updateData);
-
         // Gửi yêu cầu cập nhật hóa đơn đến backend
         const response = await axios.put(`${BASE_URL}/HoaDon/Update`, updateData);
-        console.log('API response for update:', response.data);
-
         // Hiển thị thông báo thành công
         Modal.success({
           title: 'Cập nhật thành công',
@@ -934,14 +846,12 @@ const BillManagement = () => {
           }
         });
       } catch (error) {
-        console.error('Error updating bill:', error);
         Modal.error({
           title: 'Lỗi',
           content: 'Không thể cập nhật hóa đơn. Vui lòng thử lại sau.'
         });
       }
     }).catch(errorInfo => {
-      console.error('Form validation failed:', errorInfo);
       message.error('Vui lòng điền đầy đủ thông tin');
     });
   };
@@ -955,8 +865,6 @@ const BillManagement = () => {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
-          console.log('Confirming payment for bill:', bill);
-
           // Chuẩn bị dữ liệu cập nhật theo cấu trúc API
           const updateData = {
             maHD: bill.id,
@@ -966,13 +874,8 @@ const BillManagement = () => {
             giamGia: bill.discount || 0,
             trangThai: 1 // Paid status
           };
-
-          console.log('Payment update data to be sent:', updateData);
-
           // Gửi yêu cầu cập nhật hóa đơn đến backend
           const response = await axios.put(`${BASE_URL}/HoaDon/Update`, updateData);
-          console.log('API response for payment update:', response.data);
-
           // Hiển thị thông báo thành công
           Modal.success({
             title: 'Thanh toán thành công',
@@ -988,7 +891,6 @@ const BillManagement = () => {
             }
           });
         } catch (error) {
-          console.error('Error updating payment status:', error);
           Modal.error({
             title: 'Lỗi',
             content: 'Không thể cập nhật trạng thái thanh toán. Vui lòng thử lại sau.'
@@ -1573,13 +1475,8 @@ const BillManagement = () => {
                       <Select
                         placeholder="Chọn dịch vụ"
                         onChange={(value) => {
-                          console.log('Selected service ID:', value);
-                          console.log('Available services:', services);
-
                           // Tìm dịch vụ được chọn
                           const selectedService = services.find(s => s.maDichVu === value);
-                          console.log('Selected service:', selectedService);
-
                           if (selectedService) {
                             // Cập nhật đơn giá tự động
                             const currentFieldValue = form.getFieldValue(['serviceDetails', name]) || {};
@@ -1587,9 +1484,6 @@ const BillManagement = () => {
                               ...currentFieldValue,
                               donGia: selectedService.donGia
                             };
-
-                            console.log('Updating form field:', name, 'with value:', updatedValue);
-
                             // Cập nhật trường donGia
                             form.setFields([
                               {

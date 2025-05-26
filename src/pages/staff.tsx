@@ -12,25 +12,18 @@ const StaffPage = () => {
   useEffect(() => {
     const checkAuth = async () => {
       setAuthChecking(true);
-      console.log('Staff Page - Kiểm tra xác thực người dùng');
-
       // Thêm độ trễ nhỏ để đảm bảo cookies được đọc đúng
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Kiểm tra xác thực người dùng
       const isAuth = isAuthenticated();
-      console.log('Staff Page - Kết quả kiểm tra xác thực:', isAuth);
-
       if (!isAuth) {
-        console.log('Staff Page - Người dùng chưa xác thực, chuyển hướng đến trang đăng nhập');
         router.push('/login');
         return;
       }
 
       // Lấy thông tin người dùng hiện tại
       const user = getCurrentUser();
-      console.log('Staff Page - Thông tin người dùng đầy đủ:', user);
-
       // Xử lý loaiTK đảm bảo là số
       const loaiTK = typeof user?.loaiTK === 'string' ? parseInt(user.loaiTK, 10) : user?.loaiTK;
 
@@ -38,18 +31,9 @@ const StaffPage = () => {
       const isStaff = user?.role === 'staff' || loaiTK === 2;
 
       // Log chi tiết thông tin quyền truy cập
-      console.log('Staff Page - Kiểm tra quyền truy cập:', {
-        username: user?.username,
-        role: user?.role,
-        loaiTK: loaiTK,
-        isStaff: isStaff
-      });
-
       if (!isStaff) {
-        console.log('Staff Page - Người dùng không phải nhân viên, chuyển hướng về trang chủ');
         router.push('/');
       } else {
-        console.log('Staff Page - Xác nhận người dùng là nhân viên, cho phép truy cập');
         setIsAuthorized(true);
       }
 

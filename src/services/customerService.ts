@@ -87,12 +87,10 @@ export const createCustomer = async (customerData: Customer): Promise<ApiRespons
       throw error || new Error('Failed to create customer with all available URLs');
     }
 
-    console.log('Customer creation response status:', response.status);
-    console.log('Customer creation response data:', JSON.stringify(response.data, null, 2));
 
     // Kiểm tra xem response có chứa dữ liệu khách hàng không
     if (!response.data || !response.data.data || !response.data.data.maKH) {
-      console.warn('API response does not contain customer ID (maKH):', response.data);
+
     }
 
     return {
@@ -101,7 +99,6 @@ export const createCustomer = async (customerData: Customer): Promise<ApiRespons
       data: response.data
     };
   } catch (error) {
-    console.error('Error creating customer:', error);
 
     // Xử lý lỗi cụ thể
     if (axios.isAxiosError(error)) {
@@ -142,7 +139,7 @@ export const getAllCustomers = async (pageNumber: number = 1, pageSize: number =
       timeout: 15000 // 15 second timeout
     });
 
-    console.log('Customers API response:', response.data);
+
 
     if (response.data && response.data.success && response.data.data) {
       return {
@@ -163,7 +160,7 @@ export const getAllCustomers = async (pageNumber: number = 1, pageSize: number =
       };
     }
   } catch (error: any) {
-    console.error('Error fetching customers:', error);
+
     return {
       success: false,
       message: error.response?.data?.message || 'Không thể lấy danh sách khách hàng',
@@ -199,7 +196,6 @@ export const getAllCustomersNoPagination = async (): Promise<ApiResponse<Custome
       data: []
     };
   } catch (error) {
-    console.error('Error fetching customers without pagination:', error);
     return {
       success: false,
       message: 'Không thể lấy danh sách khách hàng',
@@ -223,7 +219,6 @@ export const getCustomerById = async (customerId: number): Promise<ApiResponse<C
       data: response.data
     };
   } catch (error) {
-    console.error(`Error fetching customer with ID ${customerId}:`, error);
     return {
       success: false,
       message: 'Không thể lấy thông tin khách hàng. Vui lòng thử lại sau.'

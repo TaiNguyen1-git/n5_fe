@@ -55,7 +55,6 @@ export default async function handler(
         data: response.data
       });
     } catch (error: any) {
-      console.error(`Error fetching user with id ${id}:`, error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy thông tin người dùng'
@@ -64,23 +63,17 @@ export default async function handler(
   } else if (req.method === 'PUT') {
     try {
       // Log request body for debugging
-      console.log(`PUT /api/users/${id} - Request body:`, req.body);
-
       // Update user
       const userData = req.body;
 
       // Update user through backend API
-      console.log('API route: Updating user with data:', userData);
       const response = await axios.put(`${BACKEND_API_URL}/User/Update`, userData);
-      console.log('API route: Update user response:', response.data);
-
       return res.status(200).json({
         success: true,
         message: 'Cập nhật người dùng thành công',
         data: response.data
       });
     } catch (error: any) {
-      console.error(`Error updating user with id ${id}:`, error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi cập nhật thông tin người dùng'
@@ -89,17 +82,13 @@ export default async function handler(
   } else if (req.method === 'DELETE') {
     try {
       // Delete user through backend API
-      console.log(`API route: Deleting user with id ${id}`);
       const response = await axios.delete(`${BACKEND_API_URL}/User/Delete?id=${id}`);
-      console.log('API route: Delete user response:', response.data);
-
       return res.status(200).json({
         success: true,
         message: 'Xóa người dùng thành công',
         data: response.data
       });
     } catch (error: any) {
-      console.error(`Error deleting user with id ${id}:`, error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi xóa người dùng'

@@ -519,7 +519,6 @@ Tổng doanh thu: ${item.totalRevenue.toLocaleString('vi-VN')} VNĐ`}
         const totalRevenueValue = await revenueService.getTotalRevenue();
         setTotalRevenue(totalRevenueValue);
       } catch (totalRevenueError) {
-        console.error('Error fetching total revenue:', totalRevenueError);
         // Nếu không lấy được tổng doanh thu, sử dụng tổng từ dữ liệu chi tiết
       }
 
@@ -566,9 +565,6 @@ Tổng doanh thu: ${item.totalRevenue.toLocaleString('vi-VN')} VNĐ`}
             roomRevenue = Math.round(totalRevenue * 0.8);
             serviceRevenue = Math.round(totalRevenue * 0.2);
           }
-
-          console.log(`Revenue data for ${dateStr}:`, { totalRevenue, roomRevenue, serviceRevenue });
-
           return {
             id: index + 1,
             date: dateStr,
@@ -584,7 +580,6 @@ Tổng doanh thu: ${item.totalRevenue.toLocaleString('vi-VN')} VNĐ`}
         // Cập nhật state với dữ liệu doanh thu mới
         setRevenueData(formattedRevenueData);
       } catch (revenueError) {
-        console.error('Error fetching revenue data:', revenueError);
         message.warning('Không thể lấy dữ liệu doanh thu từ API. Sử dụng dữ liệu từ hóa đơn.');
 
         // Nếu không lấy được dữ liệu doanh thu, sử dụng phương pháp cũ
@@ -632,7 +627,6 @@ Tổng doanh thu: ${item.totalRevenue.toLocaleString('vi-VN')} VNĐ`}
       processCustomerData();
       processRoomTypeData();
     } catch (error) {
-      console.error('Error fetching data:', error);
       message.error('Không thể lấy dữ liệu. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);

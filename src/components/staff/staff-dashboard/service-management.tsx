@@ -61,8 +61,6 @@ const ServiceManagement: React.FC = () => {
   const fetchServices = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoading(true);
     try {
-      console.log(`Fetching services with pagination: page ${pageNumber}, size ${pageSize}`);
-
       const response = await serviceApi.getAllServices(pageNumber, pageSize);
 
       if (response.success && response.data) {
@@ -85,14 +83,11 @@ const ServiceManagement: React.FC = () => {
           pageSize: paginatedData.pageSize,
           total: paginatedData.totalItems,
         }));
-
-        console.log('Services loaded successfully with pagination:', formattedData.length);
         message.success('Tải dữ liệu dịch vụ thành công');
       } else {
         throw new Error(response.message || 'Failed to fetch services');
       }
     } catch (error) {
-      console.error("Error fetching services:", error);
       message.error("Không thể tải dữ liệu dịch vụ. Vui lòng thử lại sau.");
 
       // Fallback: try to get services without pagination
@@ -113,7 +108,6 @@ const ServiceManagement: React.FC = () => {
         }));
         message.warning('Đã tải dữ liệu dịch vụ với phương thức dự phòng');
       } catch (fallbackError) {
-        console.error("Fallback also failed:", fallbackError);
       }
     } finally {
       setLoading(false);
@@ -244,7 +238,6 @@ const ServiceManagement: React.FC = () => {
       message.success('Xóa dịch vụ thành công');
       fetchServices(pagination.current, pagination.pageSize);
     } catch (error) {
-      console.error("Lỗi khi xóa dịch vụ:", error);
       message.error("Không thể xóa dịch vụ. Vui lòng thử lại sau.");
     }
   };
@@ -303,7 +296,6 @@ const ServiceManagement: React.FC = () => {
       setIsModalVisible(false);
       fetchServices(pagination.current, pagination.pageSize);
     } catch (error) {
-      console.error("Lỗi khi lưu dịch vụ:", error);
       message.error("Không thể lưu dịch vụ. Vui lòng kiểm tra lại thông tin.");
     }
   };

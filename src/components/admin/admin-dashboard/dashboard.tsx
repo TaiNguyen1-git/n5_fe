@@ -34,7 +34,6 @@ const Dashboard = () => {
     try {
       await Promise.all([fetchStats(), fetchRecentBookings()]);
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
       message.error("Không thể tải dữ liệu. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
@@ -53,7 +52,6 @@ const Dashboard = () => {
 
       setStats(data);
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
       message.error('Không thể tải dữ liệu thống kê. Vui lòng thử lại sau.');
     } finally {
       setStatsLoading(false);
@@ -68,7 +66,6 @@ const Dashboard = () => {
 
       setRecentBookings(data);
     } catch (error) {
-      console.error('Error fetching recent bookings:', error);
       message.error('Không thể tải dữ liệu đặt phòng gần đây. Vui lòng thử lại sau.');
     } finally {
       setBookingsLoading(false);

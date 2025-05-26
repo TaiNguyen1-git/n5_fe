@@ -29,12 +29,7 @@ export default async function handler(
         message: 'Thiếu tham số roomNumber'
       });
     }
-
-    console.log(`API room-detail - Đang tìm kiếm phòng với tham số: ${roomNumber}`);
-
     // Gọi API GetAll để lấy danh sách tất cả các phòng
-    console.log('Gọi API GetAll để lấy danh sách phòng');
-
     try {
       // Gọi API với pagination để lấy tất cả phòng
       const response = await axios.get('https://ptud-web-1.onrender.com/api/Phong/GetAll', {
@@ -49,21 +44,14 @@ export default async function handler(
       });
 
       if (response.status === 200 && response.data) {
-        console.log('API GetAll trả về thành công');
-
         // Kiểm tra xem response.data có trường items không
         const rooms = response.data.items || response.data;
 
         if (!Array.isArray(rooms)) {
           throw new Error('Dữ liệu trả về không phải là mảng');
         }
-
-        console.log(`Tìm thấy ${rooms.length} phòng từ API GetAll`);
-
         // Debug: Log một vài phòng đầu tiên để xem cấu trúc dữ liệu
         if (rooms.length > 0) {
-          console.log('Cấu trúc dữ liệu phòng đầu tiên:', JSON.stringify(rooms[0], null, 2));
-          console.log('Danh sách số phòng có sẵn:', rooms.map((r: any) => r.soPhong || r.maPhong).slice(0, 20));
         }
 
         // Tìm phòng theo tham số (có thể là mã phòng, số phòng hoặc tên phòng)
@@ -73,14 +61,11 @@ export default async function handler(
         foundRoom = rooms.find((room: any) =>
           room.soPhong?.toString() === roomNumber.toString()
         );
-        console.log(`Tìm theo số phòng ${roomNumber}: ${foundRoom ? 'Tìm thấy' : 'Không tìm thấy'}`);
-
         // Nếu không tìm thấy theo số phòng, thử tìm theo số phòng với prefix 'p'
         if (!foundRoom && roomNumber.toString().startsWith('p')) {
           foundRoom = rooms.find((room: any) =>
             room.soPhong?.toString() === roomNumber.toString()
           );
-          console.log(`Tìm theo số phòng với prefix ${roomNumber}: ${foundRoom ? 'Tìm thấy' : 'Không tìm thấy'}`);
         }
 
         // Nếu không tìm thấy theo số phòng, thử tìm theo mã phòng
@@ -88,7 +73,6 @@ export default async function handler(
           foundRoom = rooms.find((room: any) =>
             room.maPhong?.toString() === roomNumber.toString()
           );
-          console.log(`Tìm theo mã phòng ${roomNumber}: ${foundRoom ? 'Tìm thấy' : 'Không tìm thấy'}`);
         }
 
         // Nếu vẫn không tìm thấy, thử tìm theo số phòng với format khác (ví dụ: p201, P201)
@@ -97,7 +81,6 @@ export default async function handler(
           foundRoom = rooms.find((room: any) =>
             room.soPhong?.toString().toLowerCase() === roomNumberWithP.toLowerCase()
           );
-          console.log(`Tìm theo số phòng với prefix p ${roomNumberWithP}: ${foundRoom ? 'Tìm thấy' : 'Không tìm thấy'}`);
         }
 
         // Nếu vẫn không tìm thấy, thử tìm theo tên phòng
@@ -105,7 +88,6 @@ export default async function handler(
           foundRoom = rooms.find((room: any) =>
             room.ten?.toString().toLowerCase() === roomNumber.toString().toLowerCase()
           );
-          console.log(`Tìm theo tên phòng ${roomNumber}: ${foundRoom ? 'Tìm thấy' : 'Không tìm thấy'}`);
         }
 
         // Nếu vẫn không tìm thấy, thử tìm kiếm mờ rộng hơn (tên phòng chứa chuỗi tìm kiếm)
@@ -113,7 +95,6 @@ export default async function handler(
           foundRoom = rooms.find((room: any) =>
             room.ten?.toString().toLowerCase().includes(roomNumber.toString().toLowerCase())
           );
-          console.log(`Tìm theo tên phòng chứa ${roomNumber}: ${foundRoom ? 'Tìm thấy' : 'Không tìm thấy'}`);
         }
 
         // Cuối cùng, thử tìm theo số phòng chứa chuỗi tìm kiếm
@@ -121,17 +102,12 @@ export default async function handler(
           foundRoom = rooms.find((room: any) =>
             room.soPhong?.toString().includes(roomNumber.toString())
           );
-          console.log(`Tìm theo số phòng chứa ${roomNumber}: ${foundRoom ? 'Tìm thấy' : 'Không tìm thấy'}`);
         }
 
         if (foundRoom) {
-          console.log('Tìm thấy phòng:', foundRoom);
-
           // Chuyển đổi dữ liệu từ backend sang định dạng frontend cần
           try {
             // Lấy giá từ loaiPhong.giaPhong nếu có
-            console.log('Room data from API:', JSON.stringify(foundRoom, null, 2));
-
             // Kiểm tra cấu trúc dữ liệu và lấy giá từ loaiPhong
             let roomPrice = null;
             if (foundRoom.giaTien) {
@@ -157,16 +133,9 @@ export default async function handler(
                   roomPrice = 500000; // Giá mặc định
               }
             }
-
-            console.log('Extracted room price:', roomPrice);
-
             // Xử lý mô tả và tiện nghi
             let description = foundRoom.moTa || 'Phòng tiêu chuẩn với đầy đủ tiện nghi cơ bản';
             let features = ['Wi-Fi miễn phí', 'Điều hòa', 'TV', 'Tủ lạnh']; // Default features
-
-            console.log('foundRoom.moTa:', foundRoom.moTa);
-            console.log('description before processing:', description);
-
             // Nếu có mô tả từ API, kiểm tra xem có phải là danh sách tiện nghi không
             if (foundRoom.moTa) {
               // Nếu mô tả chứa dấu phẩy, có thể là danh sách tiện nghi
@@ -179,10 +148,6 @@ export default async function handler(
                 description = foundRoom.moTa;
               }
             }
-
-            console.log('Final description:', description);
-            console.log('Final features:', features);
-
             const formattedData = {
               id: foundRoom.maPhong?.toString() || '0',
               maPhong: foundRoom.maPhong || 0,
@@ -196,18 +161,12 @@ export default async function handler(
               images: foundRoom.hinhAnh ? [foundRoom.hinhAnh] : ['/images/rooms/default-room.jpg'],
               features: features
             };
-
-            console.log('Final formattedData.moTa:', formattedData.moTa);
-            console.log('Final formattedData.features:', formattedData.features);
-            console.log('Final formattedData:', JSON.stringify(formattedData, null, 2));
-
             return res.status(200).json({
               success: true,
               message: 'Lấy thông tin phòng thành công',
               data: formattedData
             });
           } catch (formatError: any) {
-            console.error('Lỗi khi định dạng dữ liệu:', formatError.message || 'Unknown error');
             return res.status(200).json({
               success: true,
               message: 'Lấy thông tin phòng thành công nhưng có lỗi định dạng',
@@ -215,7 +174,6 @@ export default async function handler(
             });
           }
         } else {
-          console.log(`Không tìm thấy phòng nào với tham số: ${roomNumber}`);
           return res.status(404).json({
             success: false,
             message: 'Không tìm thấy thông tin phòng',
@@ -226,8 +184,6 @@ export default async function handler(
         throw new Error(`API trả về trạng thái không thành công: ${response.status}`);
       }
     } catch (apiError: any) {
-      console.error('Lỗi khi gọi API GetAll:', apiError.message || 'Unknown error');
-
       // Trả về lỗi 500
       return res.status(500).json({
         success: false,
@@ -236,7 +192,6 @@ export default async function handler(
       });
     }
   } catch (error: any) {
-    console.error('Room Detail handler - Lỗi:', error.message || 'Unknown error');
     return res.status(500).json({
       success: false,
       message: 'Đã xảy ra lỗi khi lấy thông tin phòng',

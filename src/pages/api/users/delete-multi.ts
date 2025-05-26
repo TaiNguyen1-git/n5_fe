@@ -31,21 +31,13 @@ export default async function handler(
 
   if (req.method === 'POST') {
     try {
-      console.log('delete-multi API route called with body:', req.body);
       const { id } = req.body;
-
-      console.log('Extracted ID:', id, 'Type:', typeof id);
-
       if (!id) {
-        console.error('ID is missing in request body');
         return res.status(400).json({
           success: false,
           message: 'ID người dùng là bắt buộc'
         });
       }
-
-      console.log(`API route delete-multi: Deleting user with id ${id}`);
-
       // Thử nhiều cách khác nhau để gọi API xóa
       let success = false;
       let responseData = null;
@@ -53,9 +45,7 @@ export default async function handler(
 
       // Cách 1: Sử dụng GET
       try {
-        console.log('Method 1: Using GET');
         const response = await axios.get(`${BACKEND_API_URL}/User/Delete?id=${id}`);
-        console.log('Method 1 response:', response.data);
         success = true;
         responseData = response.data;
         return res.status(200).json({
@@ -64,14 +54,11 @@ export default async function handler(
           data: responseData
         });
       } catch (error1) {
-        console.error('Method 1 failed:', error1);
         errorMessage += 'GET failed; ';
 
         // Cách 2: Sử dụng POST
         try {
-          console.log('Method 2: Using POST');
           const response = await axios.post(`${BACKEND_API_URL}/User/Delete?id=${id}`);
-          console.log('Method 2 response:', response.data);
           success = true;
           responseData = response.data;
           return res.status(200).json({
@@ -80,14 +67,11 @@ export default async function handler(
             data: responseData
           });
         } catch (error2) {
-          console.error('Method 2 failed:', error2);
           errorMessage += 'POST failed; ';
 
           // Cách 3: Sử dụng DELETE
           try {
-            console.log('Method 3: Using DELETE');
             const response = await axios.delete(`${BACKEND_API_URL}/User/Delete?id=${id}`);
-            console.log('Method 3 response:', response.data);
             success = true;
             responseData = response.data;
             return res.status(200).json({
@@ -96,7 +80,6 @@ export default async function handler(
               data: responseData
             });
           } catch (error3) {
-            console.error('Method 3 failed:', error3);
             errorMessage += 'DELETE failed; ';
           }
         }
@@ -115,7 +98,6 @@ export default async function handler(
         });
       }
     } catch (error) {
-      console.error('Error deleting user:', error);
       return res.status(500).json({
         success: false,
         message: 'Đã xảy ra lỗi khi xóa người dùng'

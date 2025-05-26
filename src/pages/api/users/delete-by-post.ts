@@ -31,24 +31,17 @@ export default async function handler(
 
   if (req.method === 'POST') {
     try {
-      console.log('delete-by-post API route called with body:', req.body);
       const { id } = req.body;
 
-      console.log('Extracted ID:', id, 'Type:', typeof id);
-
       if (!id) {
-        console.error('ID is missing in request body');
         return res.status(400).json({
           success: false,
           message: 'ID người dùng là bắt buộc'
         });
       }
 
-      console.log(`API route delete-by-post: Deleting user with id ${id}`);
-
       // Sử dụng phương thức DELETE để xóa người dùng
       const response = await axios.delete(`${BACKEND_API_URL}/User/Delete?id=${id}`);
-      console.log('Delete API response:', response.data);
 
       return res.status(200).json({
         success: true,
@@ -56,7 +49,6 @@ export default async function handler(
         data: response.data
       });
     } catch (error) {
-      console.error('Error deleting user:', error);
       return res.status(500).json({
         success: false,
         message: 'Đã xảy ra lỗi khi xóa người dùng'

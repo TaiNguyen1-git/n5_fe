@@ -116,11 +116,9 @@ const WorkShiftManagement: React.FC = () => {
     setLoading(true);
     try {
       const data = await workShiftService.getAllWorkShifts();
-      console.log('Fetched work shifts data:', data);
       setWorkShifts(data);
       setFilteredWorkShifts(data); // Initialize filtered data with all data
     } catch (error: any) {
-      console.error('Error fetching work shifts:', error);
 
       // Implement retry logic (max 3 retries)
       if (retryCount < 3) {
@@ -143,19 +141,13 @@ const WorkShiftManagement: React.FC = () => {
   const fetchEmployees = async () => {
     try {
       const data = await employeeService.getAllEmployees();
-      console.log('Fetched employees data:', data);
-
       // Kiểm tra dữ liệu nhân viên
       if (data && data.length > 0) {
-        console.log('First employee:', data[0]);
-        console.log('Employee fields:', Object.keys(data[0]));
       } else {
-        console.warn('No employees found or empty array returned');
       }
 
       setEmployees(data);
     } catch (error) {
-      console.error('Error fetching employees:', error);
       message.error('Không thể tải danh sách nhân viên.');
       setEmployees([]);
     }
@@ -163,7 +155,6 @@ const WorkShiftManagement: React.FC = () => {
 
   // Handle edit work shift
   const handleEdit = (workShift: WorkShift) => {
-    console.log('Editing work shift:', workShift);
     setEditingWorkShift(workShift);
     form.setFieldsValue({
       tenCa: workShift.tenCa,
@@ -187,7 +178,6 @@ const WorkShiftManagement: React.FC = () => {
       message.success('Xóa ca làm thành công');
       fetchWorkShifts();
     } catch (error) {
-      console.error('Error deleting work shift:', error);
       message.error('Không thể xóa ca làm. Vui lòng thử lại sau.');
     }
   };
@@ -213,9 +203,6 @@ const WorkShiftManagement: React.FC = () => {
           gioKetThuc: values.gioKetThuc ? values.gioKetThuc.format('HH:mm') : null,
           ngayLamViec: values.ngayLamViec ? values.ngayLamViec.format('YYYY-MM-DD') : null,
         };
-
-        console.log('Sending data to API:', formattedValues);
-
         if (editingWorkShift) {
           // Update existing work shift
           await workShiftService.updateWorkShift(editingWorkShift.id!, formattedValues);
@@ -229,7 +216,6 @@ const WorkShiftManagement: React.FC = () => {
         setIsModalVisible(false);
         fetchWorkShifts();
       } catch (error) {
-        console.error('Error saving work shift:', error);
         message.error('Không thể lưu ca làm. Vui lòng thử lại sau.');
       }
     });

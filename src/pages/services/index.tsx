@@ -133,7 +133,6 @@ const Services = memo(() => {
     try {
       setLoading(true);
       setError(null);
-      console.log(`Fetching services: page ${pageNumber}, size ${pageSize}`);
 
       const response = await serviceApi.getAllServices(pageNumber, pageSize);
 
@@ -152,12 +151,11 @@ const Services = memo(() => {
           total: paginatedData.totalItems,
         }));
 
-        console.log('Services loaded successfully:', mappedServices.length);
       } else {
         throw new Error(response.message || 'Failed to fetch services');
       }
     } catch (err: any) {
-      console.error('Error fetching services:', err);
+
       setError(err?.message || 'Không thể tải dữ liệu dịch vụ. Vui lòng thử lại sau.');
 
       // Fallback: try to get services without pagination
@@ -171,7 +169,7 @@ const Services = memo(() => {
         }));
         setError(null);
       } catch (fallbackErr) {
-        console.error('Fallback also failed:', fallbackErr);
+
       }
     } finally {
       setLoading(false);

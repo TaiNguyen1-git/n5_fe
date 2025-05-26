@@ -128,8 +128,6 @@ const RoomManagement = () => {
     setError('');
 
     try {
-      console.log(`Fetching rooms with pagination: page ${pageNumber}, size ${pageSize}`);
-
       // Use the new getRooms service with pagination
       const response = await getRooms(undefined, pageNumber, pageSize);
 
@@ -154,15 +152,10 @@ const RoomManagement = () => {
         throw new Error(response.message || 'Failed to fetch rooms');
       }
     } catch (error) {
-      console.error('Error fetching rooms with pagination:', error);
-
       // Fallback to old API method
-      console.log('Falling back to old API method...');
-
       // Try each API endpoint in sequence
       for (let i = 0; i < API_URLS.length; i++) {
         try {
-          console.log(`Trying API endpoint: ${API_URLS[i]}`);
           const response = await axios.get(API_URLS[i], {
             timeout: 10000, // 10 second timeout
             headers: {
@@ -200,16 +193,12 @@ const RoomManagement = () => {
           }
 
           // If we get here, the response format wasn't recognized
-          console.warn(`Unrecognized data format from ${API_URLS[i]}`);
-
         } catch (err) {
-          console.error(`Error fetching rooms from ${API_URLS[i]}:`, err);
           // Continue to the next API endpoint
         }
       }
 
       // If all API calls failed, use mock data as last resort
-      console.warn('All API endpoints failed, using mock data');
       setRooms(MOCK_ROOMS);
       setPagination(prev => ({
         ...prev,
@@ -280,8 +269,6 @@ const RoomManagement = () => {
       };
 
       // Hiển thị thông tin đang gửi lên API để debug
-      console.log('Sending update data:', updateData);
-
       // Thử các endpoint API khác nhau
       const apiEndpoints = [
         `/api/Phong/Update/${values.soPhong}`,
@@ -295,7 +282,6 @@ const RoomManagement = () => {
       // Thử từng endpoint cho đến khi thành công
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying to update room using endpoint: ${endpoint}`);
           const response = await axios.put(endpoint, updateData, {
             headers: {
               'Content-Type': 'application/json',
@@ -306,11 +292,9 @@ const RoomManagement = () => {
 
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Update successful with response:', response.data);
             break;
           }
         } catch (endpointError: any) {
-          console.error(`Error with endpoint ${endpoint}:`, endpointError);
           errorMessage = endpointError.response?.data?.message || endpointError.message;
           // Tiếp tục thử endpoint tiếp theo
         }
@@ -324,7 +308,6 @@ const RoomManagement = () => {
         message.error(`Cập nhật phòng thất bại: ${errorMessage || 'Không thể kết nối đến máy chủ'}`);
       }
     } catch (err: any) {
-      console.error('Error updating room:', err);
       message.error(`Không thể cập nhật phòng: ${err.message}`);
     } finally {
       setSubmitting(false);
@@ -371,7 +354,6 @@ const RoomManagement = () => {
       // Thử từng endpoint cho đến khi thành công
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying to delete room using endpoint: ${endpoint}`);
           const response = await axios.put(endpoint, deleteData, {
             headers: {
               'Content-Type': 'application/json',
@@ -382,11 +364,9 @@ const RoomManagement = () => {
 
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Delete successful with response:', response.data);
             break;
           }
         } catch (endpointError: any) {
-          console.error(`Error with endpoint ${endpoint}:`, endpointError);
           errorMessage = endpointError.response?.data?.message || endpointError.message;
           // Tiếp tục thử endpoint tiếp theo
         }
@@ -408,13 +388,11 @@ const RoomManagement = () => {
             return;
           }
         } catch (deleteError) {
-          console.error('Error with DELETE method:', deleteError);
         }
 
         message.error(`Xóa phòng thất bại: ${errorMessage || 'Không thể kết nối đến máy chủ'}`);
       }
     } catch (err: any) {
-      console.error('Error deleting room:', err);
       message.error(`Không thể xóa phòng: ${err.message}`);
     }
   };
@@ -442,9 +420,6 @@ const RoomManagement = () => {
       if (values.hinhAnh) {
         createData.hinhAnh = values.hinhAnh;
       }
-
-      console.log('Sending create data:', createData);
-
       // Thử các endpoint API khác nhau
       const apiEndpoints = [
         '/api/Phong/Create',
@@ -458,7 +433,6 @@ const RoomManagement = () => {
       // Thử từng endpoint cho đến khi thành công
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying to create room using endpoint: ${endpoint}`);
           const response = await axios.post(endpoint, createData, {
             headers: {
               'Content-Type': 'application/json',
@@ -469,11 +443,9 @@ const RoomManagement = () => {
 
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Create successful with response:', response.data);
             break;
           }
         } catch (endpointError: any) {
-          console.error(`Error with endpoint ${endpoint}:`, endpointError);
           errorMessage = endpointError.response?.data?.message || endpointError.message;
           // Tiếp tục thử endpoint tiếp theo
         }
@@ -487,7 +459,6 @@ const RoomManagement = () => {
         message.error(`Tạo phòng mới thất bại: ${errorMessage || 'Không thể kết nối đến máy chủ'}`);
       }
     } catch (err: any) {
-      console.error('Error creating room:', err);
       message.error(`Không thể tạo phòng mới: ${err.message}`);
     } finally {
       setSubmitting(false);

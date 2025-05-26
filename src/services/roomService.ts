@@ -135,14 +135,19 @@ export const getRooms = async (
       };
     }
   } catch (error) {
-    console.error('Error fetching rooms:', error);
 
     // Không sử dụng cache fallback
 
     return {
       success: false,
       message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet và thử lại sau.',
-      data: []
+      data: {
+        items: [],
+        totalItems: 0,
+        pageNumber: pageNumber,
+        pageSize: pageSize,
+        totalPages: 0
+      }
     };
   }
 };
@@ -154,7 +159,6 @@ export const getRoomsNoPagination = async (
   filters?: { giaMin?: number; giaMax?: number; soLuongKhach?: number }
 ): Promise<ApiResponse<Room[]>> => {
   try {
-    console.log('Fetching all rooms without pagination...');
     const response = await getRooms(filters, 1, 1000); // Get a large page
 
     if (response.success && response.data) {
@@ -170,7 +174,6 @@ export const getRoomsNoPagination = async (
       data: []
     };
   } catch (error) {
-    console.error('Error fetching rooms without pagination:', error);
     return {
       success: false,
       message: 'Không thể lấy danh sách phòng',
@@ -183,7 +186,6 @@ export const getRoomsNoPagination = async (
  * Get a room by ID
  */
 export const getRoomById = async (id: string) => {
-  console.log(`Fetching room with ID: ${id}`);
   let retryCount = 0;
   const maxRetries = 3;
 
@@ -267,11 +269,9 @@ export const getRoomById = async (id: string) => {
     });
 
     const roomData = axiosResponse.data;
-    console.log('Axios raw API response:', roomData);
 
     // API trả về có cấu trúc { success: true, data: {...} }
     const actualRoomData = roomData.data || roomData;
-    console.log('Axios actual room data:', actualRoomData);
 
     // Chuyển đổi dữ liệu từ backend sang định dạng frontend cần
     const formattedData = {
@@ -288,7 +288,7 @@ export const getRoomById = async (id: string) => {
       features: actualRoomData.features || (actualRoomData.moTa ? actualRoomData.moTa.split(',').map((item: string) => item.trim()) : [])
     };
 
-    console.log('Axios formatted data:', formattedData);
+
 
     // Không lưu cache
 
@@ -327,7 +327,6 @@ export const getRoomById = async (id: string) => {
 export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> => {
   try {
     // Kiểm tra dữ liệu đầu vào
-    console.log('Original booking data:', JSON.stringify(bookingData, null, 2));
 
     // Đảm bảo maPhong là số hợp lệ
     let roomId = 0;
@@ -351,11 +350,7 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
       xoa: false
     };
 
-    // Log thông tin đặt phòng để debug
-    console.log('Sending booking data to API:', serverData);
 
-    // Gọi API proxy thay vì gọi trực tiếp
-    console.log('Calling booking API with data:', JSON.stringify(serverData, null, 2));
 
     try {
       // Thử nhiều URL API khác nhau - ưu tiên sử dụng proxy API
@@ -373,7 +368,6 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
       // Thử từng URL cho đến khi thành công
       for (const url of API_URLS) {
         try {
-          console.log(`Trying to book room with URL: ${url}`);
           response = await axios.post(url, serverData, {
             timeout: 15000, // 15 giây timeout
             headers: {
@@ -384,11 +378,9 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
 
           // Nếu thành công, thoát khỏi vòng lặp
           if (response && response.status >= 200 && response.status < 300) {
-            console.log(`Successfully booked room with URL: ${url}`);
             break;
           }
         } catch (err: any) {
-          console.error(`Error booking room with URL ${url}:`, err.message);
           error = err;
           // Tiếp tục thử URL tiếp theo
         }
@@ -399,18 +391,8 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
         throw error || new Error('Failed to book room with all available URLs');
       }
 
-      console.log('Booking response status:', response.status);
-      console.log('Booking response data:', JSON.stringify(response.data, null, 2));
-
-      // Kiểm tra xem response có chứa dữ liệu đặt phòng không
-      if (!response.data) {
-        console.warn('API response missing data:', response.data);
-      }
-
       // Xử lý dữ liệu phản hồi từ proxy API
       const responseData = response.data?.data || response.data;
-
-      console.log('Processed response data:', responseData);
 
       return {
         success: true,
@@ -418,7 +400,6 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
         data: responseData
       };
     } catch (error: any) {
-      console.error('Error in booking API call:', error);
 
       // Trả về response lỗi
       return {
@@ -427,7 +408,6 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
       };
     }
   } catch (error) {
-    console.error('Error booking room:', error);
 
     // Xử lý lỗi cụ thể
     if (axios.isAxiosError(error)) {
@@ -459,7 +439,6 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
  */
 export const getUserBookings = async (userId: string): Promise<ApiResponse<Booking[]>> => {
   try {
-    console.log(`Fetching bookings for user ID: ${userId}`);
 
     // Sử dụng API handler của Next.js thay vì gọi trực tiếp
     const response = await axios.get(`/api/booking`, {
@@ -472,7 +451,7 @@ export const getUserBookings = async (userId: string): Promise<ApiResponse<Booki
       }
     });
 
-    console.log('Booking API response:', response.status);
+
 
     // Kiểm tra dữ liệu trả về
     if (response.data && response.data.success && Array.isArray(response.data.data)) {
@@ -486,7 +465,6 @@ export const getUserBookings = async (userId: string): Promise<ApiResponse<Booki
         data: response.data.data
       };
     } else {
-      console.warn('Unexpected API response format:', response.data);
       return {
         success: false,
         message: 'Định dạng dữ liệu không hợp lệ',
@@ -494,7 +472,6 @@ export const getUserBookings = async (userId: string): Promise<ApiResponse<Booki
       };
     }
   } catch (error) {
-    console.error('Error fetching user bookings:', error);
 
     // Xử lý lỗi chi tiết
     if (axios.isAxiosError(error)) {
@@ -572,7 +549,6 @@ export const cancelBooking = async (bookingId: number): Promise<ApiResponse<any>
       data: response.data
     };
   } catch (error) {
-    console.error('Error canceling booking:', error);
 
     // Xử lý lỗi cụ thể
     if (axios.isAxiosError(error)) {

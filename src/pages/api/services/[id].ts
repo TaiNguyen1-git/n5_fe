@@ -52,7 +52,6 @@ export default async function handler(
         data: service
       });
     } catch (error: any) {
-      console.error(`Error fetching service with ID ${id}:`, error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy thông tin dịch vụ'
@@ -81,10 +80,6 @@ export default async function handler(
       };
 
       // Log dữ liệu trước khi gọi API
-      console.log('API route: Updating service with ID:', id);
-      console.log('API route: Service data:', serviceData);
-      console.log('API route: Calling backend API:', `${BACKEND_API_URL}/DichVu/Update`);
-
       // Update service through backend API
       const response = await axios.put(`${BACKEND_API_URL}/DichVu/Update`, serviceData, {
         headers: {
@@ -92,16 +87,12 @@ export default async function handler(
           'Accept': 'application/json'
         }
       });
-
-      console.log('API route: Backend API response:', response.data);
-
       return res.status(200).json({
         success: true,
         message: 'Cập nhật dịch vụ thành công',
         data: response.data
       });
     } catch (error: any) {
-      console.error(`Error updating service with ID ${id}:`, error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi cập nhật dịch vụ'
@@ -117,7 +108,6 @@ export default async function handler(
         message: 'Xóa dịch vụ thành công'
       });
     } catch (error: any) {
-      console.error(`Error deleting service with ID ${id}:`, error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi xóa dịch vụ'

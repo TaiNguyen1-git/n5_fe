@@ -86,7 +86,6 @@ const BookingManagement = () => {
   const fetchCustomers = async () => {
     setCustomerDataLoading(true);
     try {
-      console.log('Fetching all customers for admin booking management...');
       const response = await getAllCustomers(1, 1000); // Get a large number to get all customers
 
       if (response.success && response.data?.items) {
@@ -98,12 +97,9 @@ const BookingManagement = () => {
           }
         });
         setCustomers(customerMap);
-        console.log('Customer data loaded for admin:', customerMap);
       } else {
-        console.warn('Failed to fetch customers for admin:', response.message);
       }
     } catch (error) {
-      console.error('Error fetching customers for admin:', error);
     } finally {
       setCustomerDataLoading(false);
     }
@@ -139,15 +135,6 @@ const BookingManagement = () => {
 
       // Set total count for pagination - use totalItems if available
       const totalCount = response.data.totalItems || response.data.totalCount || response.data.items.length;
-      console.log('Pagination info:', {
-        totalItems: response.data.totalItems,
-        totalCount: response.data.totalCount,
-        totalPages: response.data.totalPages,
-        currentPage: response.data.pageNumber || currentPage,
-        pageSize: response.data.pageSize || pageSize,
-        itemsLength: response.data.items.length,
-        finalTotal: totalCount
-      });
       setTotal(totalCount);
 
       // First, create the basic booking objects
@@ -211,7 +198,6 @@ const BookingManagement = () => {
               }
             }
           } catch (error) {
-            console.error(`Error fetching room details for booking ${booking.id}:`, error);
           }
 
           // If we couldn't get the room number, return the original booking
@@ -222,8 +208,6 @@ const BookingManagement = () => {
       // Update bookings with room numbers
       setBookings(updatedBookings);
     } catch (error: any) {
-      console.error('Error fetching bookings:', error);
-
       // Implement retry logic (max 3 retries)
       if (retryCount < 3) {
         message.warning(`Đang thử kết nối lại... (${retryCount + 1}/3)`);
@@ -255,7 +239,6 @@ const BookingManagement = () => {
           return true;
         }
       }).catch(error => {
-        console.error('Error in customer API request:', error.message);
         return { data: null, status: 500 };
       });
 
@@ -270,15 +253,11 @@ const BookingManagement = () => {
           visits: response.data.soLanGheTham || 1
         });
       } else {
-        console.log(`Customer API returned status ${response.status} or empty data`);
         throw new Error(`Failed to fetch customer data: ${response.status}`);
       }
     } catch (error: any) {
-      console.error('Error processing customer details:', error.message);
-
       // Implement retry logic (max 2 retries)
       if (retryCount < 2) {
-        console.log(`Retrying customer details fetch (${retryCount + 1}/2)...`);
         setTimeout(() => {
           fetchCustomerDetails(customerId, retryCount + 1);
         }, 1500 * (retryCount + 1)); // Exponential backoff
@@ -304,7 +283,6 @@ const BookingManagement = () => {
           return true;
         }
       }).catch(error => {
-        console.error('Error in room API request:', error.message);
         return { data: null, status: 500 };
       });
 
@@ -327,15 +305,11 @@ const BookingManagement = () => {
           description: roomData.moTa || ''
         });
       } else {
-        console.log(`Room API returned status ${response.status} or invalid data`);
         throw new Error(`Failed to fetch room data: ${response.status}`);
       }
     } catch (error: any) {
-      console.error('Error processing room details:', error.message);
-
       // Implement retry logic (max 2 retries)
       if (retryCount < 2) {
-        console.log(`Retrying room details fetch (${retryCount + 1}/2)...`);
         setTimeout(() => {
           fetchRoomDetails(roomId, retryCount + 1);
         }, 1500 * (retryCount + 1)); // Exponential backoff
@@ -395,7 +369,6 @@ const BookingManagement = () => {
       // Try each endpoint
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying to delete booking using endpoint: ${endpoint}`);
           const response = await axios.put(endpoint, deleteData, {
             headers: {
               'Content-Type': 'application/json',
@@ -406,11 +379,9 @@ const BookingManagement = () => {
 
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Delete successful with response:', response.data);
             break;
           }
         } catch (endpointError) {
-          console.error(`Error with endpoint ${endpoint}:`, endpointError);
           // Continue to next endpoint
         }
       }
@@ -426,7 +397,6 @@ const BookingManagement = () => {
         message.success('Đã xóa đặt phòng thành công! (Chế độ offline)');
       }
     } catch (error) {
-      console.error('Lỗi khi xóa đặt phòng:', error);
       message.error('Có lỗi xảy ra khi xóa đặt phòng');
     }
   };
@@ -461,9 +431,6 @@ const BookingManagement = () => {
         trangThai: statusId,
         xoa: false // Đảm bảo không đánh dấu xóa
       };
-
-      console.log('Sending update data:', updateData);
-
       // Try API endpoints
       const apiEndpoints = [
         `/api/DatPhong/Update/${id}`,
@@ -476,7 +443,6 @@ const BookingManagement = () => {
       // Try each endpoint
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying to update booking status using endpoint: ${endpoint}`);
           const response = await axios.put(endpoint, updateData, {
             headers: {
               'Content-Type': 'application/json',
@@ -487,11 +453,9 @@ const BookingManagement = () => {
 
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Update successful with response:', response.data);
             break;
           }
         } catch (endpointError) {
-          console.error(`Error with endpoint ${endpoint}:`, endpointError);
           // Continue to next endpoint
         }
       }
@@ -517,7 +481,6 @@ const BookingManagement = () => {
         }
       }
     } catch (error) {
-      console.error('Lỗi khi xác nhận đặt phòng:', error);
       message.error('Có lỗi xảy ra khi xác nhận đặt phòng');
     }
   };
@@ -552,9 +515,6 @@ const BookingManagement = () => {
         trangThai: statusId,
         xoa: false // Đảm bảo không đánh dấu xóa
       };
-
-      console.log('Sending update data:', updateData);
-
       // Try API endpoints
       const apiEndpoints = [
         `/api/DatPhong/Update/${id}`,
@@ -567,7 +527,6 @@ const BookingManagement = () => {
       // Try each endpoint
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying to update booking status using endpoint: ${endpoint}`);
           const response = await axios.put(endpoint, updateData, {
             headers: {
               'Content-Type': 'application/json',
@@ -578,11 +537,9 @@ const BookingManagement = () => {
 
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Update successful with response:', response.data);
             break;
           }
         } catch (endpointError) {
-          console.error(`Error with endpoint ${endpoint}:`, endpointError);
           // Continue to next endpoint
         }
       }
@@ -608,7 +565,6 @@ const BookingManagement = () => {
         }
       }
     } catch (error) {
-      console.error('Lỗi khi từ chối đặt phòng:', error);
       message.error('Có lỗi xảy ra khi từ chối đặt phòng');
     }
   };

@@ -55,7 +55,6 @@ export default async function handler(
         data: response.data
       });
     } catch (error: any) {
-      console.error('Contact form submission error:', error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi gửi biểu mẫu liên hệ'

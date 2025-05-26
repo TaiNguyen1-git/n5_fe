@@ -35,8 +35,6 @@ export default async function handler(
       const { pageNumber = 1, pageSize = 10 } = req.query;
 
       // Log request parameters
-      console.log(`GET /api/users - PageNumber: ${pageNumber}, PageSize: ${pageSize}`);
-
       // Get users from backend API with pagination
       // Số lần thử lại tối đa
       const maxRetries = 3;
@@ -46,7 +44,6 @@ export default async function handler(
 
       while (retryCount < maxRetries) {
         try {
-          console.log(`API call attempt ${retryCount + 1}/${maxRetries}`);
           response = await axios.get(`${BACKEND_API_URL}/User/GetAll`, {
             params: {
               PageNumber: pageNumber,
@@ -59,15 +56,12 @@ export default async function handler(
           break;
         } catch (error) {
           lastError = error;
-          console.error(`Error fetching users (attempt ${retryCount + 1}/${maxRetries}):`, error);
-
           // Tăng số lần thử
           retryCount++;
 
           if (retryCount < maxRetries) {
             // Chờ trước khi thử lại (1s, 2s, 4s...)
             const delay = Math.pow(2, retryCount) * 1000;
-            console.log(`Retrying in ${delay}ms...`);
             await new Promise(resolve => setTimeout(resolve, delay));
           } else {
             // Nếu đã hết số lần thử, ném lỗi
@@ -82,15 +76,8 @@ export default async function handler(
       }
 
       // Log response for debugging
-      console.log('API User/GetAll response structure:',
-        Object.keys(response.data).length > 0
-          ? Object.keys(response.data)
-          : 'Empty response');
-
       // Check if response has items array
       if (response.data && response.data.items && Array.isArray(response.data.items)) {
-        console.log(`Received ${response.data.items.length} users from API`);
-
         // Return the full response including pagination info
         return res.status(200).json({
           success: true,
@@ -98,8 +85,6 @@ export default async function handler(
         });
       } else if (Array.isArray(response.data)) {
         // If response is directly an array
-        console.log(`Received ${response.data.length} users from API (array format)`);
-
         return res.status(200).json({
           success: true,
           data: {
@@ -112,15 +97,12 @@ export default async function handler(
         });
       } else {
         // Unexpected response format
-        console.error('Unexpected API response format:', response.data);
         return res.status(500).json({
           success: false,
           message: 'Định dạng dữ liệu không hợp lệ từ API'
         });
       }
     } catch (error: any) {
-      console.error('Error fetching users:', error);
-
       // Extract query parameters again to avoid TypeScript errors
       const pageNumber = Number(req.query.pageNumber) || 1;
       const pageSize = Number(req.query.pageSize) || 10;
@@ -183,22 +165,17 @@ export default async function handler(
       }
 
       // Create user through backend API
-      console.log('API route: Creating user with data:', userData);
       const response = await axios.post(`${BACKEND_API_URL}/User/Create`, userData);
       
       if (!response) {
         throw new Error('Failed to get response from create user API');
       }
-      
-      console.log('API route: Create user response:', response.data);
-
       return res.status(201).json({
         success: true,
         message: 'Tạo người dùng thành công',
         data: response.data
       });
     } catch (error: any) {
-      console.error('Error creating user:', error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi tạo người dùng mới'

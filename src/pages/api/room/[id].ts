@@ -33,13 +33,9 @@ export default async function handler(
   roomId = roomId.split('/')[0];
 
   // Trong trường hợp id là số phòng (ví dụ: 404, 7, etc.)
-  console.log(`Processing room ID: ${roomId}`);
-
   try {
     // Gọi API với endpoint đúng format
     const apiEndpoint = `${BACKEND_API_URL}/Phong/GetBySoPhong/p${roomId}`;
-    console.log(`Calling API: ${apiEndpoint}`);
-
     const response = await axios.get(apiEndpoint, {
       timeout: 20000,
       headers: { 'Accept': '*/*' }
@@ -55,11 +51,7 @@ export default async function handler(
 
     // Lấy dữ liệu từ API đúng cấu trúc
     const roomData = response.data;
-    console.log('API response data:', roomData);
-
     // Lấy giá từ loaiPhong.giaPhong nếu có
-    console.log('Room data from API:', JSON.stringify(roomData, null, 2));
-
     // Kiểm tra cấu trúc dữ liệu và lấy giá từ loaiPhong
     let roomPrice = null;
     if (roomData.giaTien) {
@@ -85,9 +77,6 @@ export default async function handler(
           roomPrice = 500000; // Giá mặc định
       }
     }
-
-    console.log('Extracted room price:', roomPrice);
-
     // Format dữ liệu phù hợp với cấu trúc dùng trong frontend
     const formattedRoom = {
       id: roomId,
@@ -103,17 +92,12 @@ export default async function handler(
       images: [roomData.hinhAnh || '/images/rooms/default-room.jpg'],
       features: roomData.moTa ? roomData.moTa.split(',').map((f: string) => f.trim()) : ['Wi-Fi miễn phí', 'Điều hòa', 'TV', 'Tủ lạnh']
     };
-
-    console.log('Formatted room data:', formattedRoom);
-
     // Trả về dữ liệu đã được định dạng
     return res.status(200).json({
       success: true,
       data: formattedRoom
     });
   } catch (error) {
-    console.error(`Error fetching room with ID ${roomId}:`, error);
-
     // Kiểm tra lỗi cụ thể
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 404) {
@@ -124,10 +108,7 @@ export default async function handler(
       }
 
       // Log chi tiết lỗi để gỡ lỗi
-      console.error('Error details:', error.message);
       if (error.response) {
-        console.error('Status:', error.response.status);
-        console.error('Data:', error.response.data);
       }
     }
 

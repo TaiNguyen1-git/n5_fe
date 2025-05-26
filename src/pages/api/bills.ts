@@ -35,13 +35,10 @@ export default async function handler(
       // Return the response data
       return res.status(200).json(response.data);
     } else {
-      console.error(`API returned status code ${response.status}`);
       // Return empty array with 200 status to prevent frontend errors
       return res.status(200).json([]);
     }
   } catch (error: any) {
-    console.error('API proxy error:', error.message);
-
     // Return empty array with 200 status to prevent frontend errors
     return res.status(200).json([]);
   }

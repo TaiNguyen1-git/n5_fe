@@ -21,7 +21,6 @@ export const contactService = {
         data: response.data
       };
     } catch (error) {
-      console.error('Error submitting contact form:', error);
       return {
         success: false,
         message: 'Không thể gửi biểu mẫu liên hệ. Vui lòng thử lại sau.'
@@ -38,7 +37,6 @@ export const contactService = {
         data: response.data
       };
     } catch (error) {
-      console.error('Error fetching contact forms:', error);
       return {
         success: false,
         message: 'Không thể lấy danh sách liên hệ. Vui lòng thử lại sau.'
@@ -59,7 +57,6 @@ export const contactService = {
         data: response.data
       };
     } catch (error) {
-      console.error(`Error replying to contact with id ${id}:`, error);
       return {
         success: false,
         message: 'Không thể trả lời liên hệ. Vui lòng thử lại sau.'

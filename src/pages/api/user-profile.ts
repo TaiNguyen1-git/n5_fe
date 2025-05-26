@@ -36,7 +36,6 @@ export default async function handler(
         const payload = JSON.parse(Buffer.from(base64, 'base64').toString());
         return payload;
       } catch (error) {
-        console.error('Lỗi khi giải mã JWT:', error);
         return null;
       }
     }
@@ -51,10 +50,7 @@ export default async function handler(
     }
 
     const username = payload.unique_name;
-    console.log('API user-profile - Username từ token:', username);
-
     // Gọi API GetAll để lấy danh sách người dùng từ trang đầu tiên
-    console.log('API user-profile - Đang gọi API GetAll để tìm người dùng');
     try {
       // Tìm user trên tất cả các trang
       let currentUser = null;
@@ -70,8 +66,6 @@ export default async function handler(
 
       // Lặp qua các trang cho đến khi tìm thấy user hoặc đã kiểm tra hết các trang
       do {
-        console.log(`API user-profile - Kiểm tra trang ${currentPage}/${totalPages}`);
-
         // Gọi API với số trang hiện tại
         const response = await fetch(`https://ptud-web-1.onrender.com/api/User/GetAll?pageNumber=${currentPage}`, {
           method: 'GET',
@@ -99,13 +93,10 @@ export default async function handler(
 
         // In ra danh sách username để debug
         if (users.items && Array.isArray(users.items)) {
-          console.log(`Danh sách tenTK trong API (trang ${currentPage}):`, users.items.map((u: any) => u.tenTK).join(', '));
-
           // Tìm user trong danh sách
           const foundUser = findUserInItems(users.items);
           if (foundUser) {
             currentUser = foundUser;
-            console.log('API user-profile - Đã tìm thấy user ở trang', currentPage);
             break;
           }
         }
@@ -126,10 +117,6 @@ export default async function handler(
           loaiTK: currentUser.loaiTK || 3,
           role: currentUser.loaiTK === 1 ? 'admin' : (currentUser.loaiTK === 2 ? 'staff' : 'customer')
         };
-
-        console.log('API user-profile - Thông tin user tìm thấy:', userProfile);
-        console.log('API user-profile - Đã xác định loaiTK:', userProfile.loaiTK, 'role:', userProfile.role);
-
         return res.status(200).json({
           success: true,
           message: 'Lấy thông tin người dùng thành công',
@@ -138,22 +125,18 @@ export default async function handler(
       }
 
       // Nếu không tìm thấy user, trả về lỗi
-      console.log('API user-profile - Không tìm thấy user trong API sau khi kiểm tra tất cả các trang');
-
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy thông tin người dùng'
       });
 
     } catch (error) {
-      console.error('Lỗi khi gọi API GetAll:', error);
       return res.status(500).json({
         success: false,
         message: 'Lỗi khi kết nối đến máy chủ'
       });
     }
   } catch (error) {
-    console.error('User Profile handler - Lỗi:', error);
     return res.status(500).json({
       success: false,
       message: 'Đã xảy ra lỗi khi lấy thông tin người dùng'

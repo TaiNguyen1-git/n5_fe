@@ -84,7 +84,6 @@ export default async function handler(
       return res.status(500).json({ success: false, message: 'Failed to upload image' });
     }
   } catch (error) {
-    console.error('Error uploading image:', error);
     return res.status(500).json({ success: false, message: 'Failed to upload image' });
   }
 } 

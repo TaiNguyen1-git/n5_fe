@@ -19,9 +19,6 @@ export default async function handler(
     try {
       // Get pagination parameters from query
       const { pageNumber = '1', pageSize = '10' } = req.query;
-
-      console.log(`Fetching services with pagination: page ${pageNumber}, size ${pageSize}`);
-
       // Get services from backend API with pagination
       const response = await axios.get(`${BACKEND_API_URL}/DichVu/GetAll`, {
         params: {
@@ -32,8 +29,6 @@ export default async function handler(
       });
 
       // Log response for debugging
-      console.log('API DichVu/GetAll response:', JSON.stringify(response.data).substring(0, 500) + '...');
-
       // Transform data for frontend if needed
       let services: any[] = [];
       let paginationInfo = {
@@ -66,9 +61,6 @@ export default async function handler(
       }
 
       // Log processed services
-      console.log(`Processed ${services.length} services`);
-      console.log('Pagination info:', paginationInfo);
-
       // Transform services data for frontend
       const formattedServices = services.map((service: any) => ({
         id: service.maDichVu,
@@ -79,9 +71,6 @@ export default async function handler(
         gia: service.gia,
         trangThai: service.trangThai
       }));
-
-      console.log('Formatted services sample:', formattedServices.length > 0 ? formattedServices[0] : 'No services');
-
       return res.status(200).json({
         success: true,
         data: {
@@ -90,7 +79,6 @@ export default async function handler(
         }
       });
     } catch (error: any) {
-      console.error('Error fetching services:', error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy danh sách dịch vụ'
@@ -126,7 +114,6 @@ export default async function handler(
         data: response.data
       });
     } catch (error: any) {
-      console.error('Error creating service:', error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi tạo dịch vụ'

@@ -40,7 +40,6 @@ export const employeeService = {
   // Get all employees with pagination
   getAllEmployees: async (pageNumber: number = 1, pageSize: number = 10): Promise<PaginatedEmployeeResponse> => {
     try {
-      console.log(`Fetching employees from API with pagination: page ${pageNumber}, size ${pageSize}`);
       const response = await axios.get(`${BASE_URL}/employees`, {
         params: {
           pageNumber,
@@ -50,14 +49,6 @@ export const employeeService = {
       });
 
       // Kiểm tra cấu trúc dữ liệu trả về
-      console.log('API response structure:', {
-        isArray: Array.isArray(response.data),
-        hasData: response.data && response.data.data,
-        hasSuccess: response.data && response.data.success,
-        hasItems: response.data && response.data.items,
-        type: typeof response.data
-      });
-
       if (response.data) {
         // Nếu dữ liệu có cấu trúc success và data với pagination
         if (response.data.success && response.data.data) {
@@ -65,7 +56,6 @@ export const employeeService = {
 
           // Check if data has pagination structure
           if (data.items && Array.isArray(data.items)) {
-            console.log('Using paginated success.data structure, items length:', data.items.length);
             return {
               items: data.items,
               totalItems: data.totalItems || data.items.length,
@@ -76,7 +66,6 @@ export const employeeService = {
           }
           // If data is directly an array (fallback)
           else if (Array.isArray(data)) {
-            console.log('Using success.data array, length:', data.length);
             return {
               items: data,
               totalItems: data.length,
@@ -88,7 +77,6 @@ export const employeeService = {
         }
         // Nếu dữ liệu có cấu trúc items trực tiếp
         else if (response.data.items && Array.isArray(response.data.items)) {
-          console.log('Using direct items array, length:', response.data.items.length);
           return {
             items: response.data.items,
             totalItems: response.data.totalItems || response.data.items.length,
@@ -99,7 +87,6 @@ export const employeeService = {
         }
         // Nếu dữ liệu là mảng trực tiếp (fallback)
         else if (Array.isArray(response.data)) {
-          console.log('Using direct array, length:', response.data.length);
           return {
             items: response.data,
             totalItems: response.data.length,
@@ -109,8 +96,6 @@ export const employeeService = {
           };
         }
       }
-
-      console.warn('No valid employee data structure found, returning empty pagination response');
       return {
         items: [],
         totalItems: 0,
@@ -119,7 +104,6 @@ export const employeeService = {
         totalPages: 0
       };
     } catch (error) {
-      console.error('Error fetching employees:', error);
       throw error;
     }
   },
@@ -127,11 +111,9 @@ export const employeeService = {
   // Get all employees without pagination (for backward compatibility)
   getAllEmployeesNoPagination: async (): Promise<Employee[]> => {
     try {
-      console.log('Fetching all employees without pagination...');
       const response = await employeeService.getAllEmployees(1, 1000); // Get a large page
       return response.items;
     } catch (error) {
-      console.error('Error fetching employees without pagination:', error);
       throw error;
     }
   },
@@ -146,7 +128,6 @@ export const employeeService = {
       }
       throw new Error('Employee not found');
     } catch (error) {
-      console.error(`Error fetching employee with id ${id}:`, error);
       throw error;
     }
   },
@@ -157,7 +138,6 @@ export const employeeService = {
       const response = await axios.post(`${BASE_URL}/employees`, employee);
       return response.data;
     } catch (error) {
-      console.error('Error creating employee:', error);
       throw error;
     }
   },
@@ -165,12 +145,10 @@ export const employeeService = {
   // Update employee
   updateEmployee: async (id: number | string, employee: Partial<Employee>): Promise<any> => {
     try {
-      console.log(`Updating employee with id ${id}, data:`, employee);
       // Không cần thêm id vào URL vì API sẽ lấy từ body
       const response = await axios.put(`${BASE_URL}/employees/${id}`, employee);
       return response.data;
     } catch (error) {
-      console.error(`Error updating employee with id ${id}:`, error);
       throw error;
     }
   },
@@ -181,7 +159,6 @@ export const employeeService = {
       const response = await axios.delete(`${BASE_URL}/employees/${id}`);
       return response.data;
     } catch (error) {
-      console.error(`Error deleting employee with id ${id}:`, error);
       throw error;
     }
   }

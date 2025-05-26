@@ -77,7 +77,6 @@ export default function Home() {
         if (user) {
           // Kiểm tra tài khoản nhanvien2 đặc biệt
           if (user.username === 'nhanvien2' || (user as any).tenTK === 'nhanvien2') {
-            console.log('Home page - Phát hiện tài khoản nhanvien2, chuyển hướng đến /staff');
             router.push('/staff');
             return;
           }
@@ -86,22 +85,11 @@ export default function Home() {
           const loaiTK = typeof user.loaiTK === 'string' ? parseInt(user.loaiTK, 10) : user.loaiTK;
           const isAdmin = user.role === 'admin' || loaiTK === 1;
           const isStaff = user.role === 'staff' || loaiTK === 2;
-
-          console.log('Home page - Kiểm tra quyền người dùng:', {
-            username: user.username,
-            role: user.role,
-            loaiTK: loaiTK,
-            isAdmin: isAdmin,
-            isStaff: isStaff
-          });
-
           // Kiểm tra admin trước, sau đó mới kiểm tra staff
           if (isAdmin) {
-            console.log('Home page - Phát hiện tài khoản admin, chuyển hướng đến /admin');
             router.push('/admin');
             return; // Không render trang home
           } else if (isStaff) {
-            console.log('Home page - Phát hiện tài khoản nhân viên, chuyển hướng đến /staff');
             router.push('/staff');
             return; // Không render trang home
           }
@@ -156,14 +144,11 @@ export default function Home() {
           localStorage.setItem('cached_rooms', JSON.stringify(formattedRooms));
           localStorage.setItem('rooms_cache_time', new Date().toISOString());
         } catch (cacheError) {
-          console.warn('Error caching rooms data:', cacheError);
         }
       } else {
         throw new Error('Không nhận được dữ liệu phòng từ API');
       }
     } catch (err) {
-      console.error('Error fetching rooms:', err);
-
       // Thử lấy dữ liệu từ cache nếu có lỗi
       try {
         const cachedRoomsStr = localStorage.getItem('cached_rooms');
@@ -187,7 +172,6 @@ export default function Home() {
           }
         }
       } catch (cacheError) {
-        console.error('Error reading from cache:', cacheError);
         setError('Không thể tải dữ liệu phòng. Vui lòng thử lại sau.');
       }
     } finally {

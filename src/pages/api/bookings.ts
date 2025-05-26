@@ -47,9 +47,6 @@ export default async function handler(
       // Return the response data
       return res.status(200).json(response.data);
     } catch (error: any) {
-      console.error('API proxy error:', error.message);
-      console.log('Using mock data as fallback');
-
       // Extract pagination parameters for mock data
       const pageNumber = parseInt(req.query.PageNumber as string) || 1;
       const pageSize = parseInt(req.query.PageSize as string) || 10;

@@ -55,7 +55,6 @@ export default async function handler(
     }
 
     // Log the booking data for debugging
-    console.log('Booking data received:', JSON.stringify(bookingData, null, 2));
 
     // Try multiple API endpoints
     let lastError = null;
@@ -63,8 +62,6 @@ export default async function handler(
 
     for (const apiUrl of API_URLS) {
       try {
-        console.log(`Trying to book room with API URL: ${apiUrl}`);
-
         // Đảm bảo dữ liệu đặt phòng đúng định dạng
         const validatedData = {
           maKH: bookingData.maKH || 0,
@@ -76,8 +73,6 @@ export default async function handler(
           xoa: bookingData.xoa !== undefined ? bookingData.xoa : false
         };
 
-        console.log(`Sending validated data to ${apiUrl}:`, JSON.stringify(validatedData, null, 2));
-
         // Call the backend API with timeout
         const response = await axios.post(apiUrl, validatedData, {
           timeout: 20000, // 20s timeout
@@ -87,13 +82,11 @@ export default async function handler(
           }
         });
 
-        console.log(`API response from ${apiUrl}:`, response.status, response.data);
-
         // If successful, save the response and break the loop
         apiResponse = response;
         break;
       } catch (error: any) {
-        console.error(`Error calling ${apiUrl}:`, error.message || 'Unknown error');
+
         lastError = error;
         // Continue to the next API URL
       }
@@ -111,7 +104,6 @@ export default async function handler(
       data: apiResponse.data
     });
   } catch (error: any) {
-    console.error('Error in booking API handler:', error);
 
     // Handle specific error types
     if (axios.isAxiosError(error)) {

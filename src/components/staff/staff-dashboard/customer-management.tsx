@@ -191,11 +191,8 @@ const CustomerManagement = () => {
   const fetchCustomers = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoading(true);
     setError('');
-    console.log(`Bắt đầu tải dữ liệu khách hàng với phân trang: page ${pageNumber}, size ${pageSize}`);
-
     // 1. Thử sử dụng service mới với pagination
     try {
-      console.log('Thử fetch với customer service và pagination...');
       const response = await getAllCustomers(pageNumber, pageSize);
 
       if (response.success && response.data) {
@@ -212,8 +209,6 @@ const CustomerManagement = () => {
           pageSize: paginatedData.pageSize,
           total: paginatedData.totalItems,
         }));
-
-        console.log('Tải dữ liệu khách hàng thành công với pagination:', formattedCustomers);
         message.success('Tải dữ liệu khách hàng thành công');
         setLoading(false);
         return; // Thành công, thoát khỏi hàm
@@ -221,17 +216,13 @@ const CustomerManagement = () => {
         throw new Error(response.message || 'Failed to fetch customers');
       }
     } catch (serviceErr) {
-      console.error('Lỗi khi sử dụng customer service:', serviceErr);
       // Tiếp tục với phương thức fallback
     }
 
     // 2. Fallback: Thử sử dụng fetch API với proxy Next.js (ưu tiên nhất)
     try {
-      console.log('Fallback: Thử fetch với proxy Next.js...');
       const response = await fetch('/api/KhachHang/GetAll');
       const data = await response.json();
-      console.log('Fetch API response:', data);
-
       if (data && data.items && Array.isArray(data.items)) {
         setCustomers(data.items);
         // Update pagination for fallback (client-side pagination)
@@ -239,20 +230,17 @@ const CustomerManagement = () => {
           ...prev,
           total: data.items.length,
         }));
-        console.log('Tải dữ liệu khách hàng thành công với fetch:', data.items);
         message.success('Tải dữ liệu khách hàng thành công');
         setLoading(false);
         return; // Thành công, thoát khỏi hàm
       }
     } catch (fetchErr) {
-      console.error('Lỗi khi sử dụng fetch API:', fetchErr);
       // Tiếp tục với phương thức khác
     }
 
     // 2. Thử từng API endpoint với Axios
     for (let i = 0; i < CUSTOMER_API_URLS.length; i++) {
       try {
-        console.log(`Đang thử API endpoint với Axios: ${CUSTOMER_API_URLS[i]}`);
         const response = await axios.get(CUSTOMER_API_URLS[i], {
           timeout: 10000, // 10 giây timeout
           headers: {
@@ -275,7 +263,6 @@ const CustomerManagement = () => {
 
           if (formattedCustomers.length > 0) {
             setCustomers(formattedCustomers);
-            console.log('Tải dữ liệu khách hàng thành công với Axios:', formattedCustomers);
             message.success('Tải dữ liệu khách hàng thành công');
             setLoading(false);
             return; // Thành công, thoát khỏi hàm
@@ -283,17 +270,13 @@ const CustomerManagement = () => {
         }
 
         // Nếu đến đây, định dạng response không được nhận dạng
-        console.warn(`Định dạng dữ liệu không nhận dạng từ ${CUSTOMER_API_URLS[i]}`);
-
       } catch (axiosErr) {
-        console.error(`Lỗi khi lấy dữ liệu khách hàng từ ${CUSTOMER_API_URLS[i]}:`, axiosErr);
         // Tiếp tục thử API endpoint tiếp theo
       }
     }
 
     // 3. Trường hợp cuối cùng, thử dùng XMLHttpRequest
     try {
-      console.log('Thử với XMLHttpRequest...');
       const data = await new Promise<any>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.onload = function() {
@@ -320,17 +303,14 @@ const CustomerManagement = () => {
 
       if (data && data.items && Array.isArray(data.items)) {
         setCustomers(data.items);
-        console.log('Tải dữ liệu khách hàng thành công với XMLHttpRequest:', data.items);
         message.success('Tải dữ liệu khách hàng thành công');
         setLoading(false);
         return; // Thành công, thoát khỏi hàm
       }
     } catch (xhrErr) {
-      console.error('Lỗi khi sử dụng XMLHttpRequest:', xhrErr);
     }
 
     // 4. Nếu tất cả phương thức đều thất bại, sử dụng dữ liệu mẫu
-    console.warn('Tất cả phương thức kết nối thất bại, sử dụng dữ liệu mẫu');
     setCustomers(MOCK_CUSTOMERS.items as Customer[]);
     // Update pagination for mock data
     setPagination(prev => ({
@@ -359,17 +339,12 @@ const CustomerManagement = () => {
   // Fetch lịch sử đặt phòng của khách hàng với cơ chế fallback
   const fetchCustomerBookingHistory = async (customerId: number) => {
     setLoadingHistory(true);
-    console.log(`Bắt đầu tải lịch sử đặt phòng cho khách hàng ID: ${customerId}`);
-
     try {
       // Thử sử dụng API đặt phòng
-      console.log('Thử fetch API lịch sử đặt phòng...');
       const response = await fetch('/api/DatPhong/GetAll');
       const data = await response.json();
 
       if (data && data.items && Array.isArray(data.items)) {
-        console.log('API đặt phòng response:', data.items);
-
         // Thông báo không có lịch sử đặt phòng hợp lệ
         setBookingHistory([]);
         message.info('Không tìm thấy lịch sử đặt phòng cho khách hàng này');
@@ -377,7 +352,6 @@ const CustomerManagement = () => {
         return;
       }
     } catch (err) {
-      console.error('Lỗi khi tải dữ liệu đặt phòng:', err);
     }
 
     // Nếu không lấy được dữ liệu, hiển thị thông báo không có lịch sử
@@ -407,17 +381,12 @@ const CustomerManagement = () => {
   // Fetch hóa đơn của khách hàng
   const fetchCustomerInvoices = async (customerId: number) => {
     setLoadingInvoice(true);
-    console.log(`Bắt đầu tải thông tin hóa đơn cho khách hàng ID: ${customerId}`);
-
     try {
       // Thử sử dụng API hóa đơn
-      console.log('Thử fetch API hóa đơn...');
       const response = await fetch('/api/HoaDon/GetAll');
       const data = await response.json();
 
       if (data && data.length > 0) {
-        console.log('API hóa đơn response:', data);
-
         // Kiểm tra cấu trúc dữ liệu
         const formattedInvoices = formatInvoiceData(data);
 
@@ -436,7 +405,6 @@ const CustomerManagement = () => {
         message.info('Không tìm thấy hóa đơn cho khách hàng này');
       }
     } catch (err) {
-      console.error('Lỗi khi tải dữ liệu hóa đơn:', err);
       setInvoices([]);
       message.error('Không thể tải dữ liệu hóa đơn từ máy chủ');
     } finally {
@@ -558,7 +526,6 @@ const CustomerManagement = () => {
             danger
             icon={<DeleteOutlined />}
             onClick={() => {
-              console.log('Delete button clicked for customer:', record);
               handleDeleteCustomer(record);
             }}
             size="small"
@@ -705,9 +672,6 @@ const CustomerManagement = () => {
         maVaiTro: values.maVaiTro || 0,
         xoa: false
       };
-
-      console.log('Đang tạo khách hàng mới:', customerData);
-
       // Gọi API tạo khách hàng
       const response = await fetch('/api/KhachHang/Create', {
         method: 'POST',
@@ -726,7 +690,6 @@ const CustomerManagement = () => {
         message.error(`Tạo khách hàng thất bại: ${errorData.message || 'Lỗi không xác định'}`);
       }
     } catch (error) {
-      console.error('Lỗi khi tạo khách hàng:', error);
       message.error('Không thể tạo khách hàng mới. Vui lòng thử lại sau.');
     } finally {
       setCreatingCustomer(false);
@@ -768,9 +731,6 @@ const CustomerManagement = () => {
         tongTien: 0,
         trangThai: 0
       };
-
-      console.log('Đang cập nhật khách hàng:', customerData);
-
       // Gọi API cập nhật khách hàng
       const response = await fetch(`/api/KhachHang/Update?id=${editingCustomer.maKH}`, {
         method: 'PUT',
@@ -790,7 +750,6 @@ const CustomerManagement = () => {
         message.error(`Cập nhật khách hàng thất bại: ${errorData.message || 'Lỗi không xác định'}`);
       }
     } catch (error) {
-      console.error('Lỗi khi cập nhật khách hàng:', error);
       message.error('Không thể cập nhật thông tin khách hàng. Vui lòng thử lại sau.');
     } finally {
       setUpdatingCustomer(false);
@@ -799,7 +758,6 @@ const CustomerManagement = () => {
 
   // Xử lý xóa khách hàng
   const handleDeleteCustomer = (customer: Customer) => {
-    console.log('handleDeleteCustomer called for customer:', customer);
     setCustomerToDelete(customer);
     setIsDeleteModalVisible(true);
   };
@@ -816,7 +774,6 @@ const CustomerManagement = () => {
 
     setIsDeleting(true);
     try {
-      console.log('Calling delete API for customer ID:', customerToDelete.maKH);
       const response = await fetch(`/api/KhachHang/Delete?id=${customerToDelete.maKH}`, {
         method: 'PUT',
         headers: {
@@ -826,18 +783,15 @@ const CustomerManagement = () => {
       });
 
       if (response.ok) {
-        console.log('Delete API call successful');
         message.success('Xóa khách hàng thành công');
         fetchCustomers(pagination.current, pagination.pageSize); // Tải lại danh sách khách hàng
         setIsDeleteModalVisible(false);
         setCustomerToDelete(null);
       } else {
         const errorData = await response.json();
-        console.error('Delete API returned error:', errorData);
         message.error(`Xóa khách hàng thất bại: ${errorData.message || 'Lỗi không xác định'}`);
       }
     } catch (error) {
-      console.error('Error during delete API call:', error);
       message.error('Không thể xóa khách hàng. Vui lòng thử lại sau.');
     } finally {
       setIsDeleting(false);

@@ -40,9 +40,6 @@ export default async function handler(
           message: 'Username is required and must be a string'
         });
       }
-
-      console.log(`Checking if user exists: ${username}`);
-
       // Call backend API
       try {
         const response = await axios.get(`${BACKEND_API_URL}/User/CheckExists`, {
@@ -55,8 +52,6 @@ export default async function handler(
           exists: response.data
         });
       } catch (error) {
-        console.error('Error checking if user exists:', error);
-        
         // Trả về false nếu có lỗi khi gọi API
         return res.status(200).json({
           success: true,
@@ -64,7 +59,6 @@ export default async function handler(
         });
       }
     } catch (error) {
-      console.error('Error in check-exists API route:', error);
       return res.status(500).json({
         success: false,
         message: 'Internal server error'

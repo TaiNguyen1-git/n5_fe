@@ -95,9 +95,6 @@ export async function getUserProfile(): Promise<any> {
     if (!token) {
       return null;
     }
-
-    console.log('getUserProfile - Đang gọi API với token:', token.substring(0, 15) + '...');
-
     // Gọi API lấy thông tin người dùng
     const response = await fetch('/api/user-profile', {
       method: 'GET',
@@ -108,13 +105,8 @@ export async function getUserProfile(): Promise<any> {
 
     if (response.ok) {
       const responseData = await response.json();
-      console.log('getUserProfile - API response:', responseData);
-
       if (responseData.data) {
         // Log để debug
-        console.log('getUserProfile - Số điện thoại:', responseData.data.phone);
-        console.log('getUserProfile - Kiểu dữ liệu số điện thoại:', typeof responseData.data.phone);
-
         try {
           // Đọc dữ liệu hiện tại từ cookie hoặc localStorage
           const currentUserStr = getAuthCookie(USER_DATA_KEY) || localStorage.getItem(USER_DATA_KEY);
@@ -124,7 +116,6 @@ export async function getUserProfile(): Promise<any> {
             try {
               currentUser = JSON.parse(currentUserStr);
             } catch (parseError) {
-              console.error('Error parsing user data:', parseError);
             }
           }
 
@@ -156,20 +147,11 @@ export async function getUserProfile(): Promise<any> {
           } else {
             updatedUserData.role = 'customer';
           }
-
-          console.log('getUserProfile - Đồng bộ role từ loaiTK:', {
-            loaiTK: updatedUserData.loaiTK,
-            role: updatedUserData.role
-          });
-
           // Lưu dữ liệu mới vào cả cookie và localStorage
           setAuthCookie(USER_DATA_KEY, JSON.stringify(updatedUserData));
           localStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUserData));
-          console.log('getUserProfile - Đã cập nhật dữ liệu người dùng:', updatedUserData);
-
           return updatedUserData;
         } catch (storageError) {
-          console.error('getUserProfile - Lỗi khi cập nhật dữ liệu người dùng:', storageError);
           return responseData.data;
         }
       }
@@ -179,7 +161,6 @@ export async function getUserProfile(): Promise<any> {
 
     return null;
   } catch (error) {
-    console.error('Lỗi khi lấy thông tin người dùng:', error);
     return null;
   }
 }
@@ -207,9 +188,6 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<Updat
         message: 'Không tìm thấy thông tin xác thực'
       };
     }
-
-    console.log('Đang cập nhật thông tin người dùng:', userData);
-
     // Gọi API cập nhật thông qua Next.js API route
     const response = await fetch('/api/user-update', {
       method: 'PUT',
@@ -242,21 +220,15 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<Updat
           // Lưu dữ liệu vào cả cookie và localStorage
           setAuthCookie(USER_DATA_KEY, JSON.stringify(updatedUser));
           localStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUser));
-          console.log('userService: Đã cập nhật dữ liệu người dùng trong storage:', updatedUser);
-
           // Ngay sau khi cập nhật dữ liệu trong cookie/localStorage, chúng ta gọi API
           // để lấy dữ liệu mới nhất từ server và cập nhật lại
           try {
             setTimeout(async () => {
-              console.log('userService: Đang đồng bộ hóa dữ liệu với server...');
               const profileData = await getUserProfile();
-              console.log('userService: Đồng bộ hóa dữ liệu thành công:', profileData);
             }, 1000); // Delay 1 giây để đảm bảo server đã cập nhật xong dữ liệu
           } catch (syncError) {
-            console.error('userService: Lỗi khi đồng bộ hóa dữ liệu:', syncError);
           }
         } catch (err) {
-          console.error('Lỗi khi cập nhật thông tin người dùng:', err);
         }
       }
 
@@ -273,7 +245,6 @@ export async function updateUserProfile(userData: UserUpdateData): Promise<Updat
       };
     }
   } catch (error) {
-    console.error('Lỗi khi cập nhật thông tin người dùng:', error);
     return {
       success: false,
       message: 'Đã xảy ra lỗi khi cập nhật thông tin. Vui lòng thử lại sau.'
@@ -310,9 +281,6 @@ export const userService = {
           },
           timeout: 15000 // 15 giây
         });
-
-        console.log('API response structure:', Object.keys(response.data));
-
         // Kiểm tra cấu trúc phản hồi
         if (response.data && response.data.items && Array.isArray(response.data.items)) {
           // Phản hồi đã có cấu trúc phân trang
@@ -328,7 +296,6 @@ export const userService = {
           };
         } else {
           // Trường hợp không xác định, trả về cấu trúc mặc định
-          console.warn('Unexpected API response format:', response.data);
           return {
             items: [],
             totalItems: 0,
@@ -338,8 +305,6 @@ export const userService = {
           };
         }
       } catch (error) {
-        console.error(`Error fetching users (attempt ${retryCount + 1}/${maxRetries}):`, error);
-
         // Tăng số lần thử
         retryCount++;
 
@@ -371,7 +336,6 @@ export const userService = {
       });
       return response.data.data;
     } catch (error) {
-      console.error(`Error fetching user with id ${id}:`, error);
       throw error;
     }
   },
@@ -395,7 +359,6 @@ export const userService = {
         return response.data;
       } catch (error) {
         lastError = error;
-        console.error(`Error creating user (attempt ${retryCount + 1}/${maxRetries}):`, error);
 
         // Tăng số lần thử
         retryCount++;
@@ -427,34 +390,25 @@ export const userService = {
           ...userData,
           maTK: id
         };
-
-        console.log(`Updating user with id ${id}, data (attempt ${retryCount + 1}/${maxRetries}):`, updatedData);
-
         // Sử dụng API endpoint chính xác cho cập nhật
-        console.log('Calling API: PUT ${BASE_URL}/User/Update with data:', updatedData);
         const response = await axios.put(`${BASE_URL}/User/Update`, updatedData, {
           timeout: 15000 // 15 giây
         });
-        console.log('Update API response:', response.data);
         return response.data;
       } catch (error) {
         lastError = error;
-        console.error(`Error updating user with id ${id} (attempt ${retryCount + 1}/${maxRetries}):`, error);
-
         // Tăng số lần thử
         retryCount++;
 
         if (retryCount < maxRetries) {
           // Chờ trước khi thử lại (1s, 2s, 4s...)
           const delay = Math.pow(2, retryCount) * 1000;
-          console.log(`Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
 
     // Nếu tất cả các lần thử đều thất bại
-    console.error('All retry attempts failed for updateUser.');
     throw lastError;
   },
 
@@ -586,7 +540,6 @@ export const userService = {
       });
       return response.data.exists;
     } catch (error) {
-      console.error(`Error checking if user exists: ${username}`, error);
       return false;
     }
   },

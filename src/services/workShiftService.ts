@@ -30,7 +30,6 @@ export const workShiftService = {
       }
       return [];
     } catch (error) {
-      console.error('Error fetching work shifts:', error);
       throw error;
     }
   },
@@ -45,7 +44,6 @@ export const workShiftService = {
       }
       throw new Error('Work shift not found');
     } catch (error) {
-      console.error(`Error fetching work shift with id ${id}:`, error);
       throw error;
     }
   },
@@ -56,7 +54,6 @@ export const workShiftService = {
       const response = await axios.post(`${BASE_URL}/work-shifts`, workShift);
       return response.data;
     } catch (error) {
-      console.error('Error creating work shift:', error);
       throw error;
     }
   },
@@ -64,11 +61,9 @@ export const workShiftService = {
   // Update work shift
   updateWorkShift: async (id: number | string, workShift: Partial<WorkShift>): Promise<any> => {
     try {
-      console.log(`Updating work shift with id ${id}, data:`, workShift);
       const response = await axios.put(`${BASE_URL}/work-shifts/${id}`, workShift);
       return response.data;
     } catch (error) {
-      console.error(`Error updating work shift with id ${id}:`, error);
       throw error;
     }
   },
@@ -79,7 +74,6 @@ export const workShiftService = {
       const response = await axios.delete(`${BASE_URL}/work-shifts/${id}`);
       return response.data;
     } catch (error) {
-      console.error(`Error deleting work shift with id ${id}:`, error);
       throw error;
     }
   }

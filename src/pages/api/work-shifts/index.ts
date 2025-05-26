@@ -40,7 +40,6 @@ export default async function handler(
         data: workShifts
       });
     } catch (error: any) {
-      console.error('Error fetching work shifts:', error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy danh sách ca làm'
@@ -49,8 +48,6 @@ export default async function handler(
   } else if (req.method === 'POST') {
     try {
       // Log request body for debugging
-      console.log('POST /api/work-shifts - Request body:', req.body);
-
       // Check for required fields
       const { tenCa, gioBatDau, gioKetThuc, ngayLamViec, maNV, ghiChu } = req.body;
 
@@ -71,21 +68,14 @@ export default async function handler(
         ghiChu: ghiChu || '',
         trangThai: 1 // Default active status
       };
-
-      console.log('Sending to API:', workShiftData);
-
       // Create work shift through backend API
       const response = await axios.post(`${BACKEND_API_URL}/CaLam/Create`, workShiftData);
-
-      console.log('API response:', response.data);
-
       return res.status(201).json({
         success: true,
         message: 'Tạo ca làm thành công',
         data: response.data
       });
     } catch (error: any) {
-      console.error('Error creating work shift:', error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi tạo ca làm mới'

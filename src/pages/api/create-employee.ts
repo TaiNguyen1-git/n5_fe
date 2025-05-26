@@ -14,8 +14,6 @@ export default async function handler(
         hoTen, chucVuId, caLamId, luongCoBan, maVaiTro, trangThai
       } = req.body;
 
-      console.log('Creating employee - Request data:', req.body);
-
       // Kiểm tra dữ liệu đầu vào
       if (!hoTen || !hoTen.trim()) {
         return res.status(400).json({
@@ -48,7 +46,7 @@ export default async function handler(
 
       // Đảm bảo maVaiTro luôn là 2 (nhân viên) khi tạo mới
       if (maVaiTro !== 2) {
-        console.log(`Overriding maVaiTro from ${maVaiTro} to 2 (nhân viên)`);
+
       }
 
       // Chuẩn bị dữ liệu nhân viên theo đúng cấu trúc API
@@ -61,8 +59,6 @@ export default async function handler(
         trangThai: trangThai !== undefined ? trangThai : true
       };
 
-      console.log('Employee data:', employeeData);
-
       // Gọi API tạo nhân viên
       const employeeResponse = await axios.post(`${BACKEND_API_URL}/NhanVien/Create`, employeeData, {
         headers: {
@@ -71,25 +67,22 @@ export default async function handler(
         timeout: 30000 // 30 seconds
       });
 
-      console.log('Employee created successfully:', employeeResponse.data);
-
       return res.status(201).json({
         success: true,
         message: 'Tạo nhân viên thành công',
         data: employeeResponse.data
       });
     } catch (error: any) {
-      console.error('Error creating employee:', error);
 
       // Log chi tiết lỗi
       if (error.response) {
-        console.error('Error response status:', error.response.status);
-        console.error('Error response data:', error.response.data);
-        console.error('Error response headers:', error.response.headers);
+
+
+
       } else if (error.request) {
-        console.error('Error request:', error.request);
+
       } else {
-        console.error('Error message:', error.message);
+
       }
 
       // Xác định loại lỗi và trả về thông báo phù hợp

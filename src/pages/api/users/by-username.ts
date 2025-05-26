@@ -25,16 +25,13 @@ export default async function handler(
   }
 
   try {
-    console.log(`Fetching user data for username: ${username}`);
-    
+
     // Gọi API backend để lấy thông tin người dùng theo tên tài khoản
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://ptud-web-1.onrender.com/api';
     const response = await axios.get(`${backendUrl}/User/GetByUsername`, {
       params: { tenTK: username },
       timeout: 15000 // 15 giây
     });
-
-    console.log('Backend API response:', response.data);
 
     // Kiểm tra phản hồi từ backend
     if (response.data && response.data.success) {
@@ -57,8 +54,7 @@ export default async function handler(
       });
     }
   } catch (error: any) {
-    console.error('Error fetching user by username:', error);
-    
+
     // Trả về lỗi chi tiết
     return res.status(500).json({
       success: false,

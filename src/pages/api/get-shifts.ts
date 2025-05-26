@@ -24,15 +24,6 @@ export default async function handler(
         data: response.data
       });
     } catch (error: any) {
-      console.error('Error fetching shifts:', error);
-
-      // Log chi tiết lỗi
-      if (error.response) {
-        console.error('Error response status:', error.response.status);
-      } else {
-        console.error('Error message:', error.message);
-      }
-
       return res.status(500).json({
         success: false,
         message: 'Đã xảy ra lỗi khi lấy danh sách ca làm',

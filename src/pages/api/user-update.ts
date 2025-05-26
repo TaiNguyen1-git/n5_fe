@@ -30,8 +30,6 @@ export default async function handler(
 
     // Lấy thông tin cần cập nhật từ body
     const userData = req.body;
-    console.log('User Update handler - Thông tin cập nhật:', userData);
-
     // Sử dụng phương án đã thành công (phương án 1 với query parameter)
     try {
       // Phương án Query Parameter với tham số TenTK
@@ -40,8 +38,6 @@ export default async function handler(
       }).toString();
       
       const requestUrl = `https://ptud-web-1.onrender.com/api/User/Update?${queryParams}`;
-      console.log('Gọi API cập nhật:', requestUrl);
-
       // Gọi API với query parameter
       const response = await fetch(requestUrl, {
         method: 'PUT',
@@ -58,10 +54,7 @@ export default async function handler(
       });
       
       // Kiểm tra kết quả
-      console.log('Kết quả API (status):', response.status);
-      
       if (response.ok) {
-        console.log('Cập nhật thành công');
         return res.status(200).json({
           success: true,
           message: 'Cập nhật thông tin thành công'
@@ -71,8 +64,6 @@ export default async function handler(
         let errorMessage = 'Cập nhật thông tin thất bại';
         try {
           const errorText = await response.text();
-          console.log('Lỗi từ API:', errorText);
-          
           try {
             const errorJson = JSON.parse(errorText);
             if (errorJson.message) {
@@ -85,7 +76,6 @@ export default async function handler(
             }
           }
         } catch (e) {
-          console.error('Không thể đọc lỗi từ API:', e);
         }
         
         return res.status(response.status).json({
@@ -94,14 +84,12 @@ export default async function handler(
         });
       }
     } catch (error) {
-      console.error('User Update handler - Lỗi khi gọi API:', error);
       return res.status(500).json({
         success: false,
         message: 'Đã xảy ra lỗi khi gọi API cập nhật thông tin'
       });
     }
   } catch (error) {
-    console.error('User Update handler - Lỗi:', error);
     return res.status(500).json({
       success: false,
       message: 'Đã xảy ra lỗi khi cập nhật thông tin người dùng'

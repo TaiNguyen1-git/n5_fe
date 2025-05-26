@@ -85,7 +85,6 @@ const BookingManagement = () => {
   const fetchCustomers = async () => {
     setCustomerLoading(true);
     try {
-      console.log('Fetching all customers...');
       const response = await getAllCustomers(1, 1000); // Get a large number to get all customers
 
       if (response.success && response.data?.items) {
@@ -97,12 +96,9 @@ const BookingManagement = () => {
           }
         });
         setCustomers(customerMap);
-        console.log('Customer data loaded:', customerMap);
       } else {
-        console.warn('Failed to fetch customers:', response.message);
       }
     } catch (error) {
-      console.error('Error fetching customers:', error);
     } finally {
       setCustomerLoading(false);
     }
@@ -110,8 +106,6 @@ const BookingManagement = () => {
 
   // Format booking data from API response
   const formatBookingData = (data: any[]): Booking[] => {
-    console.log('Raw booking data:', data);
-
     // Lọc bỏ các đặt phòng không hợp lệ (không có mã đặt phòng)
     const validData = data.filter(booking => booking && booking.maDatPhong);
 
@@ -131,8 +125,6 @@ const BookingManagement = () => {
         xoa: booking.xoa || false
       };
     });
-
-    console.log('Formatted booking data:', formattedData);
     return formattedData;
   };
 
@@ -144,7 +136,6 @@ const BookingManagement = () => {
     // Try each API endpoint in sequence
     for (let i = 0; i < BOOKING_API_URLS.length; i++) {
       try {
-        console.log(`Trying API endpoint: ${BOOKING_API_URLS[i]}`);
         const response = await axios.get(BOOKING_API_URLS[i], {
           params: {
             PageNumber: currentPage,
@@ -190,10 +181,7 @@ const BookingManagement = () => {
         }
 
         // If we get here, the response format wasn't recognized
-        console.warn(`Unrecognized data format from ${BOOKING_API_URLS[i]}`);
-
       } catch (err) {
-        console.error(`Error fetching bookings from ${BOOKING_API_URLS[i]}:`, err);
         // Continue to the next API endpoint
       }
     }
@@ -230,11 +218,9 @@ const BookingManagement = () => {
       ];
 
       setBookings(mockBookings);
-      console.warn('Using mock data for demonstration');
       message.warning('Sử dụng dữ liệu mẫu để demo. Không thể kết nối đến máy chủ.');
       setError('Không thể kết nối đến máy chủ. Đang sử dụng dữ liệu mẫu.');
     } catch (mockError) {
-      console.error('Error creating mock data:', mockError);
       message.error('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
       setError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
     }
@@ -262,7 +248,6 @@ const BookingManagement = () => {
     // Try each API endpoint in sequence
     for (let i = 0; i < STATUS_API_URLS.length; i++) {
       try {
-        console.log(`Trying Status API endpoint: ${STATUS_API_URLS[i]}`);
         const response = await axios.get(STATUS_API_URLS[i], {
           timeout: 10000, // 10 second timeout
           headers: {
@@ -292,16 +277,12 @@ const BookingManagement = () => {
         }
 
         // If we get here, the response format wasn't recognized
-        console.warn(`Unrecognized data format from ${STATUS_API_URLS[i]}`);
-
       } catch (err) {
-        console.error(`Error fetching booking statuses from ${STATUS_API_URLS[i]}:`, err);
         // Continue to the next API endpoint
       }
     }
 
     // If all API calls failed, use default statuses
-    console.warn('All Status API endpoints failed, using default statuses');
     const defaultStatuses: BookingStatus[] = [
       { maTT: 1, datPhong: null, tenTT: 'Đã xác nhận', value: 1, label: 'Đã xác nhận', color: 'green' },
       { maTT: 2, datPhong: null, tenTT: 'Đang chờ', value: 2, label: 'Đang chờ', color: 'orange' },
@@ -362,7 +343,6 @@ const BookingManagement = () => {
       // Thử từng endpoint
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying to delete booking using endpoint: ${endpoint}`);
           const response = await axios.put(endpoint, deleteData, {
             headers: {
               'Content-Type': 'application/json',
@@ -373,11 +353,9 @@ const BookingManagement = () => {
 
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Delete successful with response:', response.data);
             break;
           }
         } catch (endpointError) {
-          console.error(`Error with endpoint ${endpoint}:`, endpointError);
           // Tiếp tục thử endpoint tiếp theo
         }
       }
@@ -393,7 +371,6 @@ const BookingManagement = () => {
         message.success('Đã xóa đặt phòng thành công! (Chế độ offline)');
       }
     } catch (error) {
-      console.error('Lỗi khi xóa đặt phòng:', error);
       message.error('Có lỗi xảy ra khi xóa đặt phòng');
     }
   };
@@ -423,7 +400,6 @@ const BookingManagement = () => {
       // Thử từng endpoint
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying to update booking status using endpoint: ${endpoint}`);
           const response = await axios.put(endpoint, updateData, {
             headers: {
               'Content-Type': 'application/json',
@@ -434,11 +410,9 @@ const BookingManagement = () => {
 
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Update successful with response:', response.data);
             break;
           }
         } catch (endpointError) {
-          console.error(`Error with endpoint ${endpoint}:`, endpointError);
           // Tiếp tục thử endpoint tiếp theo
         }
       }
@@ -464,7 +438,6 @@ const BookingManagement = () => {
         }
       }
     } catch (error) {
-      console.error('Lỗi khi xác nhận đặt phòng:', error);
       message.error('Có lỗi xảy ra khi xác nhận đặt phòng');
     }
   };
@@ -494,7 +467,6 @@ const BookingManagement = () => {
       // Thử từng endpoint
       for (const endpoint of apiEndpoints) {
         try {
-          console.log(`Trying to update booking status using endpoint: ${endpoint}`);
           const response = await axios.put(endpoint, updateData, {
             headers: {
               'Content-Type': 'application/json',
@@ -505,11 +477,9 @@ const BookingManagement = () => {
 
           if (response.status >= 200 && response.status < 300) {
             success = true;
-            console.log('Update successful with response:', response.data);
             break;
           }
         } catch (endpointError) {
-          console.error(`Error with endpoint ${endpoint}:`, endpointError);
           // Tiếp tục thử endpoint tiếp theo
         }
       }
@@ -535,7 +505,6 @@ const BookingManagement = () => {
         }
       }
     } catch (error) {
-      console.error('Lỗi khi từ chối đặt phòng:', error);
       message.error('Có lỗi xảy ra khi từ chối đặt phòng');
     }
   };

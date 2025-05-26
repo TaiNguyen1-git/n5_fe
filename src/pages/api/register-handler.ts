@@ -32,9 +32,6 @@ export default async function handler(
       Email: email,            // Email
       Phone: phone || ""       // Số điện thoại
     };
-
-    console.log('Register handler - Đang gửi dữ liệu đăng ký:', registerData);
-
     // Tạo form data
     const formData = new URLSearchParams();
     formData.append('MaTK', registerData.MaTK.toString());
@@ -60,16 +57,11 @@ export default async function handler(
     try {
       data = await response.json();
     } catch (error) {
-      console.error('Register handler - Lỗi khi parse JSON response:', error);
       return res.status(500).json({
         success: false,
         message: 'Lỗi khi xử lý phản hồi từ server'
       });
     }
-
-    console.log('Register handler - Kết quả đăng ký:', data);
-    console.log('Register handler - HTTP status:', response.status);
-
     // XỬ LÝ PHẢN HỒI TỪ BACKEND
     // Kiểm tra cả status và nội dung phản hồi
     if (!response.ok || response.status >= 400 || (data && data.statusCode >= 400)) {
@@ -85,9 +77,6 @@ export default async function handler(
           errorMessage = data.title;
         }
       }
-
-      console.error('Registration failed:', response.status, response.statusText);
-
       // QUAN TRỌNG: Trả về status 400 và success: false
       return res.status(400).json({
         success: false,
@@ -103,7 +92,6 @@ export default async function handler(
       data: data
     });
   } catch (error) {
-    console.error('Register handler - Lỗi:', error);
     return res.status(500).json({
       success: false,
       message: 'Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại sau.'

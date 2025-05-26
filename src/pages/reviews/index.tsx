@@ -95,7 +95,6 @@ export default function Reviews() {
         setReviews([]);
       }
     } catch (err) {
-      console.error('Error fetching reviews:', err);
       setError('Không thể tải dữ liệu đánh giá. Vui lòng thử lại sau.');
       setReviews([]);
     } finally {
@@ -130,7 +129,6 @@ export default function Reviews() {
         setPublicReviewsList([]);
       }
     } catch (err) {
-      console.error('Error fetching public reviews:', err);
       setPublicReviewsList([]);
     }
   };
@@ -155,7 +153,6 @@ export default function Reviews() {
           // Update UI
           setReviews(reviews.filter(review => review.id !== id));
         } catch (err) {
-          console.error('Error deleting review:', err);
           Modal.error({
             title: 'Lỗi',
             content: 'Không thể xóa đánh giá. Vui lòng thử lại sau.'
@@ -182,7 +179,6 @@ export default function Reviews() {
         setIsEditModalVisible(false);
         setEditingReview(null);
       } catch (err) {
-        console.error('Error updating review:', err);
         Modal.error({
           title: 'Lỗi',
           content: 'Không thể cập nhật đánh giá. Vui lòng thử lại sau.'

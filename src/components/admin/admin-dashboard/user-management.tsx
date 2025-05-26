@@ -19,7 +19,7 @@ const UserManagement = () => {
     pageSize: 10,
     total: 0
   });
-  
+
   // Thêm state mới để quản lý modal xác nhận xóa
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string>('');
@@ -33,8 +33,6 @@ const UserManagement = () => {
   const loadUsers = async (page: number = 1, pageSize: number = 10) => {
     try {
       setLoading(true);
-      console.log(`Loading users with page=${page}, pageSize=${pageSize}`);
-
       // Hiển thị thông báo đang tải
       const loadingMessage = message.loading('Đang tải danh sách người dùng...', 0);
 
@@ -84,8 +82,6 @@ const UserManagement = () => {
         }
 
         const response = await fetchResponse.json();
-        console.log('API response:', response);
-
         // Đóng thông báo đang tải
         loadingMessage();
 
@@ -98,7 +94,6 @@ const UserManagement = () => {
           });
           message.success('Tải danh sách người dùng thành công');
         } else {
-          console.warn('API returned empty data, using sample data');
           message.warning('API trả về dữ liệu trống, sử dụng dữ liệu mẫu');
           setUsers(sampleUsers);
           setPagination({
@@ -110,8 +105,6 @@ const UserManagement = () => {
       } catch (error) {
         // Đóng thông báo đang tải
         loadingMessage();
-
-        console.error('Error loading users:', error);
         message.error('Không thể kết nối đến máy chủ. Hiển thị dữ liệu mẫu.');
 
         // Sử dụng dữ liệu mẫu khi có lỗi
@@ -123,7 +116,6 @@ const UserManagement = () => {
         });
       }
     } catch (error) {
-      console.error('Unexpected error in loadUsers:', error);
       message.error('Đã xảy ra lỗi không mong muốn khi tải dữ liệu');
       setUsers([]);
     } finally {
@@ -232,7 +224,6 @@ const UserManagement = () => {
 
   // Xử lý chỉnh sửa người dùng
   const handleEdit = (user: User) => {
-    console.log('Editing user:', user);
     setEditingUser(user);
     form.setFieldsValue({
       tenTK: user.tenTK,
@@ -251,10 +242,10 @@ const UserManagement = () => {
       message.error('Không thể xóa người dùng: Tên tài khoản không hợp lệ');
       return;
     }
-    
+
     // Tìm người dùng với tenTK này để xem có tồn tại không
     const userInfo = users.find(u => u.tenTK === tenTK);
-    
+
     // Lưu tenTK và hiển thị modal xác nhận
     setUserToDelete(tenTK);
     setDeleteModalVisible(true);
@@ -263,7 +254,7 @@ const UserManagement = () => {
   // Xử lý xác nhận xóa
   const handleConfirmDelete = async () => {
     const tenTK = userToDelete;
-    
+
     // Hiển thị thông báo đang xử lý
     const loadingMessage = message.loading('Đang xóa người dùng...', 0);
 
@@ -276,10 +267,10 @@ const UserManagement = () => {
           'Accept': 'application/json'
         }
       });
-      
+
       // Phân tích phản hồi
       const responseText = await response.text();
-      
+
       let result;
       try {
         result = responseText ? JSON.parse(responseText) : {};
@@ -299,7 +290,7 @@ const UserManagement = () => {
         message.success('Đã xóa người dùng thành công');
         // Cập nhật UI sau khi xóa thành công
         setUsers(users.filter(user => user.tenTK !== tenTK));
-        
+
         // Làm mới danh sách để đảm bảo dữ liệu đồng bộ
         loadUsers(pagination.current, pagination.pageSize);
       } else {
@@ -323,7 +314,7 @@ const UserManagement = () => {
       } else {
         message.error(`Không thể xóa người dùng: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`);
       }
-      
+
       // Làm mới danh sách để đảm bảo dữ liệu đồng bộ
       loadUsers(pagination.current, pagination.pageSize);
     }
@@ -348,8 +339,6 @@ const UserManagement = () => {
   const handleSave = () => {
     form.validateFields().then(async values => {
       try {
-        console.log('Form values:', values);
-
         if (editingUser) {
           // Cập nhật người dùng hiện có
           const userData: Partial<User> = {
@@ -365,9 +354,6 @@ const UserManagement = () => {
           if (values.matKhau) {
             userData.matKhau = values.matKhau;
           }
-
-          console.log('Updating user with data:', userData);
-
           // Gọi API cập nhật người dùng
           await userService.updateUser(editingUser.maTK!, userData);
 
@@ -390,11 +376,8 @@ const UserManagement = () => {
             isVerified: values.isVerified
           };
 
-          console.log('Creating new user with data:', userData);
-
           // Gọi API tạo người dùng mới
           const response = await userService.createUser(userData);
-          console.log('API response after create:', response);
 
           // Thêm người dùng mới vào danh sách
           if (response && response.success) {
@@ -415,7 +398,6 @@ const UserManagement = () => {
         setIsModalVisible(false);
         loadUsers(pagination.current, pagination.pageSize);
       } catch (error) {
-        console.error('Error saving user:', error);
         message.error('Không thể lưu thông tin người dùng. Vui lòng thử lại sau.');
       }
     });

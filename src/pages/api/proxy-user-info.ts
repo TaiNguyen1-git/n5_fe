@@ -36,9 +36,6 @@ export default async function handler(
         message: 'Thiếu tham số username'
       });
     }
-
-    console.log(`Proxy user info - Tìm thông tin người dùng với username: ${username}`);
-
     // Giải pháp không hardcode, sử dụng API backend để tìm thông tin người dùng
     try {
       // Có thể backend của bạn có endpoint để tìm người dùng theo tên đăng nhập
@@ -65,29 +62,21 @@ export default async function handler(
         } else if (Array.isArray(data)) {
           users = data;
         }
-        
-        console.log(`Proxy user info - Nhận được ${users.length} người dùng từ API`);
-        
         // Tìm người dùng có tenTK hoặc username khớp
         const userFound = users.find((user: any) => 
           user.tenTK === username || user.username === username);
           
         if (userFound) {
           userInfo = userFound;
-          console.log(`Proxy user info - Tìm thấy người dùng với ID: ${userInfo.maTK}`);
         } else {
-          console.log(`Proxy user info - Không tìm thấy người dùng với username: ${username}`);
         }
       } else {
-        console.log(`Proxy user info - Không thể gọi API, status: ${response.status}`);
       }
       
       // Nếu không tìm thấy thông tin người dùng, trả về lỗi
       if (!userInfo) {
         // Thử cách khác: gọi API /api/User/GetbyId/username (một số hệ thống cho phép dùng username thay cho ID)
         try {
-          console.log(`Proxy user info - Thử gọi API GetbyId với username: ${username}`);
-          
           const idResponse = await fetch(`https://ptud-web-1.onrender.com/api/User/GetbyId/${username}`, {
             method: 'GET',
             headers: {
@@ -100,13 +89,10 @@ export default async function handler(
             const userData = await idResponse.json();
             if (userData && userData.value) {
               userInfo = userData.value;
-              console.log(`Proxy user info - Tìm thấy thông tin người dùng với GetbyId: ${userInfo.maTK}`);
             }
           } else {
-            console.log(`Proxy user info - Không thể gọi API GetbyId, status: ${idResponse.status}`);
           }
         } catch (error) {
-          console.error('Proxy user info - Lỗi khi gọi API GetbyId:', error);
         }
       }
       
@@ -129,14 +115,12 @@ export default async function handler(
       });
       
     } catch (error) {
-      console.error('Proxy user info - Lỗi:', error);
       return res.status(500).json({
         success: false,
         message: 'Đã xảy ra lỗi khi tìm thông tin người dùng'
       });
     }
   } catch (error) {
-    console.error('Proxy user info - Lỗi:', error);
     return res.status(500).json({
       success: false,
       message: 'Đã xảy ra lỗi khi xử lý yêu cầu'

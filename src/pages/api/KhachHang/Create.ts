@@ -18,7 +18,6 @@ export default async function handler(
   if (req.method === 'POST') {
     try {
       // Log request body for debugging
-      console.log('POST /api/KhachHang/Create - Request body:', req.body);
 
       // Kiểm tra các trường bắt buộc
       const { tenKH, email } = req.body;
@@ -53,7 +52,7 @@ export default async function handler(
 
         // Kiểm tra xem response có chứa dữ liệu khách hàng không
         if (!response.data || !response.data.maKH) {
-          console.warn('API response does not contain customer ID');
+
         }
 
         // Trả về kết quả từ API backend
@@ -63,14 +62,13 @@ export default async function handler(
           data: response.data
         });
       } catch (apiError: any) {
-        console.error('Error calling customer API:', apiError.message);
+
         if (axios.isAxiosError(apiError) && apiError.response) {
-          console.error('Customer API error response:', apiError.response.status, apiError.response.data);
+
         }
         throw apiError; // Re-throw to be caught by the outer catch block
       }
     } catch (error: any) {
-      console.error('Error creating customer:', error);
 
       // Xử lý lỗi cụ thể
       if (axios.isAxiosError(error)) {

@@ -38,9 +38,8 @@ export default async function handler(
   }
 
   try {
-    console.log(`Proxying request to: ${url}`);
-    console.log(`Request method: ${req.method}`);
-    console.log(`Request body:`, JSON.stringify(req.body, null, 2));
+
+
 
     // Create a custom HTTPS agent that ignores SSL errors
     const httpsAgent = new Agent({
@@ -60,16 +59,13 @@ export default async function handler(
       httpsAgent
     });
 
-    console.log(`Proxy response status: ${response.status}`);
-    
     // Return the response from the target URL
     return res.status(response.status).json({
       success: true,
       data: response.data
     });
   } catch (error: any) {
-    console.error('Proxy error:', error);
-    
+
     // Handle specific error types
     if (axios.isAxiosError(error)) {
       if (error.response) {

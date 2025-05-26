@@ -76,7 +76,6 @@ const StaffDashboard = () => {
   useEffect(() => {
     // Kiểm tra xác thực người dùng
     if (!isAuthenticated()) {
-      console.log('StaffDashboard - Người dùng chưa đăng nhập, chuyển hướng đến trang đăng nhập');
       router.push('/login.js');
       return;
     }
@@ -87,21 +86,10 @@ const StaffDashboard = () => {
     // Kiểm tra quyền truy cập dựa trên loaiTK và role
     const loaiTK = typeof user?.loaiTK === 'string' ? parseInt(user.loaiTK, 10) : user?.loaiTK;
     const isStaff = user?.role === 'staff' || loaiTK === 2;
-
-    console.log('StaffDashboard - Thông tin người dùng:', {
-      username: user?.username || (user as any)?.tenTK,
-      role: user?.role,
-      loaiTK: loaiTK,
-      isStaff: isStaff
-    });
-
     if (!isStaff) {
-      console.log('StaffDashboard - Người dùng không phải nhân viên, chuyển hướng về trang chủ');
       router.push('/');
       return;
     }
-
-    console.log('StaffDashboard - Xác nhận người dùng là nhân viên, cho phép truy cập');
     setUserData(user);
 
     setLoading(false);
@@ -118,7 +106,6 @@ const StaffDashboard = () => {
         fetchRoomsNeedAttention()
       ]);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
       message.error('Không thể tải dữ liệu tổng quan. Vui lòng thử lại sau.');
     }
   };
@@ -141,12 +128,10 @@ const StaffDashboard = () => {
         });
         return; // Exit if successful
       } catch (serviceError) {
-        console.error('Error fetching from dashboard service:', serviceError);
         // Continue to direct API calls if service fails
       }
 
       // If dashboard service fails, try to fetch data directly from APIs
-      console.log('Trying direct API calls...');
 
       // Fetch rooms data
       const roomsResponse = await fetch('/api/Phong/GetAll');
@@ -201,7 +186,6 @@ const StaffDashboard = () => {
       });
 
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
       message.error('Không thể tải dữ liệu thống kê. Hiển thị dữ liệu mẫu.');
 
       // Use mock data as fallback
@@ -248,28 +232,23 @@ const StaffDashboard = () => {
             if (Array.isArray(data)) {
               bookings = data;
               fetchSuccess = true;
-              console.log(`Successfully fetched ${bookings.length} bookings from ${endpoint}`);
               break;
             } else if (data.items && Array.isArray(data.items)) {
               bookings = data.items;
               fetchSuccess = true;
-              console.log(`Successfully fetched ${bookings.length} bookings from ${endpoint}`);
               break;
             } else if (data.data && Array.isArray(data.data)) {
               bookings = data.data;
               fetchSuccess = true;
-              console.log(`Successfully fetched ${bookings.length} bookings from ${endpoint}`);
               break;
             }
           }
         } catch (endpointError) {
-          console.error(`Error fetching from ${endpoint}:`, endpointError);
           // Continue to next endpoint
         }
       }
 
       if (!fetchSuccess) {
-        console.warn('All API endpoints failed, using mock data');
         // Use mock data as fallback
         bookings = [
           {
@@ -296,9 +275,6 @@ const StaffDashboard = () => {
         const checkOutDate = dayjs(booking.ngayKetThuc).format('YYYY-MM-DD');
         return checkInDate === today || checkOutDate === today;
       });
-
-      console.log(`Found ${todayBookings.length} bookings for today (${today})`);
-
       // Format data for table
       const roomsData = todayBookings.map((booking: any, index: number) => {
         const checkInDate = dayjs(booking.ngayBatDau).format('YYYY-MM-DD');
@@ -317,7 +293,6 @@ const StaffDashboard = () => {
 
       setRoomsNeedAttention(roomsData);
     } catch (error) {
-      console.error('Error fetching rooms that need attention:', error);
       message.error('Không thể tải dữ liệu phòng cần quản lý. Hiển thị dữ liệu mẫu.');
 
       // Use mock data as fallback

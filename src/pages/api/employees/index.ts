@@ -19,9 +19,6 @@ export default async function handler(
     try {
       // Get pagination parameters from query
       const { pageNumber = '1', pageSize = '10' } = req.query;
-
-      console.log(`Fetching employees with pagination: page ${pageNumber}, size ${pageSize}`);
-
       // Get employees from backend API with pagination
       const response = await axios.get(`${BACKEND_API_URL}/NhanVien/GetAll`, {
         params: {
@@ -32,8 +29,6 @@ export default async function handler(
       });
 
       // Log response for debugging
-      console.log('API NhanVien/GetAll response:', JSON.stringify(response.data).substring(0, 500) + '...');
-
       // Transform data for frontend if needed
       let employees = [];
       let paginationInfo = {
@@ -66,8 +61,6 @@ export default async function handler(
       }
 
       // Log processed employees
-      console.log(`Processed ${employees.length} employees`);
-
       // Đảm bảo dữ liệu nhân viên có các trường cần thiết
       const formattedEmployees = employees.map((employee: any) => ({
         id: employee.maNV || employee.id || employee.maNV_,
@@ -87,10 +80,6 @@ export default async function handler(
         vaiTro: employee.vaiTro,
         caLam: employee.caLam
       }));
-
-      console.log('Formatted employees sample:', formattedEmployees.length > 0 ? formattedEmployees[0] : 'No employees');
-      console.log('Pagination info:', paginationInfo);
-
       return res.status(200).json({
         success: true,
         data: {
@@ -99,7 +88,6 @@ export default async function handler(
         }
       });
     } catch (error: any) {
-      console.error('Error fetching employees:', error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy danh sách nhân viên'
@@ -108,8 +96,6 @@ export default async function handler(
   } else if (req.method === 'POST') {
     try {
       // Log request body for debugging
-      console.log('POST /api/employees - Request body:', req.body);
-
       // Kiểm tra các trường bắt buộc theo cấu trúc API
       const {
         hoTen_, chucVu_, taiKhoan_, matKhau_, luongCoBan, trangThai
@@ -132,21 +118,14 @@ export default async function handler(
         luongCoBan: Number(luongCoBan) || 0,
         trangThai: trangThai !== undefined ? trangThai : true
       };
-
-      console.log('Sending to API:', employeeData);
-
       // Tạo nhân viên thông qua API backend
       const response = await axios.post(`${BACKEND_API_URL}/NhanVien/Create`, employeeData);
-
-      console.log('API response:', response.data);
-
       return res.status(201).json({
         success: true,
         message: 'Tạo nhân viên thành công',
         data: response.data
       });
     } catch (error: any) {
-      console.error('Error creating employee:', error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi tạo nhân viên mới'

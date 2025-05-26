@@ -128,7 +128,6 @@ export default function BookingCreate() {
 
           // Nếu cache chưa quá 10 phút, sử dụng cache
           if ((now.getTime() - cacheTime.getTime()) < 10 * 60 * 1000) {
-            console.log('Using cached room data');
             setRoom(cachedRoom);
 
             // Đặt giá mặc định cho 1 đêm nếu có giá
@@ -140,7 +139,6 @@ export default function BookingCreate() {
             return;
           }
         } catch (cacheError) {
-          console.warn('Error reading from cache:', cacheError);
         }
       }
 
@@ -156,7 +154,6 @@ export default function BookingCreate() {
           localStorage.setItem(cacheKey, JSON.stringify(roomData));
           localStorage.setItem(`${cacheKey}_time`, new Date().toISOString());
         } catch (cacheError) {
-          console.warn('Error saving to cache:', cacheError);
         }
 
         // Đặt giá mặc định cho 1 đêm nếu có giá
@@ -170,7 +167,6 @@ export default function BookingCreate() {
         setError('Không thể tìm thấy thông tin phòng');
       }
     } catch (err) {
-      console.error(err);
       setError('Có lỗi xảy ra khi tải thông tin phòng');
     } finally {
       setLoading(false);

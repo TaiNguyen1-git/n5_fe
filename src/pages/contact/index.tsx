@@ -106,7 +106,6 @@ export default function Contact() {
         setIsSuccess(false);
       }, 5000);
     } catch (error) {
-      console.error('Contact form error:', error);
       setErrors(prev => ({
         ...prev,
         submit: 'Có lỗi xảy ra, vui lòng thử lại'

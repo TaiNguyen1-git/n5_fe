@@ -52,23 +52,19 @@ const BookingStatusDisplay: React.FC<BookingStatusDisplayProps> = ({ status, tra
             maTT: trangThai,
             tenTT: tenTT
           });
-          console.log(`Using local status for booking ${bookingId}:`, trangThai, tenTT);
           setLoading(false);
           return;
         }
 
         // Nếu không có trangThai, thử gọi API
-        console.log(`Fetching status for booking ${bookingId}`);
         const response = await axios.get(`/api/room-status/${bookingId}`, {
           timeout: 5000
         });
 
         if (response.data && response.data.success && response.data.data) {
           setApiStatus(response.data.data);
-          console.log(`Status for booking ${bookingId}:`, response.data.data);
         }
       } catch (err) {
-        console.error('Error fetching booking status:', err);
         setError('Lỗi khi tải trạng thái');
 
         // Nếu có lỗi và có trangThai, sử dụng trangThai

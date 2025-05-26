@@ -99,8 +99,6 @@ export default async function handler(
         });
       }
     } catch (uploadError) {
-      console.error('Error uploading to backend:', uploadError);
-
       // Fallback: Lưu file vào thư mục public
       const publicDir = path.join(process.cwd(), 'public');
       const uploadsDir = path.join(publicDir, 'uploads');
@@ -126,7 +124,6 @@ export default async function handler(
       });
     }
   } catch (error) {
-    console.error('Error handling upload:', error);
     return res.status(500).json({ success: false, message: 'Lỗi xử lý upload' });
   }
 }

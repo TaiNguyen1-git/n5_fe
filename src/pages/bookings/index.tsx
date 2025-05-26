@@ -122,8 +122,6 @@ export default function BookingHistory() {
                 trangThai: booking.trangThai
               };
             } catch (roomErr) {
-              console.warn(`Error fetching room data for booking ${booking.maHD}:`, roomErr);
-
               // Return basic booking data even if we couldn't get room details
               return {
                 id: booking.maHD,
@@ -154,7 +152,6 @@ export default function BookingHistory() {
         setBookings([]);
       }
     } catch (err) {
-      console.error('Error fetching bookings:', err);
       setError('Không thể tải dữ liệu đặt phòng. Vui lòng thử lại sau.');
       setBookings([]);
     } finally {
@@ -214,7 +211,6 @@ export default function BookingHistory() {
             });
           }
         } catch (err) {
-          console.error('Error cancelling booking:', err);
           Modal.error({
             title: 'Lỗi',
             content: 'Không thể hủy đặt phòng. Vui lòng thử lại sau.'

@@ -50,7 +50,6 @@ export const dashboardService = {
         totalRevenue: 0
       };
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
       // Return default values on error
       return {
         totalRooms: 0,
@@ -80,7 +79,6 @@ export const dashboardService = {
       // Return empty array if response format is invalid
       return [];
     } catch (error) {
-      console.error('Error fetching recent bookings:', error);
       // Return empty array on error
       return [];
     }

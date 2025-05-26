@@ -26,16 +26,12 @@ export default async function handler(
         });
       }
 
-      console.log(`Checking if username ${username} exists...`);
-      
       // Gọi API kiểm tra tài khoản
       try {
         const response = await axios.get(`${BACKEND_API_URL}/User/GetByUsername`, {
           params: { username },
           timeout: 15000 // 15 second timeout
         });
-
-        console.log(`API response for username ${username}:`, response.data);
 
         // Nếu có dữ liệu, tài khoản đã tồn tại
         if (response.data) {
@@ -66,16 +62,15 @@ export default async function handler(
         throw error;
       }
     } catch (error: any) {
-      console.error('Error checking username:', error);
-      
+
       // Log chi tiết lỗi để debug
       if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
+
+
       } else if (error.request) {
-        console.error('Error request:', error.request);
+
       } else {
-        console.error('Error message:', error.message);
+
       }
       
       return res.status(500).json({

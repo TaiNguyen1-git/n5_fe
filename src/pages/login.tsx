@@ -20,13 +20,11 @@ export default function Login() {
     // Thêm kiểm tra để đảm bảo không chuyển hướng khi đang ở trang đăng nhập
     const checkAuth = async () => {
       if (isAuthenticated()) {
-        console.log('Login page - User is already authenticated, redirecting...');
         const redirectPath = redirect && typeof redirect === 'string'
           ? decodeURIComponent(redirect)
           : '/';
         router.push(redirectPath);
       } else {
-        console.log('Login page - User is not authenticated, staying on login page');
       }
     };
 
@@ -63,14 +61,10 @@ export default function Login() {
 
     try {
       // Xóa dữ liệu cũ trước khi đăng nhập để tránh xung đột
-      console.log("Login page - Xóa dữ liệu người dùng cũ trước khi đăng nhập");
       Cookies.remove('auth_token', { path: '/' });
       Cookies.remove('user', { path: '/' });
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
-
-      // Hiển thị thông báo cho người dùng biết
-      console.log("Login page - Đang thử đăng nhập với:", username);
 
       // Gọi API qua handler của Next.js
       const response = await fetch('/api/login-handler', {
@@ -85,7 +79,6 @@ export default function Login() {
       });
 
       const result = await response.json();
-      console.log("Login page - Kết quả đăng nhập:", result);
 
       if (result.success) {
         // Lưu token và thông tin người dùng
@@ -111,9 +104,6 @@ export default function Login() {
           } else if (userLoaiTK === 2) {
             userRole = 'staff';
           }
-
-          console.log("Login page - Xác định role từ loaiTK:", { loaiTK: userLoaiTK, role: userRole });
-
           // Xử lý dữ liệu người dùng
           const userData = {
             id: result.data.maTK || result.data.id,
@@ -138,9 +128,6 @@ export default function Login() {
             // Giá trị mặc định
             return username === 'admin' ? 1 : 3;
           }
-
-          console.log('Login page - Thông tin người dùng đầy đủ:', JSON.stringify(userData));
-
           // Lưu dữ liệu người dùng vào cả cookie và localStorage
           Cookies.set('user', JSON.stringify(userData), {
             expires: 7,
@@ -154,11 +141,8 @@ export default function Login() {
           try {
             setTimeout(() => {
               import('../services/userService').then(({ getUserProfile }) => {
-                console.log('Login page: Đang tải profile sau đăng nhập...');
                 getUserProfile().then(profileData => {
                   if (profileData) {
-                    console.log('Login page: Đã tải thành công profile:', profileData);
-
                     // Đảm bảo loaiTK từ profile là số
                     let profileLoaiTK = profileData.loaiTK;
                     if (typeof profileLoaiTK === 'string') {
@@ -181,12 +165,6 @@ export default function Login() {
                       loaiTK: profileLoaiTK, // Đảm bảo loaiTK là số
                       vaiTro: profileLoaiTK // Đảm bảo vaiTro khớp với loaiTK
                     };
-
-                    console.log('Login page: Cập nhật thông tin người dùng với role/loaiTK:', {
-                      role: profileRole,
-                      loaiTK: profileLoaiTK
-                    });
-
                     // Lưu vào cả cookie và localStorage
                     Cookies.set('user', JSON.stringify(updatedUserData), {
                       expires: 7,
@@ -195,21 +173,16 @@ export default function Login() {
                       path: '/'
                     });
                     localStorage.setItem('user', JSON.stringify(updatedUserData));
-                    console.log('Login page: Đã cập nhật dữ liệu người dùng đầy đủ');
 
                     // Nếu role thay đổi, làm mới trang để cập nhật quyền
                     if (profileRole !== userData.role) {
-                      console.log('Login page: Phát hiện thay đổi role, sẽ làm mới trang...');
                       window.location.reload();
                     }
-                  } else {
-                    console.log('Login page: Không lấy được profile từ API');
                   }
                 });
               });
             }, 1500); // Đợi 1.5 giây để đảm bảo token đã được lưu và sẵn sàng sử dụng
           } catch (profileError) {
-            console.error('Lỗi khi tải profile:', profileError);
           }
 
           // Kích hoạt sự kiện để thông báo cho Header
@@ -221,7 +194,6 @@ export default function Login() {
 
           // Kiểm tra trực tiếp tài khoản nhanvien2
           if (userData.username === 'nhanvien2' || userData.tenTK === 'nhanvien2') {
-            console.log('Login page - Phát hiện tài khoản nhanvien2, chuyển hướng đến /staff');
             redirectTo = '/staff';
           }
           // Nếu không có redirectPath, kiểm tra loaiTK và vaiTro
@@ -231,33 +203,23 @@ export default function Login() {
 
             if (isAdmin) {
               redirectTo = '/admin';
-              console.log('Login page - Xác định là Admin, chuyển hướng đến:', redirectTo);
             } else if (isStaff) {
               redirectTo = '/staff';
-              console.log('Login page - Xác định là Staff, chuyển hướng đến:', redirectTo);
             } else {
               // Khách hàng
               redirectTo = (redirect && typeof redirect === 'string')
                 ? decodeURIComponent(redirect)
                 : '/';
-              console.log('Login page - Xác định là Customer, chuyển hướng đến:', redirectTo);
             }
-          } else {
-            console.log('Login page - Sử dụng redirectPath từ server:', redirectTo);
           }
-
-          // Đảm bảo chuyển hướng xảy ra
-          console.log('Login page - Đang chuyển hướng đến:', redirectTo);
           setTimeout(() => {
             router.push(redirectTo);
           }, 100);
         }
       } else {
-        console.log("Login page - Đăng nhập thất bại:", result);
         setError(result.message || 'Tên đăng nhập hoặc mật khẩu không chính xác');
       }
     } catch (err) {
-      console.error("Login page - Lỗi đăng nhập:", err);
       setError('Có lỗi xảy ra khi kết nối với máy chủ. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);
@@ -341,9 +303,6 @@ export default function Login() {
             <div className={styles.forgotPassword}>
               <a
                 href="/forgot-password"
-                onClick={(e) => {
-                  console.log('Đang chuyển đến trang quên mật khẩu');
-                }}
               >
                 Quên mật khẩu
               </a>

@@ -217,7 +217,6 @@ export default function RoomDetail() {
 
         // Lấy ID khách hàng từ response
         customerId = customerResponse.data?.maKH;
-        console.log('Đã tạo khách hàng mới với ID:', customerId);
       }
 
       // Lấy mã phòng từ dữ liệu phòng hoặc từ API
@@ -227,29 +226,23 @@ export default function RoomDetail() {
         // Đầu tiên, thử lấy mã phòng từ dữ liệu phòng hiện tại
         if (room.maPhong) {
           roomId = typeof room.maPhong === 'string' ? parseInt(room.maPhong) : room.maPhong;
-          console.log('Using room ID from current data:', roomId);
         } else if (room.id) {
           roomId = parseInt(room.id);
-          console.log('Using room ID from room.id:', roomId);
         }
 
         // Nếu không có mã phòng hợp lệ, thử lấy từ API
         if (isNaN(roomId) || roomId === 0) {
-          console.log('Fetching exact room ID from API...');
           try {
             const roomIdResponse = await fetch(`/api/room-id?roomId=${room.id || room.maPhong}`);
             const roomIdData = await roomIdResponse.json();
 
             if (roomIdResponse.ok && roomIdData.success && roomIdData.data?.maPhong) {
               roomId = roomIdData.data.maPhong;
-              console.log('Using exact room ID from API:', roomId);
             } else {
-              console.warn('Could not get room ID from API, using fallback ID');
               // Sử dụng ID dự phòng nếu không thể lấy từ API
               roomId = parseInt(room.id || '3');
             }
           } catch (apiError) {
-            console.error('Error fetching room ID from API:', apiError);
             // Sử dụng ID dự phòng nếu không thể lấy từ API
             roomId = parseInt(room.id || '3');
           }
@@ -259,10 +252,6 @@ export default function RoomDetail() {
         if (isNaN(roomId) || roomId === 0) {
           throw new Error('Mã phòng không hợp lệ sau khi thử tất cả các cách');
         }
-
-        console.log('Room data:', JSON.stringify(room, null, 2));
-        console.log('Final room ID to use:', roomId);
-
         // Chuẩn bị dữ liệu đặt phòng theo đúng cấu trúc API yêu cầu
         const bookingRequestData = {
           maKH: customerId ? parseInt(customerId.toString()) : 0,
@@ -277,18 +266,11 @@ export default function RoomDetail() {
           email: bookingData.email || '',
           soDienThoai: bookingData.phoneNumber || ''
         };
-
-        console.log('Sending booking request with data:', JSON.stringify(bookingRequestData, null, 2));
-
         // Thực hiện đặt phòng
         const response = await bookRoom(bookingRequestData);
 
         if (response.success) {
-          console.log('Booking successful, response data:', JSON.stringify(response.data, null, 2));
-
           // Lấy thông tin phòng từ response nếu có
-          console.log('Processing successful booking response:', JSON.stringify(response, null, 2));
-
           // Xử lý nhiều cấu trúc dữ liệu phản hồi khác nhau
           let bookingId = 'N/A';
           if (response.data?.maHD) {
@@ -323,11 +305,9 @@ export default function RoomDetail() {
           setBookingError(response.message || 'Đặt phòng thất bại. Vui lòng thử lại sau.');
         }
       } catch (error) {
-        console.error('Error fetching room ID or booking room:', error);
         setBookingError('Không thể xác định mã phòng hoặc đặt phòng. Vui lòng thử lại sau.');
       }
     } catch (err) {
-      console.error('Error booking room:', err);
       if (err instanceof Error) {
         // Phân loại lỗi để hiển thị thông báo phù hợp
         if ((err as any).code === 'ECONNABORTED' || err.message.includes('timeout') || err.message.includes('Network Error')) {

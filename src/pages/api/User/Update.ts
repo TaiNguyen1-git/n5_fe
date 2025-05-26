@@ -18,7 +18,6 @@ export default async function handler(
   if (req.method === 'PUT') {
     try {
       // Log request body for debugging
-      console.log('PUT /api/User/Update - Request body:', req.body);
 
       // Kiểm tra các trường bắt buộc
       const { TenTK, TenHienThi, Email, Phone, MatKhau } = req.body;
@@ -40,12 +39,8 @@ export default async function handler(
       if (Phone) userData.Phone = Phone;
       if (MatKhau) userData.MatKhau = MatKhau;
 
-      console.log('Sending to API:', userData);
-
       // Cập nhật người dùng thông qua API backend
       const response = await axios.put(`${BACKEND_API_URL}/User/Update`, userData);
-
-      console.log('API response:', response.data);
 
       return res.status(200).json({
         success: true,
@@ -53,7 +48,7 @@ export default async function handler(
         data: response.data
       });
     } catch (error: any) {
-      console.error('Error updating user:', error);
+
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi cập nhật tài khoản'

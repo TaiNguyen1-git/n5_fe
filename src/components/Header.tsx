@@ -29,7 +29,6 @@ const Header: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated()) {
       const currentUser = getCurrentUser();
-      console.log('Header - User data:', currentUser);
       setUser(currentUser);
     }
 
@@ -37,7 +36,6 @@ const Header: React.FC = () => {
     const handleUserChange = () => {
       if (isAuthenticated()) {
         const currentUser = getCurrentUser();
-        console.log('Header - User updated:', currentUser);
         setUser(currentUser);
       } else {
         setUser(null);

@@ -3,6 +3,7 @@ import { Table, Button, Space, Modal, Form, Input, Select, InputNumber, Card, Ta
 import { EditOutlined, DeleteOutlined, PlusOutlined, SaveOutlined, CloseOutlined, HomeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import axios from 'axios';
+import { getRooms, PaginatedRoomResponse } from '../../../services/roomService';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -122,7 +123,7 @@ const callApi = async (
   // Try with Axios first
   for (let i = 0; i <= retries; i++) {
     try {
-      console.log(`API call (attempt ${i+1}/${retries+1}): ${method} ${url}`);
+
 
       let response;
       if (method === 'GET') {
@@ -151,7 +152,6 @@ const callApi = async (
         return { success: true, data: response.data, status: response.status };
       }
     } catch (error) {
-      console.error(`API call failed (attempt ${i+1}/${retries+1}):`, error);
       lastError = error;
 
       // Wait before retrying (exponential backoff)
@@ -163,7 +163,6 @@ const callApi = async (
 
   // Try with fetch as fallback
   try {
-    console.log(`Trying with fetch API as fallback: ${method} ${url}`);
 
     const options: RequestInit = {
       method,
@@ -178,7 +177,6 @@ const callApi = async (
       return { success: true, data: responseData, status: response.status };
     }
   } catch (error) {
-    console.error('Fetch API fallback failed:', error);
   }
 
   // Return failure if all attempts failed
@@ -201,82 +199,94 @@ const RoomManagement = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total: number, range: [number, number]) =>
+      `${range[0]}-${range[1]} của ${total} phòng`,
+  });
+
   // Fetch danh sách phòng từ API
   useEffect(() => {
-    fetchRooms();
+    fetchRooms(pagination.current, pagination.pageSize);
   }, []);
 
-  const fetchRooms = async () => {
+  // Handle table pagination change
+  const handleTableChange = (page: number, pageSize?: number) => {
+    const newPagination = {
+      ...pagination,
+      current: page,
+      pageSize: pageSize || pagination.pageSize,
+    };
+    setPagination(newPagination);
+    fetchRooms(page, pageSize || pagination.pageSize);
+  };
+
+  const fetchRooms = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoading(true);
     setError(null);
 
-    // Always use mock data in development for testing if API is unreliable
-    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true') {
-      setTimeout(() => {
-        console.log('Using mock data (development mode)');
-        setRooms(MOCK_ROOMS);
-        setLoading(false);
-      }, 1000);
-      return;
-    }
-
-    // Regular API call with fallbacks
     try {
-      // First try: Using axios with proxy option if enabled
-      const url = USE_PROXY ? `${PROXY_URL}/Phong/GetAll` : `${BACKEND_API_URL}/Phong/GetAll`;
-      console.log(`Attempting to fetch from: ${url}`);
+      // Use the new getRooms service with pagination
+      const response = await getRooms(undefined, pageNumber, pageSize);
 
-      const response = await axios.get(url, {
-        timeout: 15000,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
+      if (response.success && response.data) {
+        const paginatedData = response.data as PaginatedRoomResponse;
 
-      if (response.data && response.data.items) {
-        console.log('Data fetched successfully');
-        setRooms(response.data.items);
+        // Format room data to match the existing Room interface
+        const formattedRooms = paginatedData.items.map((room: any) => ({
+          maPhong: room.maPhong,
+          datPhongs: room.datPhongs || null,
+          hinhAnhPhongs: room.hinhAnhPhongs || null,
+          soPhong: room.soPhong || room.tenPhong || `Phòng ${room.maPhong}`,
+          soNguoi: room.soNguoi || room.soLuongKhach || 2,
+          moTa: room.moTa || '',
+          xoa: room.xoa || null,
+          maLoaiPhong: room.maLoaiPhong || 1,
+          tenLoaiPhong: room.tenLoaiPhong || room.loaiPhong || 'Standard',
+          loaiPhong: {
+            maLoai: room.maLoaiPhong || 1,
+            tenLoai: room.tenLoaiPhong || room.loaiPhong || 'Standard',
+            giaPhong: room.giaTien || room.giaPhong || 500000,
+            phongs: null
+          },
+          trangThaiPhong: {
+            maTT: room.trangThai || 1,
+            tenTT: room.trangThaiTen || 'Available',
+            phongs: null
+          }
+        }));
+
+        // Update rooms and pagination info
+        setRooms(formattedRooms);
+        setPagination(prev => ({
+          ...prev,
+          current: paginatedData.pageNumber,
+          pageSize: paginatedData.pageSize,
+          total: paginatedData.totalItems,
+        }));
+
         setLoading(false);
         return;
+      } else {
+        throw new Error(response.message || 'Failed to fetch rooms');
       }
-    } catch (error) {
-      console.error('Primary API request failed:', error);
+    } catch (error: any) {
+      // Fallback to mock data
+      setRooms(MOCK_ROOMS);
+      setPagination(prev => ({
+        ...prev,
+        current: 1,
+        total: MOCK_ROOMS.length,
+      }));
+      setError('Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu.');
+      message.warning('Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu.');
+      setLoading(false);
     }
-
-    // Second try: Try alternative URLs directly
-    for (const directUrl of DIRECT_API_URLS) {
-      try {
-        console.log(`Trying alternative URL: ${directUrl}`);
-        const response = await fetch(directUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.items) {
-            console.log('Data fetched successfully from alternative URL');
-            setRooms(data.items);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (error) {
-        console.error(`Failed with URL ${directUrl}:`, error);
-      }
-    }
-
-    // Use mock data as last resort
-    setRooms(MOCK_ROOMS);
-    setError('API không khả dụng - đang hiển thị dữ liệu mẫu');
-    message.warning('API không khả dụng, đang hiển thị dữ liệu mẫu');
-    setLoading(false);
   };
 
   // Lọc phòng theo loại và trạng thái
@@ -407,11 +417,9 @@ const RoomManagement = () => {
       const result = await callApi('DELETE', url);
 
       if (result.success) {
-        console.log('Deletion successful');
         setRooms(rooms.filter(room => room.maPhong !== maPhong));
         message.success('Đã xóa phòng thành công');
       } else {
-        console.error('All delete attempts failed');
         message.error(`Lỗi khi xóa phòng: ${result.message}`);
 
         // Optimistic UI update even if server call failed
@@ -421,7 +429,6 @@ const RoomManagement = () => {
         }
       }
     } catch (error) {
-      console.error('Error in delete function:', error);
       message.error('Lỗi khi xóa phòng');
     }
   };
@@ -470,7 +477,7 @@ const RoomManagement = () => {
 
         if (result.success) {
           message.success('Cập nhật phòng thành công');
-          fetchRooms(); // Tải lại danh sách phòng
+          fetchRooms(pagination.current, pagination.pageSize); // Tải lại danh sách phòng
           setIsModalVisible(false);
         } else {
           message.error(`Không thể cập nhật phòng: ${result.message || 'Unknown error'}`);
@@ -494,14 +501,13 @@ const RoomManagement = () => {
 
         if (result.success) {
           message.success('Thêm phòng mới thành công');
-          fetchRooms(); // Tải lại danh sách phòng
+          fetchRooms(pagination.current, pagination.pageSize); // Tải lại danh sách phòng
           setIsModalVisible(false);
         } else {
           message.error(`Không thể thêm phòng mới: ${result.message || 'Unknown error'}`);
         }
       }
     } catch (error) {
-      console.error('Form validation failed:', error);
     }
   };
 
@@ -512,7 +518,7 @@ const RoomManagement = () => {
         <Space>
           <Button
             icon={<ReloadOutlined />}
-            onClick={fetchRooms}
+            onClick={() => fetchRooms(pagination.current, pagination.pageSize)}
             loading={loading}
           >
             Làm mới
@@ -535,7 +541,7 @@ const RoomManagement = () => {
             <div>
               <p>{error}</p>
               <p>Vui lòng kiểm tra kết nối mạng của bạn và thử lại.</p>
-              <Button type="primary" onClick={fetchRooms} style={{ marginTop: 8 }}>
+              <Button type="primary" onClick={() => fetchRooms(pagination.current, pagination.pageSize)} style={{ marginTop: 8 }}>
                 Thử lại
               </Button>
             </div>
@@ -623,7 +629,25 @@ const RoomManagement = () => {
           dataSource={filteredRooms}
           rowKey="maPhong"
           bordered
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
+            showSizeChanger: pagination.showSizeChanger,
+            showQuickJumper: pagination.showQuickJumper,
+            showTotal: pagination.showTotal,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            onChange: handleTableChange,
+            onShowSizeChange: handleTableChange,
+            hideOnSinglePage: false,
+            simple: false,
+            responsive: true,
+          }}
+          loading={{
+            spinning: loading,
+            tip: 'Đang tải dữ liệu phòng...',
+            size: 'large'
+          }}
         />
       </Spin>
 

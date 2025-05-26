@@ -223,7 +223,6 @@ export default async function handler(
         }
       });
     } catch (error: any) {
-      console.error('Error fetching dashboard stats:', error);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy thông tin thống kê'
