@@ -223,7 +223,6 @@ export default function Home() {
             <div className={styles.searchBox}>
               <div className={styles.searchTabs}>
                 <div className={styles.searchTab}>Đặt phòng</div>
-                <div className={styles.searchTab}>Đặt tour</div>
               </div>
 
               <form onSubmit={handleSearch}>

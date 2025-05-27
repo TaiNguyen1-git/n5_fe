@@ -91,30 +91,20 @@ const RoomsPage = () => {
     }
   };
 
-  // Lấy danh sách phòng từ API với pagination
-  const fetchRooms = async (page: number = 1) => {
+  // State để lưu tất cả phòng từ API
+  const [allRooms, setAllRooms] = useState<Room[]>([]);
+
+  // Lấy tất cả phòng từ API (không pagination, không filter)
+  const fetchAllRooms = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Build query parameters
+      // Lấy tất cả phòng với pageSize lớn
       const params = new URLSearchParams({
-        pageNumber: page.toString(),
-        pageSize: pageSize.toString()
+        pageNumber: '1',
+        pageSize: '1000' // Lấy nhiều phòng để có đủ dữ liệu
       });
-
-      // Add filter parameters
-      if (guestCount) {
-        params.append('soLuongKhach', guestCount.toString());
-      }
-
-      if (priceRange[0] > 0) {
-        params.append('giaMin', priceRange[0].toString());
-      }
-
-      if (priceRange[1] < 2000000) {
-        params.append('giaMax', priceRange[1].toString());
-      }
 
       params.append('_t', Date.now().toString());
       const response = await fetch(`/api/rooms?${params.toString()}`);
@@ -126,7 +116,7 @@ const RoomsPage = () => {
       const result = await response.json();
 
       if (result.success && result.data) {
-        const { items, totalItems, totalPages, pageNumber } = result.data;
+        const { items } = result.data;
 
         // Convert API data to Room interface format
         const normalizedRooms = items.map((room: any) => ({
@@ -144,35 +134,8 @@ const RoomsPage = () => {
           features: room.features || ['WiFi', 'TV', 'Điều hòa', 'Minibar']
         }));
 
-        // Filter by search term, room type, and room status on frontend (since API doesn't support these filters)
-        let filteredRooms = normalizedRooms;
-
-        if (searchTerm) {
-          filteredRooms = filteredRooms.filter((room: Room) =>
-            room.tenPhong?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            room.soPhong?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            room.moTa?.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        }
-
-        if (roomType) {
-          filteredRooms = filteredRooms.filter((room: Room) => room.loaiPhongText === roomType);
-        }
-
-        if (roomStatus !== null) {
-          filteredRooms = filteredRooms.filter((room: Room) => room.trangThai === roomStatus);
-        }
-
-        setRooms(filteredRooms);
-        setTotalItems(totalItems || filteredRooms.length);
-        setTotalPages(totalPages || Math.ceil((totalItems || filteredRooms.length) / pageSize));
-        setCurrentPage(pageNumber || page);
-
-        // Collect unique room types for filter
-        const uniqueTypes = Array.from(new Set(normalizedRooms.map((room: Room) => room.loaiPhongText).filter(Boolean)));
-
-        // Don't override room types from API with room data
-        // Room types should come from the dedicated API endpoint
+        // Lưu tất cả phòng vào state
+        setAllRooms(normalizedRooms);
       } else {
         throw new Error('Invalid API response format');
       }
@@ -181,12 +144,10 @@ const RoomsPage = () => {
 
       // Sử dụng dữ liệu mẫu khi có lỗi
       const mockRooms = generateMockRooms();
-      setRooms(mockRooms);
-      setTotalItems(mockRooms.length);
-      setTotalPages(Math.ceil(mockRooms.length / pageSize));
+      setAllRooms(mockRooms);
 
       // Set room types from mock data
-      const mockTypes = Array.from(new Set(mockRooms.map(room => room.loaiPhongText)));
+      const mockTypes = Array.from(new Set(mockRooms.map(room => room.loaiPhongText).filter(Boolean))) as string[];
       setAllRoomTypes(mockTypes);
 
       message.warning('Không thể kết nối đến máy chủ. Hiển thị dữ liệu mẫu.');
@@ -195,20 +156,71 @@ const RoomsPage = () => {
     }
   };
 
-  // Fetch room types when component mounts
+  // Hàm lọc và phân trang dữ liệu
+  const getFilteredAndPaginatedRooms = () => {
+    let filteredRooms = allRooms;
+
+    // Apply all filters
+    if (searchTerm) {
+      filteredRooms = filteredRooms.filter((room: Room) =>
+        room.tenPhong?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        room.soPhong?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        room.moTa?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (roomType) {
+      filteredRooms = filteredRooms.filter((room: Room) => room.loaiPhongText === roomType);
+    }
+
+    if (roomStatus !== null) {
+      filteredRooms = filteredRooms.filter((room: Room) => room.trangThai === roomStatus);
+    }
+
+    if (guestCount) {
+      filteredRooms = filteredRooms.filter((room: Room) => room.soNguoi >= guestCount);
+    }
+
+    // Price filtering
+    filteredRooms = filteredRooms.filter((room: Room) => {
+      const roomPrice = room.giaTien || 0;
+      return roomPrice >= priceRange[0] && roomPrice <= priceRange[1];
+    });
+
+    // Update total items
+    const totalFilteredItems = filteredRooms.length;
+    const totalFilteredPages = Math.ceil(totalFilteredItems / pageSize);
+
+    // Apply pagination
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedRooms = filteredRooms.slice(startIndex, endIndex);
+
+    // Update state
+    setRooms(paginatedRooms);
+    setTotalItems(totalFilteredItems);
+    setTotalPages(totalFilteredPages);
+
+    return paginatedRooms;
+  };
+
+  // Fetch room types and all rooms when component mounts
   useEffect(() => {
     fetchRoomTypes();
+    fetchAllRooms();
   }, []);
 
-  // Fetch rooms when component mounts or filters change
+  // Apply filters and pagination when filters or currentPage change
   useEffect(() => {
-    fetchRooms(1);
-  }, [guestCount, priceRange]);
+    if (allRooms.length > 0) {
+      getFilteredAndPaginatedRooms();
+    }
+  }, [allRooms, guestCount, priceRange, searchTerm, roomType, roomStatus, currentPage]);
 
-  // Handle search, room type, and room status filter changes (client-side filtering)
+  // Reset to first page when filters change (but not currentPage itself)
   useEffect(() => {
-    fetchRooms(currentPage);
-  }, [searchTerm, roomType, roomStatus]);
+    setCurrentPage(1);
+  }, [guestCount, priceRange, searchTerm, roomType, roomStatus]);
 
 
 
@@ -265,7 +277,7 @@ const RoomsPage = () => {
   // Handle pagination change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    fetchRooms(page);
+    // getFilteredAndPaginatedRooms sẽ được gọi tự động qua useEffect
   };
 
   // Xử lý khi click vào phòng
@@ -359,7 +371,7 @@ const RoomsPage = () => {
                   min={0}
                   max={2000000}
                   step={100000}
-                  defaultValue={[0, 2000000]}
+                  value={priceRange}
                   onChange={(value) => setPriceRange(value as [number, number])}
                 />
               </div>
