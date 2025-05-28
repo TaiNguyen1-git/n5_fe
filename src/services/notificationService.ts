@@ -384,37 +384,19 @@ class NotificationService {
     this.notifyListeners();
   }
 
-  // Add sample notifications for demo purposes
+  // Add development notification
   private addSampleNotifications() {
     if (!this.isClient) return;
 
-    const sampleNotifications = [
-      {
-        type: 'booking' as const,
-        title: 'Đặt phòng mới',
-        message: 'Khách hàng Nguyễn Văn A đã đặt phòng 101',
-        priority: 'medium' as const,
-        data: { maDatPhong: 'sample_1', maPhong: 101, tenKH: 'Nguyễn Văn A' }
-      },
-      {
-        type: 'checkin' as const,
-        title: 'Nhận phòng hôm nay',
-        message: 'Khách hàng Trần Thị B sẽ nhận phòng 205 hôm nay',
-        priority: 'high' as const,
-        data: { maDatPhong: 'sample_2', maPhong: 205, tenKH: 'Trần Thị B' }
-      },
-      {
-        type: 'room' as const,
-        title: 'Phòng cần dọn dẹp',
-        message: 'Phòng 301 cần được dọn dẹp',
-        priority: 'medium' as const,
-        data: { maPhong: 301, soPhong: '301' }
-      }
-    ];
+    const developmentNotification = {
+      type: 'system' as const,
+      title: 'Hệ thống thông báo',
+      message: 'Tính năng thông báo đang được phát triển. Vui lòng quay lại sau!',
+      priority: 'low' as const,
+      data: { status: 'development' }
+    };
 
-    sampleNotifications.forEach(notification => {
-      this.addNotification(notification);
-    });
+    this.addNotification(developmentNotification);
   }
 }
 

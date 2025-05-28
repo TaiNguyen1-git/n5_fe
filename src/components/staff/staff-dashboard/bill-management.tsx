@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import { getAllCustomers, type Customer } from '../../../services/customerService';
+import NoPermissionModal from '../../shared/NoPermissionModal';
 
 const { Option } = Select;
 const { Step } = Steps;
@@ -30,6 +31,12 @@ const BillManagement = () => {
   // Customer data states for real-time customer name lookup
   const [customerMap, setCustomerMap] = useState<Record<number, Customer>>({});
   const [customerDataLoading, setCustomerDataLoading] = useState(false);
+
+  // Permission modal states
+  const [noPermissionModal, setNoPermissionModal] = useState({
+    visible: false,
+    action: ''
+  });
 
   useEffect(() => {
     fetchBills();

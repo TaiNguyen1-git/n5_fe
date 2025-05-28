@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { getAllCustomers, PaginatedCustomerResponse } from '../../../services/customerService';
 import dayjs from 'dayjs';
 import axios from 'axios';
+import NoPermissionModal from '../../shared/NoPermissionModal';
 
 const { TabPane } = Tabs;
 const { Option } = Select;
@@ -149,6 +150,12 @@ const CustomerManagement = () => {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Permission modal states
+  const [noPermissionModal, setNoPermissionModal] = useState({
+    visible: false,
+    action: ''
+  });
 
   // Pagination state
   const [pagination, setPagination] = useState({
@@ -701,17 +708,11 @@ const CustomerManagement = () => {
     }
   };
 
-  // Hiển thị modal cập nhật khách hàng
+  // Hiển thị modal cập nhật khách hàng - Staff không có quyền
   const showEditModal = (customer: Customer) => {
-    setEditingCustomer(customer);
-    setIsEditModalVisible(true);
-
-    // Thiết lập giá trị mặc định cho form
-    editForm.setFieldsValue({
-      tenKH: customer.tenKH,
-      email: customer.email,
-      phone: customer.phone,
-      xoa: customer.xoa
+    setNoPermissionModal({
+      visible: true,
+      action: 'chỉnh sửa thông tin khách hàng'
     });
   };
 
@@ -761,10 +762,12 @@ const CustomerManagement = () => {
     }
   };
 
-  // Xử lý xóa khách hàng
+  // Xử lý xóa khách hàng - Staff không có quyền
   const handleDeleteCustomer = (customer: Customer) => {
-    setCustomerToDelete(customer);
-    setIsDeleteModalVisible(true);
+    setNoPermissionModal({
+      visible: true,
+      action: 'xóa khách hàng'
+    });
   };
 
   // Xử lý hủy xóa khách hàng
@@ -1105,6 +1108,13 @@ const CustomerManagement = () => {
           <p>Bạn có chắc chắn muốn xóa khách hàng "{customerToDelete.tenKH}" không?</p>
         )}
       </Modal>
+
+      {/* Modal không có quyền */}
+      <NoPermissionModal
+        visible={noPermissionModal.visible}
+        action={noPermissionModal.action}
+        onClose={() => setNoPermissionModal({ visible: false, action: '' })}
+      />
     </div>
   );
 };

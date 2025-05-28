@@ -7,6 +7,7 @@ import axios from 'axios';
 import AddBooking from './add-booking';
 import EditBooking from './edit-booking';
 import { getAllCustomers, type Customer } from '../../../services/customerService';
+import NoPermissionModal from '../../shared/NoPermissionModal';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -80,6 +81,12 @@ const BookingManagement = () => {
   // Customer data states
   const [customers, setCustomers] = useState<Record<number, Customer>>({});
   const [customerLoading, setCustomerLoading] = useState(false);
+
+  // Permission modal states
+  const [noPermissionModal, setNoPermissionModal] = useState({
+    visible: false,
+    action: ''
+  });
 
   // Fetch customer data
   const fetchCustomers = async () => {
@@ -310,10 +317,12 @@ const BookingManagement = () => {
     setIsModalVisible(true);
   };
 
-  // Xử lý chỉnh sửa đặt phòng
+  // Xử lý chỉnh sửa đặt phòng - Staff không có quyền
   const handleEdit = (booking: Booking) => {
-    setEditBooking(booking);
-    setIsEditModalVisible(true);
+    setNoPermissionModal({
+      visible: true,
+      action: 'chỉnh sửa đặt phòng'
+    });
   };
 
   // Xử lý khi chỉnh sửa thành công
@@ -321,58 +330,12 @@ const BookingManagement = () => {
     fetchBookings();
   };
 
-  // Xử lý xóa đặt phòng
+  // Xử lý xóa đặt phòng - Staff không có quyền
   const handleDeleteBooking = async (id: number) => {
-    try {
-      message.loading('Đang xóa đặt phòng...', 0.5);
-
-      // Chuẩn bị dữ liệu xóa
-      const deleteData = {
-        xoa: true
-      };
-
-      // Thử gọi API để xóa
-      const apiEndpoints = [
-        `/api/DatPhong/Delete/${id}`,
-        `https://ptud-web-3.onrender.com/api/DatPhong/Delete/${id}`,
-        `/api/bookings/${id}`
-      ];
-
-      let success = false;
-
-      // Thử từng endpoint
-      for (const endpoint of apiEndpoints) {
-        try {
-          const response = await axios.put(endpoint, deleteData, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            timeout: 10000 // 10 giây timeout
-          });
-
-          if (response.status >= 200 && response.status < 300) {
-            success = true;
-            break;
-          }
-        } catch (endpointError) {
-          // Tiếp tục thử endpoint tiếp theo
-        }
-      }
-
-      if (success) {
-        message.success('Đã xóa đặt phòng thành công!');
-        // Làm mới dữ liệu
-        fetchBookings();
-      } else {
-        // Nếu API không thành công, vẫn cập nhật UI
-        const updatedBookings = bookings.filter(booking => booking.maDatPhong !== id);
-        setBookings(updatedBookings);
-        message.success('Đã xóa đặt phòng thành công! (Chế độ offline)');
-      }
-    } catch (error) {
-      message.error('Có lỗi xảy ra khi xóa đặt phòng');
-    }
+    setNoPermissionModal({
+      visible: true,
+      action: 'xóa đặt phòng'
+    });
   };
 
   // Xử lý xác nhận đặt phòng trực tiếp không qua Modal
@@ -994,6 +957,13 @@ const BookingManagement = () => {
         visible={isEditModalVisible}
         onClose={() => setIsEditModalVisible(false)}
         onSuccess={handleEditSuccess}
+      />
+
+      {/* Modal không có quyền */}
+      <NoPermissionModal
+        visible={noPermissionModal.visible}
+        action={noPermissionModal.action}
+        onClose={() => setNoPermissionModal({ visible: false, action: '' })}
       />
     </div>
   );
