@@ -22,6 +22,7 @@ export interface RecentBooking {
   checkOut: string;
   status: string;
   totalPrice: number;
+  bookingDate?: string; // Ngày đặt phòng
 }
 
 // API services for dashboard

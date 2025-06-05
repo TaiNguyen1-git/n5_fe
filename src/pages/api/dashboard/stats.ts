@@ -6,6 +6,7 @@ type ResponseData = {
   success: boolean;
   message?: string;
   data?: any;
+  metadata?: any; // Thêm metadata để debug
 };
 
 // Backend API URL
@@ -166,15 +167,10 @@ export default async function handler(
         return false;
       }).length;
 
-      // Sử dụng tổng số thực tế từ API, nhưng vẫn lọc theo điều kiện xóa từ dữ liệu có sẵn
-      const totalBookings = totalBookingsFromAPI; // Sử dụng tổng số từ API
-      const activeBookings = bookings.filter((booking: any) => !booking.xoa).length; // Đếm active từ sample
-
-      const totalCustomers = totalCustomersFromAPI; // Sử dụng tổng số từ API
-      const activeCustomers = customers.filter((customer: any) => !customer.xoa).length; // Đếm active từ sample
-
-      const totalEmployees = totalEmployeesFromAPI; // Sử dụng tổng số từ API
-      const activeEmployees = employees.filter((employee: any) => !employee.xoa).length; // Đếm active từ sample
+      // Sử dụng tổng số thực tế từ API
+      const totalBookings = totalBookingsFromAPI;
+      const totalCustomers = totalCustomersFromAPI;
+      const totalEmployees = totalEmployeesFromAPI;
 
 
 

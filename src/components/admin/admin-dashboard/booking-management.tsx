@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Tag, Modal, Input, Select, DatePicker, Card, Statistic, Row, Col, message, Tabs, Space, Popconfirm, Spin } from 'antd';
+import { Table, Button, Tag, Modal, Input, Select, Card, Statistic, Row, Col, message, Tabs, Space, Popconfirm, DatePicker } from 'antd';
 import { EyeOutlined, CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import AddBooking from './add-booking';
 import EditBooking from './edit-booking';
-import { getAllCustomers, type Customer } from '../../../services/customerService';
+import { getAllCustomers, type Customer as ApiCustomer } from '../../../services/customerService';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -31,8 +31,8 @@ interface Booking {
   xoa?: boolean; // Trường để đánh dấu đặt phòng đã bị xóa
 }
 
-// Interface for customer data
-interface Customer {
+// Interface for local customer data (keeping for compatibility)
+interface LocalCustomer {
   id: number;
   name: string;
   phone: string;
@@ -68,7 +68,7 @@ const BookingManagement = () => {
   // Các state này được giữ lại để tương thích với các hàm đã có
   // nhưng không còn được sử dụng trong modal chi tiết đơn giản hóa
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [customerDetails, setCustomerDetails] = useState<Customer | null>(null);
+  const [customerDetails, setCustomerDetails] = useState<LocalCustomer | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [roomDetails, setRoomDetails] = useState<Room | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -80,7 +80,7 @@ const BookingManagement = () => {
   const [error, setError] = useState('');
 
   // Customer data states for real-time customer name lookup
-  const [customers, setCustomers] = useState<Record<number, Customer>>({});
+  const [customers, setCustomers] = useState<Record<number, ApiCustomer>>({});
   const [customerDataLoading, setCustomerDataLoading] = useState(false);
 
   // Fetch customer data
@@ -91,8 +91,8 @@ const BookingManagement = () => {
 
       if (response.success && response.data?.items) {
         // Create a map of customer ID to customer data
-        const customerMap: Record<number, Customer> = {};
-        response.data.items.forEach((customer: Customer) => {
+        const customerMap: Record<number, ApiCustomer> = {};
+        response.data.items.forEach((customer: ApiCustomer) => {
           if (customer.maKH) {
             customerMap[customer.maKH] = customer;
           }
@@ -471,7 +471,6 @@ const BookingManagement = () => {
         const updatedBookings = [...bookings];
         const index = updatedBookings.findIndex(booking => booking.id === id);
         if (index !== -1) {
-          // Only update status, keep other info
           updatedBookings[index] = {
             ...updatedBookings[index],
             status: 'confirmed'
@@ -555,7 +554,6 @@ const BookingManagement = () => {
         const updatedBookings = [...bookings];
         const index = updatedBookings.findIndex(booking => booking.id === id);
         if (index !== -1) {
-          // Only update status, keep other info
           updatedBookings[index] = {
             ...updatedBookings[index],
             status: 'cancelled'

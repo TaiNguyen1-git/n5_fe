@@ -22,7 +22,7 @@ export default async function handler(
         timeout: 15000 // 15 second timeout
       });
 
-      console.log('Backend CaLam/GetAll response:', JSON.stringify(response.data, null, 2));
+
 
       // Transform data for frontend if needed
       let workShifts = [];
@@ -35,7 +35,7 @@ export default async function handler(
         }
       }
 
-      console.log('Processed work shifts:', workShifts);
+
 
       return res.status(200).json({
         success: true,
@@ -53,7 +53,7 @@ export default async function handler(
       // Check for required fields
       const { tenCa, gioBatDau, gioKetThuc, ngayLamViec, maNV, ghiChu, trangThai } = req.body;
 
-      console.log('Received work shift data:', req.body);
+
 
       if (!tenCa || !gioBatDau || !gioKetThuc || !ngayLamViec) {
         return res.status(400).json({
@@ -79,8 +79,6 @@ export default async function handler(
         gioKetThuc: `${endDate}T${gioKetThuc}:00.000Z`
       };
 
-      console.log('Sending to backend:', workShiftData);
-
       // Create work shift through backend API
       const response = await axios.post(`${BACKEND_API_URL}/CaLam/Create`, workShiftData, {
         timeout: 15000,
@@ -89,15 +87,12 @@ export default async function handler(
         }
       });
 
-      console.log('Backend response:', response.data);
-
       return res.status(201).json({
         success: true,
         message: 'Tạo ca làm thành công',
         data: response.data
       });
     } catch (error: any) {
-      console.error('Error creating work shift:', error.response?.data || error.message);
       return res.status(500).json({
         success: false,
         message: error.response?.data?.message || error.message || 'Đã xảy ra lỗi khi tạo ca làm mới'

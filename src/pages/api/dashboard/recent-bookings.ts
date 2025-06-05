@@ -18,8 +18,11 @@ export default async function handler(
 ) {
   if (req.method === 'GET') {
     try {
-      // Gọi API để lấy thông tin đặt phòng
+      // Gọi API để lấy thông tin đặt phòng với pageSize lớn để lấy tất cả
       const bookingsResponse = await axios.get(`${BACKEND_API_URL}/DatPhong/GetAll`, {
+        params: {
+          pageSize: 1000 // Lấy nhiều bookings để đảm bảo có booking mới nhất
+        },
         timeout: 15000
       });
 
@@ -37,9 +40,9 @@ export default async function handler(
       const filteredBookings = bookings
         .filter((booking: any) => !booking.xoa) // Chỉ lấy những đặt phòng chưa bị xóa
         .sort((a: any, b: any) => {
-          // Sắp xếp theo ngày tạo đặt phòng mới nhất
-          const dateA = dayjs(a.ngayTao || a.ngayDat || a.ngayBatDau);
-          const dateB = dayjs(b.ngayTao || b.ngayDat || b.ngayBatDau);
+          // Sắp xếp theo ngày đặt phòng mới nhất (ngayDat)
+          const dateA = dayjs(a.ngayDat);
+          const dateB = dayjs(b.ngayDat);
           return dateB.unix() - dateA.unix();
         })
         .slice(0, 10); // Lấy 10 đặt phòng gần nhất
@@ -70,10 +73,10 @@ export default async function handler(
               break;
             default:
               // Xác định trạng thái dựa trên thời gian nếu không có mã trạng thái rõ ràng
-              if (dayjs().isAfter(dayjs(booking.ngayKetThuc || booking.ngayKT))) {
+              if (booking.checkOut && dayjs().isAfter(dayjs(booking.checkOut))) {
                 status = 'checked_out';
-              } else if (dayjs().isAfter(dayjs(booking.ngayBatDau || booking.ngayBD)) &&
-                         dayjs().isBefore(dayjs(booking.ngayKetThuc || booking.ngayKT))) {
+              } else if (booking.checkIn && dayjs().isAfter(dayjs(booking.checkIn)) &&
+                         booking.checkOut && dayjs().isBefore(dayjs(booking.checkOut))) {
                 status = 'checked_in';
               } else {
                 status = 'pending';
@@ -122,10 +125,11 @@ export default async function handler(
             id: booking.maDatPhong || booking.id || Math.random(),
             roomNumber: roomNumber,
             customerName: customerName,
-            checkIn: booking.ngayBatDau || booking.ngayBD || booking.checkIn || dayjs().format('YYYY-MM-DD'),
-            checkOut: booking.ngayKetThuc || booking.ngayKT || booking.checkOut || dayjs().add(1, 'day').format('YYYY-MM-DD'),
+            checkIn: booking.checkIn || dayjs(booking.ngayDat).format('YYYY-MM-DD'),
+            checkOut: booking.checkOut || dayjs(booking.ngayDat).add(1, 'day').format('YYYY-MM-DD'),
             status: status,
-            totalPrice: booking.tongTien || booking.giaTien || 0
+            totalPrice: booking.tongTien || booking.giaTien || 0,
+            bookingDate: booking.ngayDat // Thêm ngày đặt phòng để hiển thị
           };
         })
       );

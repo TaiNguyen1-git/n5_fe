@@ -126,9 +126,7 @@ class ExportService {
       // Set font to support Vietnamese characters
       try {
         doc.setFont('helvetica', 'normal');
-      } catch (fontError) {
-        console.warn('Font setting failed, using default:', fontError);
-      }
+      } catch (fontError) {      }
 
       // Add title
       if (title) {
@@ -184,9 +182,7 @@ class ExportService {
               };
               return replacements[char] || char;
             });
-          } catch (error) {
-            console.warn('Error processing cell data:', error);
-            return '';
+          } catch (error) {            return '';
           }
         })
       );
@@ -221,22 +217,16 @@ class ExportService {
             return acc;
           }, {} as any)
         });
-      } catch (tableError) {
-        console.error('Error creating table:', tableError);
-        throw new Error('Lỗi khi tạo bảng dữ liệu trong PDF');
+      } catch (tableError) {        throw new Error('Lỗi khi tạo bảng dữ liệu trong PDF');
       }
 
       // Save the PDF
       try {
         doc.save(`${filename}.pdf`);
-      } catch (saveError) {
-        console.error('Error saving PDF:', saveError);
-        throw new Error('Lỗi khi lưu file PDF');
+      } catch (saveError) {        throw new Error('Lỗi khi lưu file PDF');
       }
 
-    } catch (error) {
-      console.error('PDF Export Error:', error);
-      throw error;
+    } catch (error) {      throw error;
     }
   }
 
@@ -360,9 +350,7 @@ class ExportService {
 
       doc.save(`xac-nhan-dat-phong-${booking.maDatPhong || 'unknown'}.pdf`);
 
-    } catch (error) {
-      console.error('Error exporting booking confirmation:', error);
-      throw new Error('Loi khi xuat xac nhan dat phong');
+    } catch (error) {      throw new Error('Loi khi xuat xac nhan dat phong');
     }
   }
 }

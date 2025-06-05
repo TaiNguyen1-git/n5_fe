@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Card,
-  Typography,
   Space,
   Result,
   Button
@@ -12,15 +11,10 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 
-const { Title } = Typography;
-
 const NotificationPanel: React.FC = () => {
   const handleRefresh = () => {
     // Placeholder for future implementation
-    console.log('Refreshing notifications...');
   };
-
-
 
   return (
     <div style={{ padding: '20px' }}>

@@ -170,15 +170,11 @@ const WorkShiftManagement: React.FC = () => {
             hasMorePages = false;
           }
         } catch (pageError) {
-          console.error(`Error fetching page ${currentPage}:`, pageError);
           hasMorePages = false;
         }
       }
-
-      console.log(`Loaded ${allEmployees.length} employees total`);
       setEmployees(allEmployees);
     } catch (error) {
-      console.error('Error fetching employees:', error);
       message.error('Không thể tải danh sách nhân viên.');
       setEmployees([]);
     }
@@ -911,7 +907,6 @@ const WorkShiftManagement: React.FC = () => {
                       setEmployees(filtered);
                     }
                   } catch (error) {
-                    console.error('Error searching employees:', error);
                   }
                 } else if (value.length === 0) {
                   setEmployees([]);
@@ -924,7 +919,7 @@ const WorkShiftManagement: React.FC = () => {
                     if (data && Array.isArray(data.items)) {
                       setEmployees(data.items);
                     }
-                  }).catch(console.error);
+                  }).catch(() => {});
                 }
               }}
               notFoundContent={employees.length === 0 ? "Gõ tên để tìm nhân viên" : "Không tìm thấy"}

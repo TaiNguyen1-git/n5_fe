@@ -42,9 +42,7 @@ const RevenueCharts: React.FC<RevenueChartsProps> = ({
     try {
       const total = await revenueService.getTotalRevenue();
       setTotalRevenue(total);
-    } catch (error) {
-      console.error('Error fetching total revenue:', error);
-    }
+    } catch (error) {    }
   };
 
   // Fetch monthly revenue data
@@ -74,9 +72,7 @@ const RevenueCharts: React.FC<RevenueChartsProps> = ({
       setLastMonthRevenue(lastMonthData?.tongDoanhThu || 0);
 
     } catch (error) {
-      message.error('Không thể tải dữ liệu doanh thu theo tháng');
-      console.error('Error fetching monthly revenue:', error);
-    } finally {
+      message.error('Không thể tải dữ liệu doanh thu theo tháng');    } finally {
       setLoading(false);
     }
   };
@@ -102,9 +98,7 @@ const RevenueCharts: React.FC<RevenueChartsProps> = ({
       setYearlyData(formattedData);
 
     } catch (error) {
-      message.error('Không thể tải dữ liệu doanh thu theo năm');
-      console.error('Error fetching yearly revenue:', error);
-    } finally {
+      message.error('Không thể tải dữ liệu doanh thu theo năm');    } finally {
       setLoading(false);
     }
   };

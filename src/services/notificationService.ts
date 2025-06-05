@@ -70,9 +70,7 @@ class NotificationService {
     try {
       localStorage.setItem('hotel_notifications', JSON.stringify(this.notifications));
       localStorage.setItem('hotel_notifications_last_check', this.lastCheck);
-    } catch (error) {
-      console.error('Failed to save notifications:', error);
-    }
+    } catch (error) {    }
   }
 
   // Load notifications from localStorage
@@ -90,9 +88,7 @@ class NotificationService {
       if (lastCheck) {
         this.lastCheck = lastCheck;
       }
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
-      this.notifications = [];
+    } catch (error) {      this.notifications = [];
     }
   }
 
@@ -140,9 +136,7 @@ class NotificationService {
       this.saveNotifications();
       this.notifyListeners();
 
-    } catch (error) {
-      console.error('Error checking for notifications:', error);
-    }
+    } catch (error) {    }
   }
 
   // Check for new bookings
@@ -170,9 +164,7 @@ class NotificationService {
         });
       });
 
-    } catch (error) {
-      console.error('Error checking new bookings:', error);
-    }
+    } catch (error) {    }
   }
 
   // Check for today's check-ins
@@ -209,9 +201,7 @@ class NotificationService {
         }
       });
 
-    } catch (error) {
-      console.error('Error checking today check-ins:', error);
-    }
+    } catch (error) {    }
   }
 
   // Check for today's check-outs
@@ -247,9 +237,7 @@ class NotificationService {
         }
       });
 
-    } catch (error) {
-      console.error('Error checking today check-outs:', error);
-    }
+    } catch (error) {    }
   }
 
   // Check for room status changes
@@ -283,9 +271,7 @@ class NotificationService {
         }
       });
 
-    } catch (error) {
-      console.error('Error checking room status:', error);
-    }
+    } catch (error) {    }
   }
 
   // Add a new notification

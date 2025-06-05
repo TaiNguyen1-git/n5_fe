@@ -12,7 +12,12 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out node_modules/.cache",
-    "optimize": "npm run clean && npm run build"
+    "optimize": "npm run clean && npm run build",
+    "test:invoice": "node test-invoice-apis.js",
+    "test:integration": "node test-invoice-integration.js",
+    "test:quick": "node quick-test.js",
+    "test:apis": "node test-invoice-apis.js",
+    "test:all": "npm run test:invoice && npm run test:integration"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
@@ -20,7 +25,7 @@
     "@types/formidable": "^3.4.5",
     "@types/uuid": "^10.0.0",
     "antd": "^5.24.7",
-    "axios": "^1.8.4",
+    "axios": "1.9.0",
     "date-fns": "^4.1.0",
     "dayjs": "1.11.13",
     "form-data": "4.0.2",

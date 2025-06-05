@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
+import { GetServerSideProps } from 'next';
 
 export default function RoomRedirect() {
   const router = useRouter();
@@ -13,10 +14,10 @@ export default function RoomRedirect() {
   }, [id, router]);
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
       height: '100vh',
       flexDirection: 'column',
       gap: '20px'
@@ -26,3 +27,16 @@ export default function RoomRedirect() {
     </div>
   );
 }
+
+// Sử dụng getServerSideProps để tránh lỗi prerendering
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const { id } = context.params!;
+
+  // Chuyển hướng ngay lập tức
+  return {
+    redirect: {
+      destination: `/room/${id}`,
+      permanent: false,
+    },
+  };
+};

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Tag, Space, Modal, DatePicker, Input, Select, Card, Statistic, Row, Col, message, Spin, Tabs, Popconfirm } from 'antd';
+import { Table, Button, Tag, Space, Modal, Input, Select, Card, Statistic, Row, Col, message, Tabs, Popconfirm, DatePicker } from 'antd';
 import { EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -389,7 +389,6 @@ const BookingManagement = () => {
         const updatedBookings = [...bookings];
         const index = updatedBookings.findIndex(booking => booking.maDatPhong === id);
         if (index !== -1) {
-          // Chỉ cập nhật trạng thái, giữ nguyên các thông tin khác
           updatedBookings[index] = {
             ...updatedBookings[index],
             trangThai: statusId
@@ -456,7 +455,6 @@ const BookingManagement = () => {
         const updatedBookings = [...bookings];
         const index = updatedBookings.findIndex(booking => booking.maDatPhong === id);
         if (index !== -1) {
-          // Chỉ cập nhật trạng thái, giữ nguyên các thông tin khác
           updatedBookings[index] = {
             ...updatedBookings[index],
             trangThai: statusId

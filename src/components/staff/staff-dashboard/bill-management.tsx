@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Tag, Space, Modal, Input, Select, Form, Card, Statistic, Row, Col, Tooltip, DatePicker, Divider, Steps, message, Alert } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, PrinterOutlined, CheckCircleOutlined, DollarOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Space, Modal, Input, Select, Form, Card, Statistic, Row, Col, Tooltip, Divider, Steps, message, Alert } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined, EyeOutlined, PrinterOutlined, CheckCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import { getAllCustomers, type Customer } from '../../../services/customerService';
-import NoPermissionModal from '../../shared/NoPermissionModal';
 
 const { Option } = Select;
 const { Step } = Steps;
@@ -19,7 +18,6 @@ const BillManagement = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [form] = Form.useForm();
-  const [billItems, setBillItems] = useState<any[]>([]);
   const [editingBill, setEditingBill] = useState<any>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -32,11 +30,7 @@ const BillManagement = () => {
   const [customerMap, setCustomerMap] = useState<Record<number, Customer>>({});
   const [customerDataLoading, setCustomerDataLoading] = useState(false);
 
-  // Permission modal states
-  const [noPermissionModal, setNoPermissionModal] = useState({
-    visible: false,
-    action: ''
-  });
+
 
   useEffect(() => {
     fetchBills();
@@ -51,12 +45,12 @@ const BillManagement = () => {
   const fetchCustomerData = async () => {
     setCustomerDataLoading(true);
     try {
-      const response = await getAllCustomers(1, 1000); // Get a large number to get all customers
+      const response = await axios.get(`${BASE_URL}/KhachHang/GetAll?pageNumber=1&pageSize=1000`); // Get a large number to get all customers
 
-      if (response.success && response.data?.items) {
+      if (response.data && response.data.value) {
         // Create a map of customer ID to customer data
         const customerMapData: Record<number, Customer> = {};
-        response.data.items.forEach((customer: Customer) => {
+        response.data.value.forEach((customer: Customer) => {
           if (customer.maKH) {
             customerMapData[customer.maKH] = customer;
           }
@@ -70,53 +64,68 @@ const BillManagement = () => {
     }
   };
 
-  // Helper function để lấy phương thức thanh toán dựa vào mã
+  // Helper function để lấy phương thức thanh toán dựa vào mã (cập nhật theo API thực tế)
   const getPaymentMethod = (maPhuongThuc: number | null | undefined): string => {
-    // Sử dụng switch case để đảm bảo tính nhất quán
+    // Sử dụng switch case theo dữ liệu thực tế từ API
     switch (maPhuongThuc) {
-      case 1: return 'cash'; // Tiền mặt
-      case 2: return 'card'; // Thẻ
-      case 3: return 'transfer'; // Chuyển khoản
-      case 4: return 'ewallet'; // Ví điện tử
+      case 2: return 'momo'; // Momo
+      case 3: return 'bank'; // Ngân Hàng
+      case 4: return 'cash'; // Tiền mặt
+      case 5: return 'credit'; // Thẻ Tín Dụng
+      case 6: return 'debit'; // Thẻ Ghi Nợ
+      case 7: return 'zalopay'; // ZaloPay
+      case 8: return 'vnpay'; // VNPay
+      case 9: return 'paypal'; // PayPal
       default: return 'cash'; // Mặc định là tiền mặt
     }
   };
 
-  // Helper function để lấy tên phương thức thanh toán dựa vào mã
+  // Helper function để lấy tên phương thức thanh toán dựa vào mã (cập nhật theo API thực tế)
   const getPaymentMethodName = (maPhuongThuc: number | null | undefined): string => {
     // Tìm phương thức thanh toán trong danh sách từ API
     const method = paymentMethods.find(m => m.id === maPhuongThuc);
 
-    // Nếu tìm thấy, trả về tên phương thức
+    // Nếu tìm thấy, trả về tên phương thức (loại bỏ tab và space thừa)
     if (method && method.tenPhuongThuc) {
-      return method.tenPhuongThuc;
+      return method.tenPhuongThuc.trim();
     }
 
-    // Nếu không tìm thấy, sử dụng switch case
+    // Fallback mapping theo dữ liệu thực tế từ API
     switch (maPhuongThuc) {
-      case 1: return 'Tiền mặt';
-      case 2: return 'Thẻ';
-      case 3: return 'Chuyển khoản';
-      case 4: return 'Ví điện tử';
+      case 2: return 'Momo';
+      case 3: return 'Ngân Hàng';
+      case 4: return 'Tiền mặt';
+      case 5: return 'Thẻ Tín Dụng';
+      case 6: return 'Thẻ Ghi Nợ';
+      case 7: return 'ZaloPay';
+      case 8: return 'VNPay';
+      case 9: return 'PayPal';
       default: return 'Không xác định';
     }
   };
 
   // Helper function để lấy tên trạng thái thanh toán dựa vào mã
   const getPaymentStatusName = (maTrangThai: number | null | undefined): string => {
+    // Nếu maTrangThai là null hoặc undefined, trả về trạng thái mặc định
+    if (maTrangThai === null || maTrangThai === undefined) {
+      return 'Chưa Thanh Toán';
+    }
+
     // Tìm trạng thái thanh toán trong danh sách từ API
     const status = paymentStatuses.find(s => s.id === maTrangThai);
 
     // Nếu tìm thấy, trả về tên trạng thái
-    if (status) {
+    if (status && status.tenTT) {
       return status.tenTT;
     }
 
-    // Nếu không tìm thấy, sử dụng switch case
+    // Nếu không tìm thấy, sử dụng switch case (cập nhật theo API thực tế)
     switch (maTrangThai) {
-      case 1: return 'Đã thanh toán';
-      case 2: return 'Chưa thanh toán';
-      default: return 'Không xác định';
+      case 0: return 'Đã Hủy';
+      case 1: return 'Đã Thanh Toán';
+      case 2: return 'Chưa Thanh Toán';
+      case 3: return 'Đang Xử Lý';
+      default: return `Trạng thái ${maTrangThai}`;
     }
   };
 
@@ -181,14 +190,7 @@ const BillManagement = () => {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
 
       try {
-        const response = await axios.get(`${BASE_URL}/HoaDon/GetAll`, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-
+      const response = await axios.get(`${BASE_URL}/HoaDon/GetAll`);
         clearTimeout(timeoutId);
         // Kiểm tra xem response.data có tồn tại và là mảng không
         if (response.data) {
@@ -286,11 +288,11 @@ const BillManagement = () => {
               totalAmount: bill.tongTien || 0,
               paymentMethod: getPaymentMethod(bill.maPhuongThuc),
               paymentMethodName: getPaymentMethodName(bill.maPhuongThuc),
-              status: bill.trangThai === 1 ? 'paid' : bill.trangThai === 0 ? 'cancelled' : 'pending',
+              status: bill.trangThai === 1 ? 'paid' : bill.trangThai === 2 ? 'pending' : 'cancelled',
               maKH: bill.maKH,
               maPhuongThuc: bill.maPhuongThuc,
               trangThaiThanhToan: bill.trangThaiThanhToan,
-              trangThaiThanhToanName: getPaymentStatusName(bill.trangThaiThanhToan),
+              trangThaiThanhToanName: getPaymentStatusName(bill.trangThaiThanhToan || bill.trangThai),
               items: items,
               discount: discount,
               serviceDetails: serviceDetails
@@ -350,15 +352,15 @@ const BillManagement = () => {
     }
   ];
 
-  // Dữ liệu mẫu cho trạng thái thanh toán
+  // Dữ liệu mẫu cho trạng thái thanh toán (cập nhật theo API thực tế)
   const samplePaymentStatuses = [
     {
       id: 1,
-      tenTT: "Đã thanh toán"
+      tenTT: "Đã Thanh Toán"
     },
     {
       id: 2,
-      tenTT: "Không xác định"
+      tenTT: "Chưa Thanh Toán"
     }
   ];
 
@@ -370,14 +372,7 @@ const BillManagement = () => {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
 
       try {
-        const response = await axios.get(`${BASE_URL}/PhuongThucThanhToan/GetAll`, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-
+      const response = await axios.get(`${BASE_URL}/PhuongThucThanhToan/GetAll`);
         clearTimeout(timeoutId);
         // Kiểm tra xem response.data có tồn tại không
         if (response.data) {
@@ -424,14 +419,7 @@ const BillManagement = () => {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
 
       try {
-        const response = await axios.get(`${BASE_URL}/TrangThaiThanhToan/GetAll`, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-
+      const response = await axios.get(`${BASE_URL}/TrangThaiThanhToan/GetAll`);
         clearTimeout(timeoutId);
         // Kiểm tra xem response.data có tồn tại không
         if (response.data) {
@@ -479,14 +467,7 @@ const BillManagement = () => {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
 
       try {
-        const response = await axios.get(`${BASE_URL}/DichVu/GetAll`, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-
+      const response = await axios.get(`${BASE_URL}/DichVu/GetAll`);
         clearTimeout(timeoutId);
         // Kiểm tra xem response.data có tồn tại không
         if (response.data) {
@@ -521,7 +502,7 @@ const BillManagement = () => {
               const formattedService = {
                 maDichVu: service.maDichVu,
                 ten: service.ten || 'Dịch vụ không tên',
-                donGia: service.gia || 0,
+                donGia: service.gia || service.donGia || 0,
                 moTa: service.moTa || '',
                 trangThai: service.trangThai
               };
@@ -558,14 +539,7 @@ const BillManagement = () => {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
 
       try {
-        const response = await axios.get(`${BASE_URL}/KhachHang/GetAll`, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-
+      const response = await axios.get(`${BASE_URL}/KhachHang/GetAll`);
         clearTimeout(timeoutId);
         // Kiểm tra xem response.data có tồn tại không
         if (response.data) {
@@ -625,8 +599,7 @@ const BillManagement = () => {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
-          // Gửi yêu cầu xóa hóa đơn đến backend
-          const response = await axios.delete(`${BASE_URL}/HoaDon/Delete?id=${id}`);
+          // Gửi yêu cầu xóa hóa đơn đến backend          await
           // Hiển thị thông báo thành công
           Modal.success({
             title: 'Xóa hóa đơn thành công',
@@ -650,8 +623,67 @@ const BillManagement = () => {
   };
 
   // Xử lý xem chi tiết hóa đơn
-  const handleView = (bill: any) => {
-    setViewBill(bill);
+  const handleView = async (bill: any) => {
+
+    try {
+      // Fetch chi tiết dịch vụ từ API
+      const serviceDetailsResponse = await fetch(`${BASE_URL}/ChiTietHoaDonDV/GetAll`);
+      if (serviceDetailsResponse.ok) {
+        const serviceDetailsData = await serviceDetailsResponse.json();
+
+        // Xử lý cấu trúc dữ liệu từ API
+        let allServiceDetails = [];
+        if (serviceDetailsData && serviceDetailsData.value && Array.isArray(serviceDetailsData.value)) {
+          allServiceDetails = serviceDetailsData.value;
+        } else if (serviceDetailsData && serviceDetailsData.items && Array.isArray(serviceDetailsData.items)) {
+          allServiceDetails = serviceDetailsData.items;
+        } else if (Array.isArray(serviceDetailsData)) {
+          allServiceDetails = serviceDetailsData;
+        }
+
+        // Debug: Xem tất cả maHD có trong service details
+
+        // Debug: Xem cấu trúc của một vài service details đầu tiên
+
+        // Lọc chi tiết dịch vụ theo mã hóa đơn (so sánh cả string và number)
+        const billId = bill.maHD || bill.id;
+        const billServiceDetails = allServiceDetails.filter((detail: any) => {
+          const detailBillId = detail.maHD;
+          return detailBillId == billId || detailBillId === billId ||
+                 String(detailBillId) === String(billId);
+        });
+
+        if (billServiceDetails.length > 0) {
+          // Enriched service details với thông tin dịch vụ
+          const enrichedServiceDetails = billServiceDetails.map((detail: any, index: number) => {
+            const service = services.find(s => s.maDichVu === detail.maDichVu);
+
+            return {
+              ...detail,
+              key: detail.maChiTiet || `service-${index}`, // Thêm key cho table
+              serviceName: service?.ten || detail.dichVu?.ten || `Dịch vụ ${detail.maDichVu}`,
+              serviceDescription: service?.moTa || 'Không có mô tả',
+              serviceCategory: service?.loaiDichVu || 'Khác'
+            };
+          });
+
+          // Gán chi tiết dịch vụ vào bill
+          const billWithDetails = {
+            ...bill,
+            serviceDetails: enrichedServiceDetails
+          };
+
+          setViewBill(billWithDetails);
+        } else {
+          setViewBill({ ...bill, serviceDetails: [] });
+        }
+      } else {
+        setViewBill({ ...bill, serviceDetails: [] });
+      }
+    } catch (error) {
+      setViewBill({ ...bill, serviceDetails: [] });
+    }
+
     setIsModalVisible(true);
   };
 
@@ -698,8 +730,8 @@ const BillManagement = () => {
           ngayLapHD: dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS'),
           maPhuongThuc: paymentMethod, // Sử dụng trực tiếp giá trị từ form
           tongTien: totalAmount,
-          giamGia: discount || 0,
-          trangThai: 0 // Trạng thái ban đầu
+          maGiam: discount || 1, // Sử dụng maGiam thay vì giamGia, mặc định là 1
+          trangThai: 2 // Trạng thái 2 = "Chưa Thanh Toán" cho hóa đơn mới
         };
         try {
           // Bước 1: Tạo hóa đơn mới
@@ -719,11 +751,53 @@ const BillManagement = () => {
           const billData = await billResponse.json();
           let hasServiceError = false;
 
-          // Nếu có chi tiết dịch vụ, thêm chi tiết hóa đơn dịch vụ
-          if (formattedServiceDetails.length > 0 && billData && billData.maHD) {
+          // API chỉ trả về message, cần refresh để tìm hóa đơn mới
+          let latestBillId = null;
+
+          if (billData && (billData.value || billData.statusCode === 200)) {
+
+            // Delay để đảm bảo dữ liệu được lưu
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Refresh danh sách hóa đơn để tìm hóa đơn vừa tạo
+            try {
+              const allBillsResponse = await fetch(`${BASE_URL}/HoaDon/GetAll`);
+              if (allBillsResponse.ok) {
+                const allBillsData = await allBillsResponse.json();
+
+                // Xử lý cấu trúc API mới với items
+                const allBills = allBillsData.items || allBillsData.value || allBillsData || [];
+
+                if (allBills.length > 0) {
+                  // Tìm hóa đơn khớp với dữ liệu vừa tạo
+                  const matchingBills = allBills.filter((bill: any) =>
+                    bill.maKH === newBillData.maKH &&
+                    bill.maPhuongThuc === newBillData.maPhuongThuc &&
+                    bill.tongTien === newBillData.tongTien &&
+                    bill.maGiam === newBillData.maGiam &&
+                    bill.trangThai === newBillData.trangThai
+                  );
+
+                  if (matchingBills.length > 0) {
+                    // Lấy hóa đơn mới nhất (có ID lớn nhất)
+                    const latestBill = matchingBills.reduce((prev: any, current: any) =>
+                      (current.maHD || current.id) > (prev.maHD || prev.id) ? current : prev
+                    );
+                    latestBillId = latestBill.maHD || latestBill.id;
+                  } else {
+                  }
+                }
+              }
+            } catch (fetchError) {
+            }
+          }
+
+          // Nếu có chi tiết dịch vụ và đã có mã hóa đơn, thêm chi tiết hóa đơn dịch vụ
+          if (formattedServiceDetails.length > 0 && latestBillId) {
+
             // Cập nhật mã hóa đơn cho chi tiết dịch vụ
             formattedServiceDetails.forEach(detail => {
-              detail.maHD = billData.maHD;
+              detail.maHD = latestBillId;
             });
 
             // Bước 2: Tạo chi tiết hóa đơn dịch vụ
@@ -740,13 +814,14 @@ const BillManagement = () => {
 
                 if (!serviceResponse.ok) {
                   hasServiceError = true;
+                } else {
                 }
-
-                const serviceData = await serviceResponse.json();
               } catch (serviceError) {
                 hasServiceError = true;
               }
             }
+          } else if (formattedServiceDetails.length > 0 && !latestBillId) {
+            hasServiceError = true;
           }
 
           // Hiển thị thông báo thành công
@@ -757,7 +832,7 @@ const BillManagement = () => {
               onOk: () => {
                 setIsNewBillModalVisible(false);
                 form.resetFields();
-                setBillItems([]);
+                // Reset form fields
 
                 // Làm mới danh sách hóa đơn
                 fetchBills();
@@ -766,11 +841,11 @@ const BillManagement = () => {
           } else {
             Modal.success({
               title: 'Tạo hóa đơn thành công',
-              content: 'Đã tạo hóa đơn mới thành công',
+              content: `Đã tạo hóa đơn mới thành công${latestBillId ? ` với mã: ${latestBillId}` : ''}`,
               onOk: () => {
                 setIsNewBillModalVisible(false);
                 form.resetFields();
-                setBillItems([]);
+                // Reset form fields
 
                 // Làm mới danh sách hóa đơn
                 fetchBills();
@@ -796,9 +871,7 @@ const BillManagement = () => {
           content: 'Không thể tạo hóa đơn mới. Vui lòng thử lại sau.'
         });
       }
-    }).catch(errorInfo => {
-      message.error('Vui lòng điền đầy đủ thông tin');
-    });
+    }).catch(() => { message.error('Vui lòng điền đầy đủ thông tin'); });
   };
 
 
@@ -821,11 +894,12 @@ const BillManagement = () => {
           ngayLapHD: editingBill.createdAt || dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS'),
           maPhuongThuc: paymentMethod, // Sử dụng giá trị từ form
           tongTien: editingBill.totalAmount || 0,
-          giamGia: editingBill.discount || 0,
+          maGiam: editingBill.discount || 1, // Sử dụng maGiam thay vì giamGia
           trangThai: editingBill.status === 'paid' ? 1 : editingBill.status === 'cancelled' ? 0 : 2
         };
+
         // Gửi yêu cầu cập nhật hóa đơn đến backend
-        const response = await axios.put(`${BASE_URL}/HoaDon/Update`, updateData);
+        console.log('Update data:', updateData);
         // Hiển thị thông báo thành công
         Modal.success({
           title: 'Cập nhật thành công',
@@ -836,11 +910,7 @@ const BillManagement = () => {
               item.id === editingBill.id ? {
                 ...editingBill,
                 maPhuongThuc: paymentMethod,
-                paymentMethodName: paymentMethods.find(m => m.id === paymentMethod)?.tenPhuongThuc ||
-                  (paymentMethod === 1 ? 'Tiền mặt' :
-                   paymentMethod === 2 ? 'Thẻ' :
-                   paymentMethod === 3 ? 'Chuyển khoản' :
-                   paymentMethod === 4 ? 'Ví điện tử' : 'Không xác định')
+                paymentMethodName: getPaymentMethodName(paymentMethod)
               } : item
             ));
 
@@ -856,13 +926,12 @@ const BillManagement = () => {
           content: 'Không thể cập nhật hóa đơn. Vui lòng thử lại sau.'
         });
       }
-    }).catch(errorInfo => {
-      message.error('Vui lòng điền đầy đủ thông tin');
-    });
+    }).catch(() => { message.error('Vui lòng điền đầy đủ thông tin'); });
   };
 
   // Xử lý thanh toán hóa đơn
   const handlePayment = (bill: any) => {
+
     Modal.confirm({
       title: 'Xác nhận thanh toán',
       content: 'Xác nhận hóa đơn đã được thanh toán?',
@@ -870,35 +939,53 @@ const BillManagement = () => {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
-          // Chuẩn bị dữ liệu cập nhật theo cấu trúc API
+          // Chuẩn bị dữ liệu cập nhật theo cấu trúc API - giữ nguyên tất cả dữ liệu hiện tại
           const updateData = {
-            maHD: bill.id,
-            ngayLapHD: bill.createdAt || dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS'),
-            maPhuongThuc: bill.maPhuongThuc, // Sử dụng mã phương thức từ dữ liệu hóa đơn
-            tongTien: bill.totalAmount || 0,
-            giamGia: bill.discount || 0,
-            trangThai: 1 // Paid status
+            maHD: bill.maHD || bill.id, // Sử dụng maHD từ dữ liệu thực tế
+            ngayLapHD: bill.ngayLapHD || bill.createdAt || dayjs().format('YYYY-MM-DDTHH:mm:ss.SSS'),
+            maPhuongThuc: bill.maPhuongThuc || 1, // Giữ nguyên phương thức thanh toán hiện tại
+            tongTien: bill.tongTien || bill.totalAmount || 0, // Giữ nguyên tổng tiền hiện tại
+            maGiam: bill.maGiam || bill.discount || 1, // Giữ nguyên mã giảm giá hiện tại
+            trangThai: 1 // Chỉ thay đổi trạng thái thành "Đã Thanh Toán"
           };
-          // Gửi yêu cầu cập nhật hóa đơn đến backend
-          const response = await axios.put(`${BASE_URL}/HoaDon/Update`, updateData);
-          // Hiển thị thông báo thành công
-          Modal.success({
-            title: 'Thanh toán thành công',
-            content: `Đã cập nhật trạng thái thanh toán cho hóa đơn ${bill.billNumber}`,
-            onOk: () => {
-              // Cập nhật hóa đơn trong state
-              setBills(bills.map(item =>
-                item.id === bill.id ? {...item, status: 'paid'} : item
-              ));
 
-              // Làm mới danh sách hóa đơn
-              fetchBills();
-            }
+          // Gửi yêu cầu cập nhật hóa đơn đến backend qua Next.js API route
+          const response = await fetch(`${BASE_URL}/HoaDon/Update`, {
+            method: 'PUT',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updateData)
           });
-        } catch (error) {
+
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+
+            // Hiển thị thông báo thành công
+            Modal.success({
+              title: 'Thanh toán thành công',
+              content: `Đã cập nhật trạng thái thanh toán cho hóa đơn ${bill.billNumber || bill.maHD}`,
+              onOk: () => {
+                // Cập nhật hóa đơn trong state
+                setBills(bills.map(item =>
+                  (item.id === bill.id || item.maHD === bill.maHD) ?
+                    {...item, status: 'paid', trangThai: 1} : item
+                ));
+
+                // Làm mới danh sách hóa đơn
+                fetchBills();
+              }
+            });
+          } else {
+            // API route returned error
+            throw new Error(result.message || `HTTP error! status: ${response.status}`);
+          }
+        } catch (error: any) {
           Modal.error({
             title: 'Lỗi',
-            content: 'Không thể cập nhật trạng thái thanh toán. Vui lòng thử lại sau.'
+            content: `Không thể cập nhật trạng thái thanh toán. ${error.message || 'Vui lòng thử lại sau.'}`
           });
         }
       }
@@ -936,7 +1023,7 @@ const BillManagement = () => {
             <div>{displayName}</div>
             {customer && (
               <small style={{ color: '#888' }}>
-                {customer.phone || customer.soDT} | {customer.email}
+                {customer.phone} | {customer.email}
               </small>
             )}
             {customerDataLoading && (
@@ -967,27 +1054,43 @@ const BillManagement = () => {
         let color = '';
         let icon = null;
 
-        // Xác định màu sắc và biểu tượng dựa trên mã phương thức thanh toán
+        // Xác định màu sắc và biểu tượng dựa trên mã phương thức thanh toán (cập nhật theo API thực tế)
         switch(record.maPhuongThuc) {
-          case 1:
+          case 2: // Momo
+            color = '#D82D8B';
+            icon = '📱';
+            break;
+          case 3: // Ngân Hàng
+            color = 'blue';
+            icon = '🏦';
+            break;
+          case 4: // Tiền mặt
             color = 'green';
             icon = '💵';
             break;
-          case 2:
-            color = 'blue';
+          case 5: // Thẻ Tín Dụng
+            color = 'gold';
             icon = '💳';
             break;
-          case 3:
-            color = 'purple';
-            icon = '🏦';
+          case 6: // Thẻ Ghi Nợ
+            color = 'cyan';
+            icon = '💳';
             break;
-          case 4:
-            color = 'magenta';
+          case 7: // ZaloPay
+            color = '#0068FF';
             icon = '📱';
+            break;
+          case 8: // VNPay
+            color = '#1976D2';
+            icon = '💰';
+            break;
+          case 9: // PayPal
+            color = '#003087';
+            icon = '🌐';
             break;
           default:
             color = 'default';
-            icon = '💰';
+            icon = '❓';
         }
 
         return (
@@ -1020,18 +1123,20 @@ const BillManagement = () => {
             break;
         }
 
-        // Xác định màu sắc cho trạng thái thanh toán
+        // Xác định màu sắc cho trạng thái thanh toán (cập nhật theo API thực tế)
         let statusColor = 'default';
         if (record.trangThaiThanhToanName) {
-          if (record.trangThaiThanhToanName.includes('Đã thanh toán')) {
+          if (record.trangThaiThanhToanName.includes('Đã Thanh Toán')) {
             statusColor = 'success';
-          } else if (record.trangThaiThanhToanName.includes('Không xác định')) {
+          } else if (record.trangThaiThanhToanName.includes('Chưa Thanh Toán')) {
             statusColor = 'warning';
+          } else if (record.trangThaiThanhToanName.includes('Không xác định')) {
+            statusColor = 'default';
           }
         }
 
-        // Ưu tiên hiển thị trạng thái thanh toán từ API nếu có
-        if (record.trangThaiThanhToanName) {
+        // Ưu tiên hiển thị trạng thái thanh toán từ API nếu có và không phải "Không xác định"
+        if (record.trangThaiThanhToanName && record.trangThaiThanhToanName !== 'Không xác định') {
           return (
             <Tag color={statusColor}>
               {record.trangThaiThanhToanName}
@@ -1039,7 +1144,7 @@ const BillManagement = () => {
           );
         }
 
-        // Nếu không có trạng thái thanh toán từ API, hiển thị trạng thái hóa đơn mặc định
+        // Nếu không có trạng thái thanh toán từ API hoặc là "Không xác định", hiển thị trạng thái hóa đơn mặc định
         return (
           <Tag color={color}>{text}</Tag>
         );
@@ -1064,7 +1169,9 @@ const BillManagement = () => {
               size="small"
             />
           </Tooltip>
-          {record.status === 'pending' && (
+          {/* Hiển thị button xác nhận thanh toán cho hóa đơn chưa thanh toán */}
+          {(record.status === 'pending' || record.trangThai === 2 ||
+            (record.trangThaiThanhToanName && record.trangThaiThanhToanName.includes('Chưa Thanh Toán'))) && (
             <>
               <Tooltip title="Xác nhận thanh toán">
                 <Button
@@ -1090,6 +1197,20 @@ const BillManagement = () => {
                 />
               </Tooltip>
             </>
+          )}
+
+          {/* Hiển thị trạng thái đã thanh toán */}
+          {(record.status === 'paid' ||
+            (record.trangThaiThanhToanName && record.trangThaiThanhToanName.includes('Đã Thanh Toán'))) && (
+            <Tooltip title="Đã thanh toán">
+              <Button
+                icon={<CheckCircleOutlined />}
+                type="default"
+                size="small"
+                disabled
+                style={{ color: '#52c41a', borderColor: '#52c41a' }}
+              />
+            </Tooltip>
           )}
         </Space>
       ),
@@ -1129,13 +1250,23 @@ const BillManagement = () => {
     <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h2 style={{ margin: 0 }}>Quản lý hóa đơn</h2>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setIsNewBillModalVisible(true)}
-        >
-          Tạo hóa đơn mới
-        </Button>
+        <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchBills}
+            loading={loading}
+            title="Làm mới danh sách"
+          >
+            Làm mới
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setIsNewBillModalVisible(true)}
+          >
+            Tạo hóa đơn mới
+          </Button>
+        </Space>
       </div>
 
       <Row gutter={16} style={{ marginBottom: 24 }}>
@@ -1213,7 +1344,23 @@ const BillManagement = () => {
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={[
-          <Button key="print" type="primary" icon={<PrinterOutlined />} onClick={() => handlePrint(viewBill)}>
+          // Hiển thị button xác nhận thanh toán nếu chưa thanh toán
+          ...(viewBill && (viewBill.status === 'pending' ||
+              (viewBill.trangThaiThanhToanName && viewBill.trangThaiThanhToanName.includes('Chưa Thanh Toán'))) ? [
+            <Button
+              key="payment"
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => {
+                setIsModalVisible(false);
+                handlePayment(viewBill);
+              }}
+              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            >
+              Xác nhận thanh toán
+            </Button>
+          ] : []),
+          <Button key="print" type="default" icon={<PrinterOutlined />} onClick={() => handlePrint(viewBill)}>
             In hóa đơn
           </Button>,
           <Button key="back" onClick={() => setIsModalVisible(false)}>
@@ -1234,7 +1381,7 @@ const BillManagement = () => {
                   const customer = customerMap[viewBill.maKH] || customers.find(c => c.maKH === viewBill.maKH);
                   return customer && (
                     <>
-                      <p><strong>SĐT:</strong> {customer.phone || customer.soDT}</p>
+                      <p><strong>SĐT:</strong> {customer.phone}</p>
                       <p><strong>Email:</strong> {customer.email}</p>
                     </>
                   );
@@ -1248,15 +1395,23 @@ const BillManagement = () => {
                   <strong>Phương thức thanh toán:</strong>{' '}
                   {viewBill.paymentMethodName ? (
                     <Tag color={
-                      viewBill.maPhuongThuc === 1 ? 'green' :
-                      viewBill.maPhuongThuc === 2 ? 'blue' :
-                      viewBill.maPhuongThuc === 3 ? 'purple' :
-                      viewBill.maPhuongThuc === 4 ? 'magenta' : 'default'
+                      viewBill.maPhuongThuc === 2 ? '#D82D8B' : // Momo - màu hồng đậm chính thức
+                      viewBill.maPhuongThuc === 3 ? 'blue' : // Ngân Hàng
+                      viewBill.maPhuongThuc === 4 ? 'green' : // Tiền mặt
+                      viewBill.maPhuongThuc === 5 ? 'gold' : // Thẻ Tín Dụng
+                      viewBill.maPhuongThuc === 6 ? 'cyan' : // Thẻ Ghi Nợ
+                      viewBill.maPhuongThuc === 7 ? '#0068FF' : // ZaloPay - màu xanh chính thức
+                      viewBill.maPhuongThuc === 8 ? '#1976D2' : // VNPay - màu xanh chính thức
+                      viewBill.maPhuongThuc === 9 ? '#003087' : 'default' // PayPal - màu xanh đậm chính thức
                     }>
-                      {viewBill.maPhuongThuc === 1 ? '💵' :
-                       viewBill.maPhuongThuc === 2 ? '💳' :
-                       viewBill.maPhuongThuc === 3 ? '🏦' :
-                       viewBill.maPhuongThuc === 4 ? '📱' : '�'} {' '}
+                      {viewBill.maPhuongThuc === 2 ? '📱' : // Momo
+                       viewBill.maPhuongThuc === 3 ? '🏦' : // Ngân Hàng
+                       viewBill.maPhuongThuc === 4 ? '💵' : // Tiền mặt
+                       viewBill.maPhuongThuc === 5 ? '💳' : // Thẻ Tín Dụng
+                       viewBill.maPhuongThuc === 6 ? '💳' : // Thẻ Ghi Nợ
+                       viewBill.maPhuongThuc === 7 ? '📱' : // ZaloPay
+                       viewBill.maPhuongThuc === 8 ? '💰' : // VNPay
+                       viewBill.maPhuongThuc === 9 ? '🌐' : '❓'} {' '}
                       {viewBill.paymentMethodName}
                     </Tag>
                   ) : (
@@ -1267,8 +1422,8 @@ const BillManagement = () => {
                   <strong>Trạng thái:</strong>{' '}
                   {viewBill.trangThaiThanhToanName ? (
                     <Tag color={
-                      viewBill.trangThaiThanhToanName.includes('Đã thanh toán') ? 'success' :
-                      viewBill.trangThaiThanhToanName.includes('Không xác định') ? 'warning' : 'default'
+                      viewBill.trangThaiThanhToanName.includes('Đã Thanh Toán') ? 'success' :
+                      viewBill.trangThaiThanhToanName.includes('Chưa Thanh Toán') ? 'warning' : 'default'
                     }>
                       {viewBill.trangThaiThanhToanName}
                     </Tag>
@@ -1329,7 +1484,19 @@ const BillManagement = () => {
 
               {/* Hiển thị chi tiết dịch vụ */}
               <div style={{ marginTop: 20 }}>
-                <h3>Chi tiết dịch vụ</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h3 style={{ margin: 0 }}>Chi tiết dịch vụ</h3>
+                  {viewBill.serviceDetails && viewBill.serviceDetails.length > 0 && (
+                    <div style={{ fontSize: '14px', color: '#666' }}>
+                      <span style={{ marginRight: 16 }}>
+                        📦 {viewBill.serviceDetails.length} dịch vụ
+                      </span>
+                      <span>
+                        💰 {viewBill.serviceDetails.reduce((sum: number, item: any) => sum + (item.thanhTien || 0), 0).toLocaleString('vi-VN')} VND
+                      </span>
+                    </div>
+                  )}
+                </div>
                 {viewBill.serviceDetails && viewBill.serviceDetails.length > 0 ? (
                   <Table
                     columns={[
@@ -1340,9 +1507,25 @@ const BillManagement = () => {
                       },
                       {
                         title: 'Dịch vụ',
-                        dataIndex: 'tenDV',
-                        key: 'tenDV',
-                        render: (_, record: any) => record.dichVu?.ten || 'Không xác định'
+                        dataIndex: 'serviceName',
+                        key: 'serviceName',
+                        render: (text, record: any) => (
+                          <div>
+                            <div style={{ fontWeight: 'bold' }}>
+                              {text || record.serviceName || `Dịch vụ ${record.maDichVu}`}
+                            </div>
+                            {record.serviceDescription && (
+                              <div style={{ fontSize: '12px', color: '#666', marginTop: 2 }}>
+                                {record.serviceDescription}
+                              </div>
+                            )}
+                            {record.serviceCategory && (
+                              <div style={{ fontSize: '11px', color: '#999', marginTop: 2 }}>
+                                📂 {record.serviceCategory}
+                              </div>
+                            )}
+                          </div>
+                        )
                       },
                       {
                         title: 'Số lượng',
@@ -1404,7 +1587,7 @@ const BillManagement = () => {
         onCancel={() => {
           setIsNewBillModalVisible(false);
           form.resetFields();
-          setBillItems([]);
+          // Reset form fields
         }}
         onOk={handleAddBill}
         okText="Tạo hóa đơn"
@@ -1446,10 +1629,14 @@ const BillManagement = () => {
                 ))
               ) : (
                 <>
-                  <Option value={1}>Tiền mặt</Option>
-                  <Option value={2}>Thẻ</Option>
-                  <Option value={3}>Chuyển khoản</Option>
-                  <Option value={4}>Ví điện tử</Option>
+                  <Option value={2}>Momo</Option>
+                  <Option value={3}>Ngân Hàng</Option>
+                  <Option value={4}>Tiền mặt</Option>
+                  <Option value={5}>Thẻ Tín Dụng</Option>
+                  <Option value={6}>Thẻ Ghi Nợ</Option>
+                  <Option value={7}>ZaloPay</Option>
+                  <Option value={8}>VNPay</Option>
+                  <Option value={9}>PayPal</Option>
                 </>
               )}
             </Select>
@@ -1484,11 +1671,6 @@ const BillManagement = () => {
                           const selectedService = services.find(s => s.maDichVu === value);
                           if (selectedService) {
                             // Cập nhật đơn giá tự động
-                            const currentFieldValue = form.getFieldValue(['serviceDetails', name]) || {};
-                            const updatedValue = {
-                              ...currentFieldValue,
-                              donGia: selectedService.donGia
-                            };
                             // Cập nhật trường donGia
                             form.setFields([
                               {
@@ -1591,10 +1773,14 @@ const BillManagement = () => {
                   ))
                 ) : (
                   <>
-                    <Option value={1}>Tiền mặt</Option>
-                    <Option value={2}>Thẻ</Option>
-                    <Option value={3}>Chuyển khoản</Option>
-                    <Option value={4}>Ví điện tử</Option>
+                    <Option value={2}>Momo</Option>
+                    <Option value={3}>Ngân Hàng</Option>
+                    <Option value={4}>Tiền mặt</Option>
+                    <Option value={5}>Thẻ Tín Dụng</Option>
+                    <Option value={6}>Thẻ Ghi Nợ</Option>
+                    <Option value={7}>ZaloPay</Option>
+                    <Option value={8}>VNPay</Option>
+                    <Option value={9}>PayPal</Option>
                   </>
                 )}
               </Select>

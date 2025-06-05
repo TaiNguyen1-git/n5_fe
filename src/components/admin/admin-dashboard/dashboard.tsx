@@ -75,6 +75,18 @@ const Dashboard = () => {
   // Define columns for the recent bookings table
   const columns = [
     {
+      title: 'Ngày đặt',
+      dataIndex: 'bookingDate',
+      key: 'bookingDate',
+      render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : 'N/A',
+      sorter: (a: RecentBooking, b: RecentBooking) => {
+        const dateA = dayjs(a.bookingDate);
+        const dateB = dayjs(b.bookingDate);
+        return dateB.unix() - dateA.unix(); // Sắp xếp mới nhất trước
+      },
+      defaultSortOrder: 'ascend' as const,
+    },
+    {
       title: 'Phòng',
       dataIndex: 'roomNumber',
       key: 'roomNumber',
@@ -245,7 +257,7 @@ const Dashboard = () => {
       </Spin>
 
       <div style={{ marginTop: 32 }}>
-        <Title level={4}>Đặt phòng gần đây</Title>
+        <Title level={4}>Đặt phòng gần đây (theo thời gian đặt)</Title>
         <Table
           columns={columns}
           dataSource={recentBookings}

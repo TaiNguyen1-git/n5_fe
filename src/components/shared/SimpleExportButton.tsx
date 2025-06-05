@@ -46,9 +46,7 @@ const SimpleExportButton: React.FC<SimpleExportButtonProps> = ({
       });
       
       message.success(`Đã xuất ${data.length} bản ghi thành công!`);
-    } catch (error) {
-      console.error('Export error:', error);
-      message.error('Có lỗi xảy ra khi xuất dữ liệu');
+    } catch (error) {      message.error('Có lỗi xảy ra khi xuất dữ liệu');
     } finally {
       setExportLoading(false);
     }

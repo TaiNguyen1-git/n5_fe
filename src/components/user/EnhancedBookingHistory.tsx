@@ -99,9 +99,7 @@ const EnhancedBookingHistory: React.FC = () => {
       } else {
         throw new Error('Failed to fetch booking history');
       }
-    } catch (error) {
-      console.error('Error fetching booking history:', error);
-      message.error('Không thể tải lịch sử đặt phòng');
+    } catch (error) {      message.error('Không thể tải lịch sử đặt phòng');
       setBookings([]);
     } finally {
       setLoading(false);
