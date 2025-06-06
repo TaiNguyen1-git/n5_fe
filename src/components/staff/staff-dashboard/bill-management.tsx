@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import { getAllCustomers, type Customer } from '../../../services/customerService';
+import { calculateBill, createCalculatedBill, BillCalculation } from '../../../services/billCalculationService';
 
 const { Option } = Select;
 const { Step } = Steps;
@@ -29,6 +30,11 @@ const BillManagement = () => {
   // Customer data states for real-time customer name lookup
   const [customerMap, setCustomerMap] = useState<Record<number, Customer>>({});
   const [customerDataLoading, setCustomerDataLoading] = useState(false);
+
+  // State cho bill calculation
+  const [billCalculation, setBillCalculation] = useState<BillCalculation | null>(null);
+  const [calculationLoading, setCalculationLoading] = useState(false);
+  const [selectedCustomerForBill, setSelectedCustomerForBill] = useState<number | null>(null);
 
 
 
@@ -899,7 +905,6 @@ const BillManagement = () => {
         };
 
         // Gửi yêu cầu cập nhật hóa đơn đến backend
-        console.log('Update data:', updateData);
         // Hiển thị thông báo thành công
         Modal.success({
           title: 'Cập nhật thành công',

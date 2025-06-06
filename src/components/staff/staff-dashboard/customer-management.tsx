@@ -991,6 +991,17 @@ const CustomerManagement = () => {
           </Form.Item>
 
           <Form.Item
+            name="password"
+            label="Mật khẩu"
+            rules={[
+              { required: true, message: 'Vui lòng nhập mật khẩu' },
+              { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' }
+            ]}
+          >
+            <Input.Password placeholder="Nhập mật khẩu cho tài khoản" />
+          </Form.Item>
+
+          <Form.Item
             name="maVaiTro"
             label="Vai trò"
             initialValue={0}

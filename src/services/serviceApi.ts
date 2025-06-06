@@ -207,6 +207,164 @@ export const serviceApi = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // === SuDungDichVu APIs ===
+
+  // Tạo bản ghi sử dụng dịch vụ
+  createServiceUsage: async (serviceUsage: {
+    maKH: number;
+    maDV: number;
+    ngaySD: string;
+    soLuong: number;
+    thanhTien: number;
+    trangThai?: string;
+  }): Promise<ApiResponse<any>> => {
+    try {
+      const response = await axios.post(`${BASE_URL}/service-usage`, serviceUsage, {
+        timeout: 15000,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.data && response.data.success) {
+        return {
+          success: true,
+          message: response.data.message || 'Đặt dịch vụ thành công',
+          data: response.data.data
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || 'Đặt dịch vụ thất bại',
+          data: null
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Không thể đặt dịch vụ. Vui lòng thử lại.',
+        data: null
+      };
+    }
+  },
+
+  // Lấy lịch sử sử dụng dịch vụ
+  getServiceUsageHistory: async (pageNumber: number = 1, pageSize: number = 10): Promise<ApiResponse<PaginatedResponse<any>>> => {
+    try {
+      const response = await axios.get(`${BASE_URL}/service-usage`, {
+        params: {
+          pageNumber,
+          pageSize
+        },
+        timeout: 15000
+      });
+
+      if (response.data && response.data.success) {
+        return {
+          success: true,
+          data: response.data.data
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || 'Không thể lấy lịch sử sử dụng dịch vụ',
+          data: {
+            items: [],
+            totalItems: 0,
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            totalPages: 0
+          }
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Không thể lấy lịch sử sử dụng dịch vụ',
+        data: {
+          items: [],
+          totalItems: 0,
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+          totalPages: 0
+        }
+      };
+    }
+  },
+
+  // Cập nhật bản ghi sử dụng dịch vụ
+  updateServiceUsage: async (id: number, serviceUsage: {
+    maKH: number;
+    maDV: number;
+    ngaySD: string;
+    soLuong: number;
+    thanhTien: number;
+    trangThai?: string;
+  }): Promise<ApiResponse<any>> => {
+    try {
+      const response = await axios.put(`${BASE_URL}/service-usage`, {
+        id,
+        ...serviceUsage
+      }, {
+        timeout: 15000,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.data && response.data.success) {
+        return {
+          success: true,
+          message: response.data.message || 'Cập nhật sử dụng dịch vụ thành công',
+          data: response.data.data
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || 'Cập nhật sử dụng dịch vụ thất bại',
+          data: null
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Không thể cập nhật sử dụng dịch vụ. Vui lòng thử lại.',
+        data: null
+      };
+    }
+  },
+
+  // Xóa bản ghi sử dụng dịch vụ
+  deleteServiceUsage: async (id: number): Promise<ApiResponse<any>> => {
+    try {
+      const response = await axios.delete(`${BASE_URL}/service-usage?id=${id}`, {
+        timeout: 15000
+      });
+
+      if (response.data && response.data.success) {
+        return {
+          success: true,
+          message: response.data.message || 'Xóa sử dụng dịch vụ thành công',
+          data: response.data.data
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || 'Xóa sử dụng dịch vụ thất bại',
+          data: null
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Không thể xóa sử dụng dịch vụ. Vui lòng thử lại.',
+        data: null
+      };
+    }
   }
 };
 

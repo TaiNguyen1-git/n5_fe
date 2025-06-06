@@ -14,7 +14,8 @@ import {
   CalendarOutlined,
   BellOutlined,
   SearchOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  TagOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/router';
 import { logout, getCurrentUser } from '../../../services/authService';
@@ -26,6 +27,8 @@ import BillManagement from './bill-management';
 import BookingManagement from './booking-management';
 import EmployeeManagement from './employee-management';
 import ServiceManagement from './service-management';
+import ServiceUsageManagement from './service-usage-management';
+import DiscountManagement from './discount-management';
 import Dashboard from './dashboard';
 import RoomStatusDashboard from '../../shared/RoomStatusDashboard';
 import CustomerAnalyticsDashboard from '../../shared/CustomerAnalyticsDashboard';
@@ -38,7 +41,7 @@ const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 const AdminDashboard = () => {
-  const [tab, setTab] = useState<'dashboard' | 'staff' | 'user' | 'workshift' | 'room' | 'bill' | 'booking' | 'employee' | 'service' | 'room-status' | 'customer-analytics' | 'advanced-search' | 'revenue-report' | 'notifications'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'staff' | 'user' | 'workshift' | 'room' | 'bill' | 'booking' | 'employee' | 'service' | 'service-usage' | 'discount' | 'room-status' | 'customer-analytics' | 'advanced-search' | 'revenue-report' | 'notifications'>('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const router = useRouter();
@@ -124,6 +127,11 @@ const AdminDashboard = () => {
               label: 'Quản lý hóa đơn',
             },
             {
+              key: 'discount',
+              icon: <TagOutlined />,
+              label: 'Quản lý mã giảm giá',
+            },
+            {
               key: 'workshift',
               icon: <ScheduleOutlined />,
               label: 'Quản lý ca làm',
@@ -132,6 +140,11 @@ const AdminDashboard = () => {
               key: 'service',
               icon: <BellOutlined />,
               label: 'Quản lý dịch vụ',
+            },
+            {
+              key: 'service-usage',
+              icon: <SettingOutlined />,
+              label: 'Quản lý sử dụng dịch vụ',
             },
 
             {
@@ -173,8 +186,10 @@ const AdminDashboard = () => {
             {tab === 'notifications' && <NotificationPanel />}
             {tab === 'booking' && <BookingManagement />}
             {tab === 'bill' && <BillManagement />}
+            {tab === 'discount' && <DiscountManagement />}
             {tab === 'workshift' && <WorkShiftManagement />}
             {tab === 'service' && <ServiceManagement />}
+            {tab === 'service-usage' && <ServiceUsageManagement />}
           </Suspense>
         </Content>
       </Layout>

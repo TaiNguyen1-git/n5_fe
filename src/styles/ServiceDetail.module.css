@@ -1,0 +1,257 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.backButtonContainer {
+  margin-bottom: 20px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #1890ff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.backLink:hover {
+  color: #40a9ff;
+}
+
+.serviceDetailContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  padding: 40px;
+}
+
+.serviceImageContainer {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.serviceImage {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.serviceImage:hover {
+  transform: scale(1.02);
+}
+
+.serviceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.serviceName {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.servicePrice {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #1890ff;
+  margin: 0;
+}
+
+.serviceDescription h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.serviceDescription p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #666;
+  margin: 0;
+}
+
+.bookingCard {
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.bookingCard .ant-card-head {
+  background: linear-gradient(135deg, #1890ff, #40a9ff);
+  border-radius: 12px 12px 0 0;
+}
+
+.bookingCard .ant-card-head-title {
+  color: white;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.totalPrice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.price {
+  color: #1890ff;
+  font-size: 1.4rem;
+}
+
+.bookButton {
+  width: 100%;
+  height: 48px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1890ff, #40a9ff);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.bookButton:hover {
+  background: linear-gradient(135deg, #40a9ff, #69c0ff);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(24, 144, 255, 0.3);
+}
+
+.successModal {
+  text-align: center;
+  padding: 20px;
+}
+
+.successIcon {
+  margin-bottom: 16px;
+}
+
+.successModal h3 {
+  color: #52c41a;
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+}
+
+.bookingDetails {
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: left;
+  white-space: pre-line;
+  font-family: inherit;
+  color: #333;
+}
+
+.notFound {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.notFound h2 {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.notFound p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #1890ff;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.backButton:hover {
+  background: #40a9ff;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+
+  .serviceDetailContainer {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .serviceName {
+    font-size: 2rem;
+  }
+
+  .servicePrice {
+    font-size: 1.5rem;
+  }
+
+  .serviceImage {
+    height: 250px;
+  }
+
+  .totalPrice {
+    font-size: 1rem;
+  }
+
+  .price {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .serviceName {
+    font-size: 1.8rem;
+  }
+
+  .servicePrice {
+    font-size: 1.3rem;
+  }
+
+  .serviceImage {
+    height: 200px;
+  }
+
+  .bookButton {
+    height: 44px;
+    font-size: 1rem;
+  }
+}

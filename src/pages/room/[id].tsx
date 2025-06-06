@@ -10,6 +10,8 @@ import { useUserStore } from '../../stores/userStore';
 import { Modal, Button, Spin } from 'antd';
 import { CheckOutlined } from '@ant-design/icons';
 import Layout from '../../components/Layout';
+import DiscountInput from '../../components/client/DiscountInput';
+import { Discount } from '../../services/discountService';
 
 // Lazy load LoadingSpinner để giảm thời gian biên dịch
 const LoadingSpinner = dynamic(() => import('../../components/LoadingSpinner'), {
@@ -64,6 +66,10 @@ export default function RoomDetail() {
   const userStore = useUserStore();
   const [bookingMessage, setBookingMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Discount states
+  const [appliedDiscount, setAppliedDiscount] = useState<Discount | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
 
   useEffect(() => {
     // Fetch room data when ID is available
@@ -168,6 +174,18 @@ export default function RoomDetail() {
 
     return roomPrice * nights;
   }, [room, checkInDate, checkOutDate]);
+
+  // Calculate final price after discount
+  const calculateFinalPrice = useCallback(() => {
+    const originalPrice = calculateTotalPrice();
+    return originalPrice - discountAmount;
+  }, [calculateTotalPrice, discountAmount]);
+
+  // Handle discount application
+  const handleDiscountApplied = (discount: Discount | null, amount: number) => {
+    setAppliedDiscount(discount);
+    setDiscountAmount(amount);
+  };
 
   // State cho modal thông báo đặt phòng thành công
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
@@ -563,10 +581,28 @@ export default function RoomDetail() {
                     />
                   </div>
 
+                  {/* Discount Input Component */}
+                  <DiscountInput
+                    originalPrice={calculateTotalPrice() || (room.giaTien || 500000)}
+                    onDiscountApplied={handleDiscountApplied}
+                    disabled={isSubmitting}
+                  />
+
                   <div className={styles.totalPrice}>
                     <span>Tổng tiền</span>
                     <span className={styles.price}>
-                      {`${(calculateTotalPrice() || (room.giaTien || 500000)).toLocaleString('vi-VN')} đ`}
+                      {appliedDiscount ? (
+                        <>
+                          <span className={styles.originalPrice}>
+                            {calculateTotalPrice().toLocaleString('vi-VN')}đ
+                          </span>
+                          <span className={styles.finalPrice}>
+                            {calculateFinalPrice().toLocaleString('vi-VN')}đ
+                          </span>
+                        </>
+                      ) : (
+                        `${(calculateTotalPrice() || (room.giaTien || 500000)).toLocaleString('vi-VN')}đ`
+                      )}
                     </span>
                   </div>
 

@@ -49,7 +49,8 @@ export interface ApiResponse<T> {
   data?: T;
 }
 
-const BASE_URL = 'https://ptud-web-1.onrender.com/api';
+// Sử dụng proxy thay vì direct API call
+const BASE_URL = '/api';
 
 // Define interface for paginated response
 export interface PaginatedRoomResponse {

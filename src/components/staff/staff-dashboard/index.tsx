@@ -24,6 +24,7 @@ import { isAuthenticated, logout, getCurrentUser } from '../../../services/authS
 import BookingManagement from './booking-management';
 import CustomerManagement from './customer-management';
 import BillManagement from './bill-management';
+import ServiceUsageManagement from './service-usage-management';
 import SettingsManagement from './settings-management';
 import RevenueCharts from '../../shared/RevenueCharts';
 import RoomStatusDashboard from '../../shared/RoomStatusDashboard';
@@ -376,6 +377,7 @@ const StaffDashboard = () => {
             { key: 'bookings', icon: <CalendarOutlined />, label: 'Đặt phòng' },
             { key: 'customers', icon: <TeamOutlined />, label: 'Khách hàng' },
             { key: 'bills', icon: <CreditCardOutlined />, label: 'Hóa đơn' },
+            { key: 'service-usage', icon: <BellOutlined />, label: 'Sử dụng dịch vụ' },
             { key: 'revenue', icon: <DollarOutlined />, label: 'Doanh thu' },
             { key: 'shifts', icon: <ClockCircleOutlined />, label: 'Ca làm việc' },
             { key: 'settings', icon: <SettingOutlined />, label: 'Cài đặt' },
@@ -540,6 +542,9 @@ const StaffDashboard = () => {
           )}
           {selectedMenu === 'bills' && (
             <BillManagement />
+          )}
+          {selectedMenu === 'service-usage' && (
+            <ServiceUsageManagement />
           )}
           {selectedMenu === 'revenue' && (
             <RevenueCharts />

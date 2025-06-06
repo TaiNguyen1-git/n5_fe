@@ -1,0 +1,180 @@
+.discountContainer {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.discountHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.discountIcon {
+  color: #52c41a;
+  font-size: 16px;
+}
+
+.discountTitle {
+  font-weight: 600;
+  color: #262626;
+  font-size: 14px;
+}
+
+.discountInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.discountInput {
+  border-radius: 6px;
+}
+
+.discountInput .ant-input {
+  padding-right: 80px;
+}
+
+.applyButton {
+  border-radius: 4px;
+  font-size: 12px;
+  height: 24px;
+  line-height: 1;
+}
+
+.validationMessage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.validationMessage.success {
+  color: #52c41a;
+}
+
+.validationMessage.error {
+  color: #ff4d4f;
+}
+
+.validationIcon {
+  font-size: 12px;
+}
+
+.appliedDiscountContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.appliedDiscountInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.discountTag {
+  align-self: flex-start;
+  margin: 0;
+  font-weight: 600;
+}
+
+.discountDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.discountValue {
+  font-weight: 600;
+  color: #52c41a;
+  font-size: 14px;
+}
+
+.discountType {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.removeButton {
+  color: #8c8c8c;
+  padding: 0;
+  height: auto;
+  font-size: 12px;
+}
+
+.removeButton:hover {
+  color: #ff4d4f;
+}
+
+.discountSummary {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.summaryRow:last-child {
+  margin-bottom: 0;
+}
+
+.totalRow {
+  font-weight: 600;
+  font-size: 14px;
+  padding-top: 6px;
+  border-top: 1px solid #e9ecef;
+  margin-top: 6px;
+}
+
+.discountAmountText {
+  color: #52c41a;
+  font-weight: 500;
+}
+
+.finalPrice {
+  color: #1890ff;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .discountContainer {
+    padding: 12px;
+    margin: 12px 0;
+  }
+  
+  .appliedDiscountContainer {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .removeButton {
+    align-self: flex-end;
+  }
+  
+  .discountInput .ant-input {
+    padding-right: 70px;
+  }
+  
+  .applyButton {
+    font-size: 11px;
+    height: 22px;
+  }
+}

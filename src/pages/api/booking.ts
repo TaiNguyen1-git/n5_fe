@@ -170,16 +170,8 @@ export default async function handler(
     const { userId, maPhong } = req.query;
 
     try {
-      let url;
-
-      // Determine which API endpoint to call based on the provided parameters
-      if (userId && typeof userId === 'string') {
-        url = `${BACKEND_API_URL}/DatPhong/GetByUser?id=${userId}`;
-      } else if (maPhong && typeof maPhong === 'string') {
-        url = `${BACKEND_API_URL}/DatPhong/GetByRoom?id=${maPhong}`;
-      } else {
-        url = `${BACKEND_API_URL}/DatPhong/GetAll`;
-      }
+      // Always use GetAll since GetByUser doesn't exist
+      const url = `${BACKEND_API_URL}/DatPhong/GetAll?PageSize=1000`;
 
       // Call the backend API with timeout và retry
       const controller = new AbortController();
@@ -199,44 +191,49 @@ export default async function handler(
 
         clearTimeout(timeoutId);
 
+
+
         // Format the response data
         let bookings = [];
 
         if (response.data) {
+          let rawBookings = [];
+
           if (Array.isArray(response.data)) {
-
-            bookings = response.data.map((booking: any) => ({
-              maHD: booking.maHD,
-              maPhong: booking.maPhong,
-              maKH: booking.maKH,
-              tenKH: booking.tenKH,
-              email: booking.email,
-              soDienThoai: booking.soDienThoai,
-              ngayBatDau: booking.ngayBatDau,
-              ngayKetThuc: booking.ngayKetThuc,
-              soLuongKhach: booking.soLuongKhach,
-              tongTien: booking.tongTien,
-              trangThai: booking.trangThai,
-              ngayTao: booking.ngayTao
-            }));
+            rawBookings = response.data;
           } else if (response.data.items && Array.isArray(response.data.items)) {
+            rawBookings = response.data.items;
+          }
 
-            bookings = response.data.items.map((booking: any) => ({
-              maHD: booking.maHD,
-              maPhong: booking.maPhong,
-              maKH: booking.maKH,
-              tenKH: booking.tenKH,
-              email: booking.email,
-              soDienThoai: booking.soDienThoai,
-              ngayBatDau: booking.ngayBatDau,
-              ngayKetThuc: booking.ngayKetThuc,
-              soLuongKhach: booking.soLuongKhach,
-              tongTien: booking.tongTien,
-              trangThai: booking.trangThai,
-              ngayTao: booking.ngayTao
-            }));
+          // Map and format bookings
+          const allBookings = rawBookings.map((booking: any) => ({
+            maDatPhong: booking.maDatPhong || booking.maHD,
+            maPhong: booking.maPhong,
+            maKH: booking.maKH,
+            tenKH: booking.tenKH,
+            email: booking.email,
+            soDienThoai: booking.soDienThoai,
+            checkIn: booking.checkIn || booking.ngayBatDau,
+            checkOut: booking.checkOut || booking.ngayKetThuc,
+            ngayBatDau: booking.ngayBatDau,
+            ngayKetThuc: booking.ngayKetThuc,
+            ngayDat: booking.ngayDat || booking.ngayTao,
+            soLuongKhach: booking.soLuongKhach,
+            tongTien: booking.tongTien,
+            trangThai: booking.trangThai,
+            ngayTao: booking.ngayTao,
+            xoa: booking.xoa || false
+          }));
+
+          // Filter by userId if provided
+          if (userId && typeof userId === 'string') {
+            const userIdNum = parseInt(userId);
+            bookings = allBookings.filter(booking => booking.maKH === userIdNum);
+          } else if (maPhong && typeof maPhong === 'string') {
+            const maPhongNum = parseInt(maPhong);
+            bookings = allBookings.filter(booking => booking.maPhong === maPhongNum);
           } else {
-
+            bookings = allBookings;
           }
         }
 

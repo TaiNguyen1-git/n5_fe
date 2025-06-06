@@ -2,7 +2,8 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const BASE_URL = 'https://ptud-web-1.onrender.com/api';
+// Sử dụng proxy thay vì direct API call
+const BASE_URL = '/api';
 const AUTH_TOKEN_KEY = 'auth_token';
 const USER_DATA_KEY = 'user';
 

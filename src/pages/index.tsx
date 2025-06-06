@@ -7,6 +7,7 @@ import { isAuthenticated, getCurrentUser, logout } from '../services/authService
 import axios from 'axios';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PromotionBanner from '../components/client/PromotionBanner';
 
 // Cấu trúc phòng từ API mới
 interface APIRoom {
@@ -283,6 +284,9 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* Promotion Banner */}
+        <PromotionBanner />
 
         {/* Popular rooms section */}
         <section className={styles.popularRooms} id="popular-rooms">

@@ -26,10 +26,34 @@ export default async function handler(
 
   if (req.method === 'GET') {
     try {
-      // Get specific service from backend API
-      const response = await axios.get(`${BACKEND_API_URL}/DichVu/GetById?id=${id}`);
+      console.log('API: Getting service with ID:', id);
 
-      if (!response.data) {
+      // Validate ID
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID dịch vụ không hợp lệ'
+        });
+      }
+
+      // Use GetById API (confirmed to exist)
+      console.log('API: Using GetById method for service ID:', id);
+
+      const response = await axios.get(`${BACKEND_API_URL}/DichVu/GetById?id=${id}`, {
+        timeout: 15000,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('API: GetById response status:', response.status);
+      console.log('API: GetById response data:', response.data);
+
+      const serviceData = response.data;
+
+      if (!serviceData) {
+        console.log('API: No service data found');
         return res.status(404).json({
           success: false,
           message: 'Không tìm thấy dịch vụ'
@@ -38,23 +62,29 @@ export default async function handler(
 
       // Transform data for frontend
       const service = {
-        id: response.data.maDichVu,
-        maDichVu: response.data.maDichVu,
-        ten: response.data.ten,
-        moTa: response.data.moTa,
-        hinhAnh: response.data.hinhAnh,
-        gia: response.data.gia,
-        trangThai: response.data.trangThai
+        id: serviceData.maDichVu,
+        maDichVu: serviceData.maDichVu,
+        ten: serviceData.ten,
+        moTa: serviceData.moTa,
+        hinhAnh: serviceData.hinhAnh,
+        gia: serviceData.gia,
+        trangThai: serviceData.trangThai
       };
+
+      console.log('API: Transformed service data:', service);
 
       return res.status(200).json({
         success: true,
         data: service
       });
     } catch (error: any) {
+      console.error('API: Error getting service:', error.message);
+      console.error('API: Error response:', error.response?.data);
+      console.error('API: Full error:', error);
+
       return res.status(500).json({
         success: false,
-        message: error.response?.data?.message || 'Đã xảy ra lỗi khi lấy thông tin dịch vụ'
+        message: error.response?.data?.message || error.message || 'Đã xảy ra lỗi khi lấy thông tin dịch vụ'
       });
     }
   } else if (req.method === 'PUT') {

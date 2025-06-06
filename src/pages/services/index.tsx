@@ -97,7 +97,7 @@ const mapApiToServiceData = (apiData: DichVu[]): Service[] => {
       }
     }
 
-    return {
+    const mappedService = {
       id: service.maDichVu || 0,
       title,
       description,
@@ -108,6 +108,9 @@ const mapApiToServiceData = (apiData: DichVu[]): Service[] => {
       badge,
       details
     };
+
+    console.log('Mapping service:', service.maDichVu, 'to ID:', mappedService.id);
+    return mappedService;
   });
 };
 
@@ -314,6 +317,11 @@ const Services = memo(() => {
 
                       <div className={styles.servicePriceRow}>
                         <span className={styles.servicePrice}>{formatPrice(service.price)}</span>
+                        <Link href={`/services/${service.id}`} className={styles.viewDetailButton}>
+                          <Button type="primary" size="small">
+                            Xem chi tiết
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   </div>

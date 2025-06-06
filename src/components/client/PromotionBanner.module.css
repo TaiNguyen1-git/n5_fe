@@ -1,0 +1,407 @@
+.promotionSection {
+  margin: 20px 0 40px 0;
+  padding: 0 20px;
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.headerIcon {
+  font-size: 32px;
+  color: #ff6b35;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.sectionHeader h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 10px 0;
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sectionHeader p {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.loadingContainer {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.singleBanner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.promotionCarousel {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.promotionCarousel .ant-carousel .ant-carousel-dots {
+  bottom: -40px;
+}
+
+.promotionCarousel .ant-carousel .ant-carousel-dots li button {
+  background: #667eea;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.promotionCarousel .ant-carousel .ant-carousel-dots li.ant-carousel-dots-active button {
+  background: #4facfe;
+  transform: scale(1.3);
+  opacity: 1;
+}
+
+.promotionCarousel .ant-carousel .ant-carousel-dots li:hover button {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+/* Carousel Arrows - Custom styling */
+.promotionCarousel {
+  position: relative;
+}
+
+.promotionCarousel :global(.slick-prev),
+.promotionCarousel :global(.slick-next) {
+  width: 40px !important;
+  height: 40px !important;
+  z-index: 100 !important;
+  background: rgba(0, 0, 0, 0.6) !important;
+  border-radius: 50% !important;
+  border: 2px solid white !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.promotionCarousel :global(.slick-prev) {
+  left: 15px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+.promotionCarousel :global(.slick-next) {
+  right: 15px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+/* Hide default arrows */
+.promotionCarousel :global(.slick-prev:before),
+.promotionCarousel :global(.slick-next:before) {
+  display: none !important;
+}
+
+/* Custom arrow triangles */
+.promotionCarousel :global(.slick-prev:after),
+.promotionCarousel :global(.slick-next:after) {
+  content: '' !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  border-style: solid !important;
+}
+
+.promotionCarousel :global(.slick-prev:after) {
+  border-width: 6px 10px 6px 0 !important;
+  border-color: transparent white transparent transparent !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-60%, -50%) !important;
+}
+
+.promotionCarousel :global(.slick-next:after) {
+  border-width: 6px 0 6px 10px !important;
+  border-color: transparent transparent transparent white !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-40%, -50%) !important;
+}
+
+.promotionCarousel :global(.slick-prev:hover),
+.promotionCarousel :global(.slick-next:hover) {
+  background: rgba(0, 0, 0, 0.8) !important;
+  transform: translateY(-50%) scale(1.1) !important;
+  border-color: #4facfe !important;
+}
+
+.promotionCarousel :global(.slick-prev:hover:before) {
+  border-color: transparent #4facfe transparent transparent !important;
+}
+
+.promotionCarousel :global(.slick-next:hover:before) {
+  border-color: transparent transparent transparent #4facfe !important;
+}
+
+.promotionCard {
+  margin: 0 10px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: none;
+  position: relative;
+}
+
+/* Tạo nhiều theme màu khác nhau cho các banner */
+.promotionCard:nth-child(1) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.promotionCard:nth-child(2) {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.promotionCard:nth-child(3) {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.promotionCard:nth-child(4) {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.promotionCard:nth-child(5) {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+/* Default fallback */
+.promotionCard:nth-child(n+6) {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+}
+
+.promotionCard.expiringSoon {
+  background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%) !important;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.promotionCard .ant-card-body {
+  padding: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.promotionContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  color: white;
+  min-height: 140px;
+}
+
+.promotionLeft {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 20px;
+}
+
+.promotionIcon {
+  font-size: 48px;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.2);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.promotionInfo {
+  flex: 1;
+}
+
+.promotionTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.promotionDescription {
+  font-size: 1rem;
+  margin: 0 0 12px 0;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+}
+
+.promotionMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.promotionMeta .ant-tag {
+  margin: 0;
+  border: none;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+.promotionRight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-width: 200px;
+}
+
+.discountCode {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 16px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.codeLabel {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 4px;
+}
+
+.codeValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.copyButton {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 600;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.copyButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.copyButton:focus {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .promotionSection {
+    margin: 15px 0 30px 0;
+    padding: 0 15px;
+  }
+
+  .sectionHeader h2 {
+    font-size: 1.5rem;
+  }
+
+  .sectionHeader p {
+    font-size: 1rem;
+  }
+
+  .promotionContent {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .promotionLeft {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .promotionIcon {
+    width: 60px;
+    height: 60px;
+    font-size: 32px;
+  }
+
+  .promotionTitle {
+    font-size: 1.2rem;
+  }
+
+  .promotionDescription {
+    font-size: 0.9rem;
+  }
+
+  .promotionRight {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .discountCode {
+    width: 100%;
+    max-width: 250px;
+  }
+
+  .codeValue {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .promotionCard {
+    margin: 0 5px;
+  }
+
+  .promotionContent {
+    padding: 16px;
+  }
+
+  .promotionTitle {
+    font-size: 1.1rem;
+  }
+
+  .promotionDescription {
+    font-size: 0.85rem;
+  }
+
+  .codeValue {
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+  }
+
+  .copyButton {
+    height: 36px;
+    padding: 0 16px;
+    font-size: 0.9rem;
+  }
+}

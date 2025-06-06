@@ -259,6 +259,23 @@
   font-weight: 800;
   color: #0f766e;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.originalPrice {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+.finalPrice {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #059669;
 }
 
 .bookButton {

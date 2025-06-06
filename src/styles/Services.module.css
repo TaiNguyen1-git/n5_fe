@@ -568,6 +568,22 @@
   justify-content: space-between;
   align-items: center;
   margin-top: 10px;
+  gap: 12px;
+}
+
+.viewDetailButton {
+  text-decoration: none;
+}
+
+.viewDetailButton .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.viewDetailButton .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
 }
 
 .paginationContainer {

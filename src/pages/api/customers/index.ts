@@ -16,10 +16,8 @@ export default async function handler(
 ) {
   if (req.method === 'GET') {
     try {
-      // Get pagination parameters from query
-      const { pageNumber = '1', pageSize = '10' } = req.query;
-
-
+      // Get pagination parameters and search from query
+      const { pageNumber = '1', pageSize = '10', search = '' } = req.query;
 
       // Get customers from backend API with pagination
       const response = await axios.get(`${BACKEND_API_URL}/KhachHang/GetAll`, {
@@ -66,7 +64,7 @@ export default async function handler(
 
 
       // Đảm bảo dữ liệu khách hàng có các trường cần thiết
-      const formattedCustomers = customers.map((customer: any) => ({
+      let formattedCustomers = customers.map((customer: any) => ({
         maKH: customer.maKH || customer.id,
         tenKH: customer.tenKH || customer.hoTen,
         email: customer.email,
@@ -76,6 +74,25 @@ export default async function handler(
         xoa: customer.xoa !== undefined ? customer.xoa : false,
         trangThai: customer.trangThai !== undefined ? customer.trangThai : true
       }));
+
+      // Apply search filter if search parameter is provided
+      if (search && typeof search === 'string' && search.trim()) {
+        const searchLower = search.toLowerCase();
+        formattedCustomers = formattedCustomers.filter(customer =>
+          customer.tenKH?.toLowerCase().includes(searchLower) ||
+          customer.email?.toLowerCase().includes(searchLower) ||
+          customer.phone?.toLowerCase().includes(searchLower) ||
+          customer.maKH?.toString().includes(search)
+        );
+
+        // Update pagination info for filtered results
+        paginationInfo = {
+          totalItems: formattedCustomers.length,
+          pageNumber: 1,
+          pageSize: formattedCustomers.length,
+          totalPages: 1
+        };
+      }
 
       return res.status(200).json({
         success: true,

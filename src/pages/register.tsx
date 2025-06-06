@@ -74,13 +74,19 @@ export default function Register() {
         fullName: formData.fullName,
         phone: formData.phoneNumber || ''
       };
-      // Sử dụng API handler của Next.js
-      const response = await fetch('/api/register-handler', {
+      // Sử dụng API auth register (tự động tạo cả Customer record)
+      const response = await fetch('/api/auth?action=register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+          email: formData.email,
+          fullName: formData.fullName,
+          phoneNumber: formData.phoneNumber || ''
+        })
       });
       
       const result = await response.json();
