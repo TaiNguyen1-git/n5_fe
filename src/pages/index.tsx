@@ -8,6 +8,9 @@ import axios from 'axios';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PromotionBanner from '../components/client/PromotionBanner';
+import UrgentStatsBar from '../components/client/UrgentStatsBar';
+import CountdownTimer from '../components/client/CountdownTimer';
+import AnimatedCounter from '../components/client/AnimatedCounter';
 
 // Cấu trúc phòng từ API mới
 interface APIRoom {
@@ -106,48 +109,68 @@ export default function Home() {
   }, [router]);
 
   useEffect(() => {
-    fetchRooms();
+    fetchAllRooms();
   }, []);
 
-  const fetchRooms = async () => {
+  // Lấy tất cả phòng từ API với pagination
+  const fetchAllRooms = async () => {
     setLoading(true);
     setError('');
 
     try {
-      // Sử dụng API proxy của Next.js thay vì gọi trực tiếp
-      const response = await axios.get('/api/proxy-rooms', {
-        timeout: 20000, // 20 giây timeout
-        headers: {
-          'Accept': '*/*'
+      let allRoomsData: FormattedRoom[] = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+      const pageSize = 50; // Lấy 50 phòng mỗi lần
+
+      // Lấy tất cả phòng qua nhiều trang
+      while (hasMorePages) {
+        const response = await axios.get('/api/rooms', {
+          params: {
+            pageNumber: currentPage,
+            pageSize: pageSize
+          },
+          timeout: 20000,
+          headers: {
+            'Accept': '*/*'
+          }
+        });
+
+        if (response.data && response.data.success && response.data.data) {
+          const { items, totalPages } = response.data.data;
+
+          // Format dữ liệu phòng
+          const formattedRooms: FormattedRoom[] = items.map((room: any) => ({
+            id: room.maPhong.toString(),
+            maPhong: room.maPhong,
+            tenPhong: room.tenPhong || room.soPhong || `Phòng ${room.maPhong}`,
+            moTa: room.moTa || 'Thông tin phòng đang được cập nhật',
+            hinhAnh: room.hinhAnh || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop',
+            giaTien: room.giaTien || 500000,
+            soLuongKhach: room.soLuongKhach || 2,
+            trangThai: room.trangThai || 1,
+            loaiPhong: room.loaiPhong || 'Standard',
+            features: room.moTa ? room.moTa.split(',').map((item: string) => item.trim()) : ['Wi-Fi miễn phí', 'Điều hòa', 'TV']
+          }));
+
+          allRoomsData = [...allRoomsData, ...formattedRooms];
+
+          // Kiểm tra có trang tiếp theo không
+          hasMorePages = currentPage < totalPages;
+          currentPage++;
+        } else {
+          hasMorePages = false;
         }
-      });
+      }
 
-      // Kiểm tra response có data không
-      if (response.data && Array.isArray(response.data.items)) {
-        // Format dữ liệu phòng theo đúng cấu trúc hiện tại
-        const formattedRooms: FormattedRoom[] = response.data.items.map((room: any) => ({
-          id: room.maPhong.toString(),
-          maPhong: room.maPhong,
-          tenPhong: room.soPhong || `Phòng ${room.maPhong}`,
-          moTa: room.moTa || 'Thông tin phòng đang được cập nhật',
-          hinhAnh: room.hinhAnh || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1000&auto=format&fit=crop',
-          giaTien: room.loaiPhong?.giaPhong || 500000,
-          soLuongKhach: room.soNguoi || 2,
-          trangThai: room.trangThai || 1,
-          loaiPhong: room.tenLoaiPhong || room.loaiPhong?.tenLoai || 'Standard',
-          features: room.moTa ? room.moTa.split(',').map((item: string) => item.trim()) : ['Wi-Fi miễn phí', 'Điều hòa', 'TV']
-        }));
+      setHotelRooms(allRoomsData);
 
-        setHotelRooms(formattedRooms);
-
-        // Cache dữ liệu
-        try {
-          localStorage.setItem('cached_rooms', JSON.stringify(formattedRooms));
-          localStorage.setItem('rooms_cache_time', new Date().toISOString());
-        } catch (cacheError) {
-        }
-      } else {
-        throw new Error('Không nhận được dữ liệu phòng từ API');
+      // Cache dữ liệu
+      try {
+        localStorage.setItem('cached_rooms', JSON.stringify(allRoomsData));
+        localStorage.setItem('rooms_cache_time', new Date().toISOString());
+      } catch (cacheError) {
+        // Ignore cache errors
       }
     } catch (err) {
       // Thử lấy dữ liệu từ cache nếu có lỗi
@@ -219,7 +242,20 @@ export default function Home() {
         {/* Hero section */}
         <section className={styles.hero}>
           <div className={styles.heroContent}>
-            <h1 className={styles.heroTitle}>Chào mừng đến với Khách sạn Nhóm 5</h1>
+            <h1 className={styles.heroTitle}>🔥 Đặt Phòng Ngay - Giá Tốt Nhất Hôm Nay!</h1>
+            <p className={styles.heroSubtitle}>
+              ⚡ Hiện có <span className={styles.urgentNumber}>
+                {!loading && hotelRooms.length > 0 ? (
+                  <AnimatedCounter
+                    end={hotelRooms.filter(room => room.trangThai === 1).length}
+                    duration={1500}
+                    suffix=" phòng"
+                  />
+                ) : (
+                  `${hotelRooms.filter(room => room.trangThai === 1).length} phòng`
+                )}
+              </span> trống hôm nay
+            </p>
 
             <div className={styles.searchBox}>
               <div className={styles.searchTabs}>
@@ -277,60 +313,124 @@ export default function Home() {
                   </div>
 
                   <div className={styles.searchButtonContainer}>
-                    <button type="submit" className={styles.searchButton}>Tìm phòng</button>
+                    <button type="submit" className={styles.searchButton}>🚀 TÌM PHÒNG TRỐNG NGAY</button>
                   </div>
                 </div>
               </form>
             </div>
+
+            {/* Trust signals */}
+            <div className={styles.trustSignals}>
+              <span>✅ Miễn phí hủy</span>
+              <span>⚡ Xác nhận ngay</span>
+              <span>🏆 Giá tốt nhất</span>
+            </div>
           </div>
         </section>
 
-        {/* Promotion Banner */}
-        <PromotionBanner />
+        {/* Urgent Stats Bar */}
+        <UrgentStatsBar
+          availableRooms={hotelRooms.filter(room => room.trangThai === 1).length}
+          totalRooms={hotelRooms.length}
+        />
+      </div>
 
-        {/* Popular rooms section */}
-        <section className={styles.popularRooms} id="popular-rooms">
+      {/* Enhanced Promotion Banner with Countdown - Full Width */}
+      <PromotionBanner />
+
+      <div className={styles.container}>
+
+        {/* Featured Rooms - Hot Deals */}
+        <section className={styles.featuredRooms} id="popular-rooms">
           <div className={styles.sectionContent}>
-            <h2 className={styles.sectionTitle}>Phòng phổ biến</h2>
+            <h2 className={styles.sectionTitle}>🏨 Phòng Trống Hôm Nay</h2>
+            <p className={styles.sectionSubtitle}>⚡ Đặt ngay để có giá tốt nhất!</p>
 
             {loading ? (
               <div className={styles.loading}>Đang tải phòng...</div>
             ) : error ? (
               <div className={styles.error}>
                 {error}
-                <button className={styles.retryButton} onClick={fetchRooms}>Thử lại</button>
+                <button className={styles.retryButton} onClick={fetchAllRooms}>Thử lại</button>
               </div>
             ) : (
               <div className={styles.roomGrid}>
-                {hotelRooms.map(room => (
-                  <Link href={`/room/${room.id}`} key={room.id} className={styles.roomCard}>
-                    <img
-                      src={room.hinhAnh || '/images/rooms/default-room.jpg'}
-                      alt={room.tenPhong}
-                      className={styles.roomImage}
-                      onError={(e) => {
-                        // Fallback if image fails to load
-                        (e.target as HTMLImageElement).src = '/images/rooms/default-room.jpg';
-                      }}
-                    />
+                {hotelRooms
+                  .filter(room => room.trangThai === 1) // Chỉ hiển thị phòng trống
+                  .slice(0, 6) // Giới hạn 6 phòng đầu tiên
+                  .map((room, index) => (
+                  <div
+                    key={room.id}
+                    className={styles.roomCard}
+                    style={{
+                      animationDelay: `${index * 0.1}s`,
+                      animation: 'fadeInUp 0.6s ease-out both'
+                    }}
+                  >
+                    {/* Hot badge for top 3 rooms */}
+                    {index < 3 && (
+                      <div className={styles.hotBadge}>🔥 TOP #{index + 1}</div>
+                    )}
+
+                    {/* Pressure indicators */}
+                    <div className={styles.pressureBar}>
+                      <span className={styles.pressureItem}>
+                        👥 <AnimatedCounter
+                          end={Math.floor(Math.random() * 8) + 3}
+                          duration={1000}
+                          suffix=" người đang xem"
+                        />
+                      </span>
+                      <span className={styles.pressureItem}>
+                        ✅ Phòng trống
+                      </span>
+                    </div>
+
+                    <Link href={`/room/${room.id}`}>
+                      <img
+                        src={room.hinhAnh || '/images/rooms/default-room.jpg'}
+                        alt={room.tenPhong}
+                        className={styles.roomImage}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/images/rooms/default-room.jpg';
+                        }}
+                      />
+                    </Link>
+
                     <div className={styles.roomInfo}>
                       <div className={styles.roomHeader}>
                         <h3 className={styles.roomName}>{room.tenPhong}</h3>
                         <span className={styles.roomType}>{room.loaiPhong}</span>
                       </div>
+
                       <p className={styles.roomFeatures}>
                         {room.soLuongKhach} khách · {room.features?.slice(0, 2).join(' · ')}
                       </p>
-                      <p className={styles.roomPrice}>
-                        {`${(room.giaTien || 500000).toLocaleString('vi-VN')} VNĐ / đêm`}
-                      </p>
-                      <div className={styles.roomStatus}>
-                        <span className={room.trangThai === 1 ? styles.available : styles.unavailable}>
-                          {room.trangThai === 1 ? 'Còn phòng' : 'Hết phòng'}
+
+                      {/* Price with discount */}
+                      <div className={styles.priceSection}>
+                        <span className={styles.originalPrice}>
+                          {((room.giaTien || 500000) * 1.3).toLocaleString('vi-VN')}đ
+                        </span>
+                        <span className={styles.salePrice}>
+                          {(room.giaTien || 500000).toLocaleString('vi-VN')}đ
+                          <span className={styles.discount}>-30%</span>
                         </span>
                       </div>
+
+                      {/* Urgent CTA */}
+                      <Link href={`/room/${room.id}`}>
+                        <button className={styles.urgentBookBtn}>
+                          🚀 ĐẶT NGAY - PHÒNG TRỐNG
+                        </button>
+                      </Link>
+
+                      <div className={styles.trustBadges}>
+                        <span>✅ Miễn phí hủy</span>
+                        <span>⚡ Xác nhận ngay</span>
+                      </div>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}

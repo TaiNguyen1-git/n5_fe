@@ -1,0 +1,187 @@
+/* Countdown Timer */
+.countdownContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.countdownDisplay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 20px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.timeUnit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.timeNumber {
+  font-weight: bold;
+  color: #ffff00;
+  text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+  animation: numberFlip 1s infinite;
+  background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+  padding: 8px 12px;
+  border-radius: 8px;
+  min-width: 40px;
+  text-align: center;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+@keyframes numberFlip {
+  0%, 90% { transform: scale(1); }
+  95% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.timeLabel {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timeSeparator {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #ffffff;
+  animation: blink 1s infinite;
+  margin: 0 4px;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+/* Size variants */
+.small .timeNumber {
+  font-size: 1rem;
+  padding: 4px 8px;
+  min-width: 30px;
+}
+
+.small .timeLabel {
+  font-size: 0.6rem;
+}
+
+.small .timeSeparator {
+  font-size: 1.2rem;
+}
+
+.medium .timeNumber {
+  font-size: 1.4rem;
+  padding: 8px 12px;
+  min-width: 40px;
+}
+
+.medium .timeLabel {
+  font-size: 0.7rem;
+}
+
+.medium .timeSeparator {
+  font-size: 1.5rem;
+}
+
+.large .timeNumber {
+  font-size: 2rem;
+  padding: 12px 16px;
+  min-width: 60px;
+}
+
+.large .timeLabel {
+  font-size: 0.9rem;
+}
+
+.large .timeSeparator {
+  font-size: 2rem;
+}
+
+/* Expired state */
+.expired {
+  animation: expiredPulse 2s infinite;
+}
+
+.expiredMessage {
+  background: linear-gradient(45deg, #ff4757, #ff3838);
+  color: white;
+  padding: 15px 30px;
+  border-radius: 12px;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(255, 71, 87, 0.3);
+}
+
+@keyframes expiredPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .countdownDisplay {
+    gap: 6px;
+    padding: 8px 16px;
+  }
+  
+  .timeNumber {
+    padding: 6px 10px;
+    min-width: 35px;
+    font-size: 1.2rem;
+  }
+  
+  .timeLabel {
+    font-size: 0.6rem;
+  }
+  
+  .timeSeparator {
+    font-size: 1.3rem;
+    margin: 0 2px;
+  }
+  
+  .large .timeNumber {
+    font-size: 1.6rem;
+    padding: 10px 14px;
+    min-width: 50px;
+  }
+  
+  .large .timeLabel {
+    font-size: 0.8rem;
+  }
+  
+  .large .timeSeparator {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .countdownDisplay {
+    gap: 4px;
+    padding: 6px 12px;
+  }
+  
+  .timeNumber {
+    padding: 4px 8px;
+    min-width: 30px;
+    font-size: 1rem;
+  }
+  
+  .timeLabel {
+    font-size: 0.5rem;
+  }
+  
+  .timeSeparator {
+    font-size: 1.1rem;
+    margin: 0 1px;
+  }
+}

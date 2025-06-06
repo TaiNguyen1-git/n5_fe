@@ -4,6 +4,7 @@ import { GiftOutlined, CopyOutlined, CalendarOutlined, PercentageOutlined } from
 import { discountService, Discount } from '../../services/discountService';
 import dayjs from 'dayjs';
 import styles from './PromotionBanner.module.css';
+import CountdownTimer from './CountdownTimer';
 
 const PromotionBanner: React.FC = () => {
   const [promotions, setPromotions] = useState<Discount[]>([]);
@@ -113,17 +114,95 @@ const PromotionBanner: React.FC = () => {
     <div className={styles.promotionSection}>
       <div className={styles.sectionHeader}>
         <GiftOutlined className={styles.headerIcon} />
-        <h2>Khuyến Mãi Đặc Biệt</h2>
-        <p>Đừng bỏ lỡ cơ hội tiết kiệm khi đặt phòng!</p>
+        <h2>🎁 Khuyến Mãi Đặc Biệt</h2>
+        <p>⚡ Đừng bỏ lỡ cơ hội tiết kiệm khi đặt phòng!</p>
       </div>
 
-      {promotions.length === 1 ? (
-        // Hiển thị single banner nếu chỉ có 1 khuyến mãi
-        <div className={styles.singleBanner}>
-          <PromotionCard promotion={promotions[0]} onCopyCode={copyDiscountCode} />
+      {/* Unified promotion banner with carousel */}
+      {promotions.length === 0 ? (
+        // Fallback when no promotions available
+        <div className={styles.promotionBanner}>
+          <div className={styles.promotionContent}>
+            <div className={styles.promotionLeft}>
+              <div className={styles.promotionIcon}>
+                <GiftOutlined />
+              </div>
+
+              <div className={styles.promotionInfo}>
+                <h3 className={styles.promotionTitle}>
+                  🎯 Ưu đãi đặc biệt dành cho bạn!
+                </h3>
+                <p className={styles.promotionDescription}>
+                  💎 Liên hệ với chúng tôi để nhận được mức giá tốt nhất cho kỳ nghỉ của bạn!
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.promotionRight}>
+              <Button
+                type="primary"
+                className={styles.copyButton}
+                size="large"
+              >
+                Liên hệ ngay
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : promotions.length === 1 ? (
+        // Single promotion banner
+        <div className={styles.promotionBanner}>
+          <div className={styles.promotionContent}>
+            <div className={styles.promotionLeft}>
+              <div className={styles.promotionIcon}>
+                {promotions[0].loaiGiam === 'percent' || promotions[0].loaiGiam === '%' ? (
+                  <PercentageOutlined />
+                ) : (
+                  <GiftOutlined />
+                )}
+              </div>
+
+              <div className={styles.promotionInfo}>
+                <h3 className={styles.promotionTitle}>
+                  🎯 {getPromotionTitle(promotions[0])}
+                </h3>
+                <p className={styles.promotionDescription}>
+                  {getPromotionDescription(promotions[0])}
+                </p>
+
+                <div className={styles.promotionMeta}>
+                  <div className={styles.timerSection}>
+                    <span className={styles.timerLabel}>⏰ Kết thúc sau:</span>
+                    <CountdownTimer
+                      endDate={promotions[0].ngayKetThuc}
+                      size="medium"
+                      showLabels={true}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.promotionRight}>
+              <div className={styles.discountCode}>
+                <div className={styles.codeLabel}>Mã giảm giá:</div>
+                <div className={styles.codeValue}>{promotions[0].tenMa}</div>
+              </div>
+
+              <Button
+                type="primary"
+                icon={<CopyOutlined />}
+                onClick={() => copyDiscountCode(promotions[0].tenMa!)}
+                className={styles.copyButton}
+                size="large"
+              >
+                Sao chép mã
+              </Button>
+            </div>
+          </div>
         </div>
       ) : (
-        // Hiển thị carousel nếu có nhiều khuyến mãi
+        // Multiple promotions with carousel
         <Carousel
           autoplay
           autoplaySpeed={4000}
@@ -134,7 +213,56 @@ const PromotionBanner: React.FC = () => {
         >
           {promotions.map((promotion, index) => (
             <div key={promotion.id || index}>
-              <PromotionCard promotion={promotion} onCopyCode={copyDiscountCode} />
+              <div className={styles.promotionBanner}>
+                <div className={styles.promotionContent}>
+                  <div className={styles.promotionLeft}>
+                    <div className={styles.promotionIcon}>
+                      {promotion.loaiGiam === 'percent' || promotion.loaiGiam === '%' ? (
+                        <PercentageOutlined />
+                      ) : (
+                        <GiftOutlined />
+                      )}
+                    </div>
+
+                    <div className={styles.promotionInfo}>
+                      <h3 className={styles.promotionTitle}>
+                        🎯 {getPromotionTitle(promotion)}
+                      </h3>
+                      <p className={styles.promotionDescription}>
+                        {getPromotionDescription(promotion)}
+                      </p>
+
+                      <div className={styles.promotionMeta}>
+                        <div className={styles.timerSection}>
+                          <span className={styles.timerLabel}>⏰ Kết thúc sau:</span>
+                          <CountdownTimer
+                            endDate={promotion.ngayKetThuc}
+                            size="medium"
+                            showLabels={true}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.promotionRight}>
+                    <div className={styles.discountCode}>
+                      <div className={styles.codeLabel}>Mã giảm giá:</div>
+                      <div className={styles.codeValue}>{promotion.tenMa}</div>
+                    </div>
+
+                    <Button
+                      type="primary"
+                      icon={<CopyOutlined />}
+                      onClick={() => copyDiscountCode(promotion.tenMa!)}
+                      className={styles.copyButton}
+                      size="large"
+                    >
+                      Sao chép mã
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </Carousel>
@@ -208,21 +336,17 @@ const PromotionCard: React.FC<PromotionCardProps> = ({ promotion, onCopyCode }) 
 // Helper functions (move outside component to avoid re-creation)
 const getPromotionTitle = (discount: Discount) => {
   const value = formatDiscountValue(discount);
-  const endDate = dayjs(discount.ngayKetThuc);
-  const daysLeft = endDate.diff(dayjs(), 'day');
-  
-  if (daysLeft <= 3) {
-    return `🔥 KHUYẾN MÃI SẮP KẾT THÚC - GIẢM ${value}`;
-  } else if (discount.loaiGiam === 'percent' || discount.loaiGiam === '%') {
-    return `🎉 KHUYẾN MÃI ĐẶC BIỆT - GIẢM ${value}`;
+
+  // Always make it flash sale style for urgency
+  if (discount.loaiGiam === 'percent' || discount.loaiGiam === '%') {
+    return `GIẢM ${value} TẤT CẢ PHÒNG`;
   } else {
-    return `💰 GIẢM NGAY ${value} CHO ĐƠN HÀNG`;
+    return `GIẢM NGAY ${value}`;
   }
 };
 
 const getPromotionDescription = (discount: Discount) => {
-  const endDate = dayjs(discount.ngayKetThuc).format('DD/MM/YYYY');
-  return `Áp dụng đến hết ngày ${endDate}. Nhập mã "${discount.tenMa}" khi đặt phòng để được giảm giá!`;
+  return `💎 Ưu đãi đặc biệt! Nhập mã "${discount.tenMa}" khi đặt phòng để được giảm giá ngay!`;
 };
 
 const formatDiscountValue = (discount: Discount) => {
