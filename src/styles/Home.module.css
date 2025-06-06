@@ -838,12 +838,47 @@ a.secondary {
   box-shadow: 0 8px 25px rgba(0, 123, 255, 0.4);
 }
 
+.roomImageContainer {
+  position: relative;
+  overflow: hidden;
+}
+
 .roomImage {
   width: 100%;
   height: 200px;
   object-fit: cover;
   display: block;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.virtualTourBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.roomCard:hover .virtualTourBtn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.virtualTourBtn:hover {
+  background: rgba(102, 126, 234, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .roomInfo {
@@ -1304,6 +1339,62 @@ a.secondary {
   background: rgba(255, 255, 255, 1);
 }
 
+/* Hotel Tour Section */
+.hotelTourSection {
+  text-align: center;
+  margin-top: 30px;
+  animation: fadeInUp 1s ease-out 0.6s both;
+}
+
+.hotelTourBtn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hotelTourBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.hotelTourBtn:hover::before {
+  left: 100%;
+}
+
+.hotelTourBtn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.hotelTourBtn:active {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.hotelTourDesc {
+  margin-top: 10px;
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
 /* Featured Rooms Enhancements */
 .featuredRooms {
   padding: 60px 0;
@@ -1513,6 +1604,11 @@ a.secondary {
   .urgentBookBtn {
     padding: 12px;
     font-size: 0.9rem;
+  }
+
+  .hotelTourBtn {
+    padding: 12px 24px;
+    font-size: 1rem;
   }
 }
 

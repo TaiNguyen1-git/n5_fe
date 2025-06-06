@@ -11,6 +11,7 @@ import PromotionBanner from '../components/client/PromotionBanner';
 import UrgentStatsBar from '../components/client/UrgentStatsBar';
 import CountdownTimer from '../components/client/CountdownTimer';
 import AnimatedCounter from '../components/client/AnimatedCounter';
+import VirtualTour from '../components/client/VirtualTour';
 
 // Cấu trúc phòng từ API mới
 interface APIRoom {
@@ -67,6 +68,11 @@ export default function Home() {
   // Thêm trạng thái kiểm tra xác thực
   const [authChecking, setAuthChecking] = useState(true);
   const [shouldRender, setShouldRender] = useState(false);
+
+  // Virtual Tour state
+  const [showVirtualTour, setShowVirtualTour] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
+  const [tourType, setTourType] = useState<'room' | 'hotel'>('room');
 
   // Kiểm tra nếu người dùng là admin hoặc nhân viên, chuyển hướng đến trang tương ứng
   useEffect(() => {
@@ -226,6 +232,24 @@ export default function Home() {
     }
   };
 
+  // Handle Virtual Tour
+  const openVirtualTour = (roomId: string) => {
+    setSelectedRoomId(roomId);
+    setTourType('room');
+    setShowVirtualTour(true);
+  };
+
+  const openHotelTour = () => {
+    setSelectedRoomId('');
+    setTourType('hotel');
+    setShowVirtualTour(true);
+  };
+
+  const closeVirtualTour = () => {
+    setShowVirtualTour(false);
+    setSelectedRoomId('');
+  };
+
   // Hiển thị màn hình loading khi đang kiểm tra xác thực
   if (authChecking) {
     return <LoadingSpinner />;
@@ -325,6 +349,19 @@ export default function Home() {
               <span>⚡ Xác nhận ngay</span>
               <span>🏆 Giá tốt nhất</span>
             </div>
+
+            {/* Hotel Virtual Tour Button */}
+            <div className={styles.hotelTourSection}>
+              <button
+                className={styles.hotelTourBtn}
+                onClick={openHotelTour}
+              >
+                🏨 Khám phá khách sạn 360°
+              </button>
+              <p className={styles.hotelTourDesc}>
+                Tham quan toàn bộ tiện nghi: Sảnh, nhà hàng, hồ bơi, spa, gym...
+              </p>
+            </div>
           </div>
         </section>
 
@@ -386,16 +423,27 @@ export default function Home() {
                       </span>
                     </div>
 
-                    <Link href={`/room/${room.id}`}>
-                      <img
-                        src={room.hinhAnh || '/images/rooms/default-room.jpg'}
-                        alt={room.tenPhong}
-                        className={styles.roomImage}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/images/rooms/default-room.jpg';
-                        }}
-                      />
-                    </Link>
+                    <div className={styles.roomImageContainer}>
+                      <Link href={`/room/${room.id}`}>
+                        <img
+                          src={room.hinhAnh || '/images/rooms/default-room.jpg'}
+                          alt={room.tenPhong}
+                          className={styles.roomImage}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/images/rooms/default-room.jpg';
+                          }}
+                        />
+                      </Link>
+
+                      {/* Virtual Tour Button */}
+                      <button
+                        className={styles.virtualTourBtn}
+                        onClick={() => openVirtualTour(room.id)}
+                        title="Xem tour ảo 360°"
+                      >
+                        🏠 Tour 360°
+                      </button>
+                    </div>
 
                     <div className={styles.roomInfo}>
                       <div className={styles.roomHeader}>
@@ -437,6 +485,15 @@ export default function Home() {
           </div>
         </section>
       </div>
+
+      {/* Virtual Tour Modal */}
+      {showVirtualTour && (
+        <VirtualTour
+          roomId={selectedRoomId}
+          tourType={tourType}
+          onClose={closeVirtualTour}
+        />
+      )}
     </Layout>
   );
 }
