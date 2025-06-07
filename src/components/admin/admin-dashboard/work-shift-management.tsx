@@ -210,11 +210,16 @@ const WorkShiftManagement: React.FC = () => {
   };
 
   // Handle add new work shift
-  const handleAdd = () => {
+  const handleAdd = (preserveMultiDateMode = false) => {
     setEditingWorkShift(null);
     form.resetFields();
-    setSelectedDates([]);
-    setIsMultiDateMode(false);
+
+    // Nếu không preserve multi-date mode, reset về chế độ bình thường
+    if (!preserveMultiDateMode) {
+      setSelectedDates([]);
+      setIsMultiDateMode(false);
+    }
+
     setIsModalVisible(true);
 
     // Tải lại danh sách nhân viên khi mở modal
@@ -612,7 +617,7 @@ const WorkShiftManagement: React.FC = () => {
                   icon={<PlusOutlined />}
                   onClick={() => {
                     setIsMultiDateMode(true);
-                    handleAdd();
+                    handleAdd(true); // Preserve multi-date mode
                   }}
                 >
                   Tạo ca cho {selectedDates.length} ngày đã chọn
@@ -665,7 +670,7 @@ const WorkShiftManagement: React.FC = () => {
                       icon={<PlusOutlined />}
                       onClick={() => {
                         setIsMultiDateMode(true);
-                        handleAdd();
+                        handleAdd(true); // Preserve multi-date mode
                       }}
                     >
                       Tạo ca làm
@@ -728,15 +733,35 @@ const WorkShiftManagement: React.FC = () => {
       )}
 
       <Modal
-        title={editingWorkShift ? "Chỉnh sửa ca làm" : "Thêm ca làm mới"}
+        title={
+          editingWorkShift
+            ? "Chỉnh sửa ca làm"
+            : isMultiDateMode && selectedDates.length > 0
+              ? `Tạo ca làm cho ${selectedDates.length} ngày đã chọn`
+              : "Thêm ca làm mới"
+        }
         open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        onCancel={() => {
+          setIsModalVisible(false);
+          // Reset states when closing modal
+          if (!editingWorkShift) {
+            setSelectedDates([]);
+            setIsMultiDateMode(false);
+          }
+        }}
         footer={[
-          <Button key="cancel" onClick={() => setIsModalVisible(false)}>
+          <Button key="cancel" onClick={() => {
+            setIsModalVisible(false);
+            // Reset states when closing modal
+            if (!editingWorkShift) {
+              setSelectedDates([]);
+              setIsMultiDateMode(false);
+            }
+          }}>
             Hủy
           </Button>,
           <Button key="save" type="primary" onClick={handleSave}>
-            {editingWorkShift ? "Cập nhật" : "Thêm"}
+            {editingWorkShift ? "Cập nhật" : isMultiDateMode && selectedDates.length > 0 ? `Tạo ${selectedDates.length} ca làm` : "Thêm"}
           </Button>
         ]}
       >
@@ -761,7 +786,9 @@ const WorkShiftManagement: React.FC = () => {
                   setIsMultiDateMode(e.target.checked);
                   if (e.target.checked) {
                     form.setFieldsValue({ ngayLamViec: undefined });
-                    setSelectedDates([]);
+                    if (selectedDates.length === 0) {
+                      setSelectedDates([]);
+                    }
                   } else {
                     setSelectedDates([]);
                   }
@@ -769,6 +796,75 @@ const WorkShiftManagement: React.FC = () => {
               >
                 Chọn nhiều ngày cùng lúc
               </Checkbox>
+
+              {/* Hiển thị thông tin các ngày đã chọn */}
+              {isMultiDateMode && selectedDates.length > 0 && (
+                <div style={{
+                  marginTop: 12,
+                  padding: 16,
+                  backgroundColor: '#f6ffed',
+                  border: '2px solid #52c41a',
+                  borderRadius: 8,
+                  boxShadow: '0 2px 8px rgba(82, 196, 26, 0.15)'
+                }}>
+                  <div style={{
+                    fontWeight: 'bold',
+                    marginBottom: 12,
+                    color: '#52c41a',
+                    fontSize: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span style={{ fontSize: '20px' }}>📅</span>
+                    Sẽ tạo ca làm cho {selectedDates.length} ngày đã chọn
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    marginBottom: 12,
+                    maxHeight: '120px',
+                    overflowY: 'auto',
+                    padding: '8px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                    borderRadius: '6px'
+                  }}>
+                    {selectedDates
+                      .sort((a, b) => a.unix() - b.unix())
+                      .map((date, index) => (
+                        <span
+                          key={index}
+                          style={{
+                            padding: '4px 12px',
+                            backgroundColor: '#52c41a',
+                            color: 'white',
+                            borderRadius: '16px',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            boxShadow: '0 2px 4px rgba(82, 196, 26, 0.3)'
+                          }}
+                        >
+                          {date.format('DD/MM/YYYY')} ({date.format('ddd')})
+                        </span>
+                      ))}
+                  </div>
+                  <div style={{
+                    fontSize: '13px',
+                    color: '#666',
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #d9d9d9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span style={{ fontSize: '16px' }}>💡</span>
+                    <strong>Lưu ý:</strong> Thông tin ca làm (tên ca, giờ bắt đầu, giờ kết thúc, nhân viên, ghi chú) sẽ được áp dụng cho tất cả {selectedDates.length} ngày này.
+                  </div>
+                </div>
+              )}
             </Form.Item>
           )}
 

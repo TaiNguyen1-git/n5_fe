@@ -8,6 +8,10 @@
   --border-radius: 6px;
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   --transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+
+  /* Font variables to fix undefined font issues */
+  --font-geist-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-geist-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 }
 
 /* Performance optimizations */
@@ -27,10 +31,12 @@ body {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
+  font-feature-settings: 'kern' 1;
+  text-rendering: optimizeLegibility;
 }
 
 /* Reset and base styles */
@@ -188,6 +194,55 @@ button {
     z-index: 1000;
     height: 100vh;
   }
+}
+
+/* Minimal Font Fixes for Specific Issues */
+.ant-table-tbody > tr > td,
+.ant-table-thead > tr > th {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Fix for tags showing incorrect font - highest priority */
+.ant-tag,
+.ant-tag *,
+.ant-tag span,
+.ant-table .ant-tag,
+.ant-table .ant-tag *,
+.ant-table .ant-tag span {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+  font-feature-settings: normal !important;
+  font-variant-ligatures: normal !important;
+  font-synthesis: none !important;
+}
+
+/* Override any CSS variables that might affect tags */
+.ant-tag {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Ensure no inheritance from parent elements */
+* .ant-tag {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Ultimate fix for Tag font issues - maximum specificity */
+html body .ant-tag,
+html body .ant-tag *,
+html body .ant-tag span,
+html body div .ant-tag,
+html body div .ant-tag *,
+html body div .ant-tag span,
+html body .ant-table .ant-tag,
+html body .ant-table .ant-tag *,
+html body .ant-table .ant-tag span {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
 }
 
 /* Reduce motion for accessibility */

@@ -17,6 +17,14 @@
   "env": {
     "NEXT_PUBLIC_API_URL": "https://ptud-web-1.onrender.com/api"
   },
+  "functions": {
+    "src/pages/api/GiamGia/*.ts": {
+      "maxDuration": 30
+    },
+    "src/pages/api/**/*.ts": {
+      "maxDuration": 20
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",
@@ -28,11 +36,20 @@
       ]
     },
     {
+      "source": "/api/GiamGia/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/api/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=60, stale-while-revalidate=300"
+          "value": "public, max-age=30, stale-while-revalidate=60"
         }
       ]
     },

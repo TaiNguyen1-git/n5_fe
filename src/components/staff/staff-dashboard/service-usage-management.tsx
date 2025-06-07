@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { serviceApi, PaginatedResponse, ApiResponse } from '../../../services/serviceApi';
 import { getAllCustomersNoPagination, Customer } from '../../../services/customerService';
+import styles from '../../../styles/ServiceUsageManagement.module.css';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -207,7 +208,25 @@ const ServiceUsageManagement: React.FC = () => {
     };
     
     const statusInfo = statusMap[status] || { color: 'default', text: status };
-    return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
+    return (
+      <Tag
+        color={statusInfo.color}
+        style={{
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important',
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
+          textRendering: 'optimizeLegibility',
+          fontFeatureSettings: 'normal',
+          fontVariantLigatures: 'normal'
+        }}
+      >
+        <span style={{
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important'
+        }}>
+          {statusInfo.text}
+        </span>
+      </Tag>
+    );
   };
 
   // Handle refresh
@@ -419,7 +438,7 @@ const ServiceUsageManagement: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className={styles.serviceUsageContainer}>
       <h2>Quản lý sử dụng dịch vụ</h2>
 
       {/* Statistics */}

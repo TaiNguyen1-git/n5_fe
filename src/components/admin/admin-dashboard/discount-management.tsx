@@ -4,6 +4,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, Exclamation
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import axios from 'axios';
+import { discountAPI, getDiscountErrorMessage } from '../../../utils/discountApiUtils';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -47,16 +48,34 @@ const DiscountManagement = () => {
     calculateStats();
   }, [discounts]);
 
-  const fetchDiscounts = async () => {
+  const fetchDiscounts = async (showSuccessMessage = false) => {
     setLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/GiamGia/GetAll`);
-      if (response.data && response.data.items && Array.isArray(response.data.items)) {
-        setDiscounts(response.data.items);
+      const response = await discountAPI.getAll();
+
+      let discountsData = [];
+
+      // Xử lý nhiều cấu trúc response khác nhau
+      if (response.data?.success && response.data?.data?.items) {
+        discountsData = response.data.data.items;
+      } else if (response.data?.items && Array.isArray(response.data.items)) {
+        discountsData = response.data.items;
+      } else if (response.data?.value && Array.isArray(response.data.value)) {
+        discountsData = response.data.value;
+      } else if (Array.isArray(response.data)) {
+        discountsData = response.data;
+      }
+
+      setDiscounts(discountsData);
+
+      if (showSuccessMessage) {
         message.success('Đã tải danh sách mã giảm giá');
       }
-    } catch (error) {
-      message.error('Không thể tải danh sách mã giảm giá');
+    } catch (error: any) {
+      console.error('Error fetching discounts:', error);
+
+      const errorMessage = getDiscountErrorMessage(error);
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -150,86 +169,79 @@ const DiscountManagement = () => {
   };
 
   const handleToggleStatus = async (discount: Discount) => {
+    setLoading(true);
+
     try {
-      // Thử format với query parameter (giống như Delete API)
-      const updateData = {
-        id: discount.id,
-        tenMa: discount.tenMa,
-        loaiGiam: discount.loaiGiam,
-        giaTri: discount.giaTri,
-        ngayBatDau: discount.ngayBatDau,
-        ngayKetThuc: discount.ngayKetThuc,
-        trangThai: !discount.trangThai
-      };
+      // Sử dụng utility function với retry logic
+      const response = await discountAPI.toggleStatus(discount);
 
-      // Thử với query parameter như Delete API
-      await axios.put(`${BASE_URL}/GiamGia/Update?id=${discount.id}`, updateData);
-      message.success(`Đã ${!discount.trangThai ? 'kích hoạt' : 'tạm dừng'} mã giảm giá`);
-      fetchDiscounts();
-    } catch (error: any) {
-      // Nếu vẫn lỗi, thử cách cuối: chỉ gửi những field cần thiết
-      try {
-        const minimalData = {
-          trangThai: !discount.trangThai
-        };
-
-        await axios.put(`${BASE_URL}/GiamGia/Update?id=${discount.id}`, minimalData);
+      if (response.data?.success !== false) {
         message.success(`Đã ${!discount.trangThai ? 'kích hoạt' : 'tạm dừng'} mã giảm giá`);
-        fetchDiscounts();
-      } catch (error2: any) {
 
-        // Hiển thị lỗi chi tiết
-        const errorMessage = error.response?.data?.value ||
-                            error.response?.data?.message ||
-                            error.response?.data?.error ||
-                            error.message ||
-                            'API Update không hoạt động. Hãy thử refresh trang.';
+        // Cập nhật state local trước để UI phản hồi nhanh hơn
+        setDiscounts(prev => prev.map(d =>
+          d.id === discount.id ? { ...d, trangThai: !d.trangThai } : d
+        ));
 
-        message.error(`Lỗi: ${errorMessage}`);
+        // Fetch lại data sau một khoảng thời gian ngắn để đảm bảo đồng bộ
+        setTimeout(() => {
+          fetchDiscounts();
+        }, 300);
+      } else {
+        throw new Error(response.data?.message || 'Cập nhật thất bại');
       }
+    } catch (error: any) {
+      console.error('Error toggling discount status:', error);
+
+      const errorMessage = getDiscountErrorMessage(error);
+      message.error(errorMessage);
+
+      // Khôi phục trạng thái ban đầu nếu có lỗi
+      setDiscounts(prev => prev.map(d =>
+        d.id === discount.id ? { ...d, trangThai: discount.trangThai } : d
+      ));
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSubmit = async (values: any) => {
     try {
       const submitData = {
-        ...values,
+        tenMa: values.tenMa?.trim(),
+        loaiGiam: values.loaiGiam,
+        giaTri: Number(values.giaTri), // Ensure giaTri is a number
         ngayBatDau: values.ngayBatDau?.toISOString(),
         ngayKetThuc: values.ngayKetThuc?.toISOString(),
+        trangThai: values.trangThai !== undefined ? values.trangThai : true
       };
 
       if (editingDiscount) {
-        // Update existing discount - thử với query parameter
+        // Update existing discount
         const updateData = { id: editingDiscount.id, ...submitData };
-        await axios.put(`${BASE_URL}/GiamGia/Update?id=${editingDiscount.id}`, updateData);
+        await discountAPI.update(editingDiscount.id, updateData);
         message.success('Đã cập nhật mã giảm giá');
       } else {
         // Create new discount
-        await axios.post(`${BASE_URL}/GiamGia/Create`, submitData);
+        await discountAPI.create(submitData);
         message.success('Đã tạo mã giảm giá mới');
       }
 
       setIsModalVisible(false);
       fetchDiscounts();
-    } catch (error) {
-      message.error('Không thể lưu mã giảm giá');
+    } catch (error: any) {
+      const errorMessage = getDiscountErrorMessage(error);
+      message.error(errorMessage);
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
-      await axios.delete(`${BASE_URL}/GiamGia/Delete?id=${id}`);
+      await discountAPI.delete(id);
       message.success('Đã xóa mã giảm giá');
       fetchDiscounts();
     } catch (error: any) {
-
-      // Hiển thị lỗi chi tiết
-      const errorMessage = error.response?.data?.value ||
-                          error.response?.data?.message ||
-                          error.response?.data?.error ||
-                          error.message ||
-                          'Không thể xóa mã giảm giá';
-
+      const errorMessage = getDiscountErrorMessage(error);
       message.error(`Lỗi xóa: ${errorMessage}`);
     }
   };
@@ -294,6 +306,8 @@ const DiscountManagement = () => {
                 onChange={() => handleToggleStatus(record)}
                 checkedChildren="ON"
                 unCheckedChildren="OFF"
+                loading={loading}
+                data-discount-id={record.id}
               />
             </div>
           </div>
@@ -447,7 +461,7 @@ const DiscountManagement = () => {
         <Space>
           <Button
             icon={<ReloadOutlined />}
-            onClick={fetchDiscounts}
+            onClick={() => fetchDiscounts(true)}
             loading={loading}
           >
             Làm mới
@@ -525,7 +539,15 @@ const DiscountManagement = () => {
             label="Giá trị giảm (VNĐ)"
             rules={[
               { required: true, message: 'Vui lòng nhập giá trị giảm' },
-              { type: 'number', min: 1000, message: 'Giá trị giảm tối thiểu 1,000 VNĐ' }
+              {
+                validator: (_, value) => {
+                  const numValue = Number(value);
+                  if (isNaN(numValue) || numValue < 1000) {
+                    return Promise.reject(new Error('Giá trị giảm tối thiểu 1,000 VNĐ'));
+                  }
+                  return Promise.resolve();
+                }
+              }
             ]}
           >
             <Input type="number" placeholder="Nhập số tiền giảm" />

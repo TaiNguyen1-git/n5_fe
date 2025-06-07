@@ -806,9 +806,10 @@ const BillManagement = () => {
               detail.maHD = latestBillId;
             });
 
-            // Bước 2: Tạo chi tiết hóa đơn dịch vụ
+            // Bước 2: Tạo chi tiết hóa đơn dịch vụ và service usage
             for (const serviceDetail of formattedServiceDetails) {
               try {
+                // 2a. Tạo chi tiết hóa đơn dịch vụ
                 const serviceResponse = await fetch(`${BASE_URL}/ChiTietHoaDonDV/Create`, {
                   method: 'POST',
                   headers: {
@@ -820,21 +821,53 @@ const BillManagement = () => {
 
                 if (!serviceResponse.ok) {
                   hasServiceError = true;
+                  console.error('Failed to create service detail:', await serviceResponse.text());
                 } else {
+                  console.log('Service detail created successfully for bill:', latestBillId, 'service:', serviceDetail.maDichVu);
                 }
+
+                // 2b. Tạo service usage record
+                const serviceUsageData = {
+                  maKH: newBillData.maKH || 0, // Sử dụng maKH từ bill data
+                  maDV: serviceDetail.maDichVu,
+                  ngaySD: new Date().toISOString(),
+                  soLuong: serviceDetail.soLuong,
+                  thanhTien: serviceDetail.thanhTien,
+                  trangThai: 'Đã đặt',
+                  xoa: false
+                };
+
+                try {
+                  const serviceUsageResponse = await fetch(`${BASE_URL}/SuDungDichVu/Create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(serviceUsageData)
+                  });
+
+                  if (serviceUsageResponse.ok) {
+                    console.log('Service usage created successfully for service:', serviceDetail.maDichVu);
+                  } else {
+                    console.error('Failed to create service usage:', await serviceUsageResponse.text());
+                  }
+                } catch (serviceUsageError) {
+                  console.error('Error creating service usage:', serviceUsageError);
+                }
+
               } catch (serviceError) {
                 hasServiceError = true;
+                console.error('Error creating service detail:', serviceError);
               }
             }
           } else if (formattedServiceDetails.length > 0 && !latestBillId) {
             hasServiceError = true;
+            console.warn('No bill ID available, cannot create service details');
           }
 
           // Hiển thị thông báo thành công
           if (hasServiceError) {
             Modal.warning({
               title: 'Tạo hóa đơn thành công nhưng có lỗi',
-              content: 'Đã tạo hóa đơn mới thành công nhưng có lỗi khi thêm chi tiết dịch vụ. Vui lòng kiểm tra lại.',
+              content: `Đã tạo hóa đơn mới thành công${latestBillId ? ` với mã: ${latestBillId}` : ''} nhưng có lỗi khi thêm chi tiết dịch vụ. Vui lòng kiểm tra lại trong quản lý sử dụng dịch vụ.`,
               onOk: () => {
                 setIsNewBillModalVisible(false);
                 form.resetFields();
@@ -845,9 +878,16 @@ const BillManagement = () => {
               }
             });
           } else {
+            const serviceCount = formattedServiceDetails.length;
+            let successMessage = `Đã tạo hóa đơn mới thành công${latestBillId ? ` với mã: ${latestBillId}` : ''}`;
+
+            if (serviceCount > 0) {
+              successMessage += `. Đã thêm ${serviceCount} dịch vụ vào hóa đơn và tạo bản ghi sử dụng dịch vụ.`;
+            }
+
             Modal.success({
               title: 'Tạo hóa đơn thành công',
-              content: `Đã tạo hóa đơn mới thành công${latestBillId ? ` với mã: ${latestBillId}` : ''}`,
+              content: successMessage,
               onOk: () => {
                 setIsNewBillModalVisible(false);
                 form.resetFields();

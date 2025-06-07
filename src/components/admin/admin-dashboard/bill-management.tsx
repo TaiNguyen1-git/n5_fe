@@ -384,12 +384,20 @@ const BillManagement = () => {
     try {
       const response = await axios.get(`${BASE_URL}/GiamGia/GetAll`);
 
-
       if (response.data) {
         let discountsData = [];
 
-        // Handle different response structures
-        if (response.data.items && Array.isArray(response.data.items)) {
+        // Handle different response structures from the proxy API
+        if (response.data.success && response.data.data) {
+          // Handle proxy API response structure
+          if (Array.isArray(response.data.data)) {
+            discountsData = response.data.data;
+          } else if (response.data.data.items && Array.isArray(response.data.data.items)) {
+            discountsData = response.data.data.items;
+          } else if (response.data.data.value && Array.isArray(response.data.data.value)) {
+            discountsData = response.data.data.value;
+          }
+        } else if (response.data.items && Array.isArray(response.data.items)) {
           discountsData = response.data.items;
         } else if (response.data.value && Array.isArray(response.data.value)) {
           discountsData = response.data.value;
@@ -399,7 +407,9 @@ const BillManagement = () => {
 
         const validDiscounts = discountsData
           .filter((discount: any) => {
-            if (!discount || !discount.trangThai) return false;
+            if (!discount) return false;
+            // Only filter by status if it exists, otherwise include all
+            if (discount.trangThai !== undefined && !discount.trangThai) return false;
             if (discount.ngayKetThuc) {
               const endDate = new Date(discount.ngayKetThuc);
               const now = new Date();
@@ -409,13 +419,13 @@ const BillManagement = () => {
             return true;
           })
           .map((discount: any) => ({
-            maGiam: discount.maGiam || discount.id,
-            tenGG: discount.tenGG || discount.tenMa || `Giảm giá ${discount.maGiam}`,
-            giaTriGiam: discount.giaTriGiam || discount.giaTri || 0,
+            // Map the correct field names from the API response
+            maGiam: discount.id || discount.maGiam,
+            tenGG: discount.tenMa || discount.tenGG || `Giảm giá ${discount.id || discount.maGiam}`,
+            giaTriGiam: discount.giaTri || discount.giaTriGiam || 0,
             ngayKetThuc: discount.ngayKetThuc,
-            trangThai: discount.trangThai
+            trangThai: discount.trangThai !== undefined ? discount.trangThai : true
           }));
-
 
         setDiscounts(validDiscounts);
       } else {
@@ -785,6 +795,63 @@ const BillManagement = () => {
       // Create detailed items
       const detailedItems = await createDetailedBillItems(bill);
 
+      // Fetch service details from ChiTietHoaDonDV API
+      let serviceDetails = [];
+      try {
+        const serviceDetailsResponse = await fetch(`${BASE_URL}/ChiTietHoaDonDV/GetAll`);
+        if (serviceDetailsResponse.ok) {
+          const serviceDetailsData = await serviceDetailsResponse.json();
+
+          // Handle different API response structures
+          let allServiceDetails = [];
+          if (serviceDetailsData && serviceDetailsData.value && Array.isArray(serviceDetailsData.value)) {
+            allServiceDetails = serviceDetailsData.value;
+          } else if (serviceDetailsData && serviceDetailsData.items && Array.isArray(serviceDetailsData.items)) {
+            allServiceDetails = serviceDetailsData.items;
+          } else if (Array.isArray(serviceDetailsData)) {
+            allServiceDetails = serviceDetailsData;
+          }
+
+          // Filter service details for this specific bill
+          const billId = bill.maHD || bill.id;
+          serviceDetails = allServiceDetails.filter((detail: any) =>
+            detail.maHD === billId && !detail.xoa
+          );
+
+          // Enrich service details with service information
+          for (let detail of serviceDetails) {
+            try {
+              const serviceResponse = await fetch(`${BASE_URL}/DichVu/GetById/${detail.maDichVu}`);
+              if (serviceResponse.ok) {
+                const serviceData = await serviceResponse.json();
+                detail.tenDichVu = serviceData.ten || `Dịch vụ ${detail.maDichVu}`;
+                detail.moTaDichVu = serviceData.moTa || '';
+                detail.donGia = detail.donGia || serviceData.gia || 0;
+              }
+            } catch (serviceError) {
+              console.error(`Error fetching service ${detail.maDichVu}:`, serviceError);
+              // Fallback service names and prices
+              if (detail.maDichVu === 1) {
+                detail.tenDichVu = 'Giặt ủi';
+                detail.donGia = detail.donGia || 100000;
+              } else if (detail.maDichVu === 2) {
+                detail.tenDichVu = 'Buffet';
+                detail.donGia = detail.donGia || 500000;
+              } else {
+                detail.tenDichVu = `Dịch vụ ${detail.maDichVu}`;
+                detail.donGia = detail.donGia || 0;
+              }
+            }
+          }
+
+          console.log(`Found ${serviceDetails.length} service details for bill ${billId}`);
+        }
+      } catch (error) {
+        console.error('Error fetching service details:', error);
+        // Fallback to existing serviceDetails from bill object
+        serviceDetails = bill.serviceDetails || [];
+      }
+
       // Get discount info
       let discountInfo = null;
       if (bill.maGiam && bill.maGiam > 1) {
@@ -812,6 +879,7 @@ const BillManagement = () => {
       const updatedBill = {
         ...bill,
         items: detailedItems,
+        serviceDetails: serviceDetails, // Add fetched service details
         discountInfo: discountInfo,
         // Use calculated discount amount or from discount info
         giaTriGiam: actualDiscountAmount > 0 ? actualDiscountAmount : (discountInfo?.giaTriGiam || 0)
@@ -965,7 +1033,45 @@ const BillManagement = () => {
           }
 
           const billResult = await billResponse.json();
-          const newBillId = billResult.maHD || billResult.id;
+          let newBillId = billResult.maHD || billResult.id;
+
+          // If no bill ID returned, try to find the latest bill
+          if (!newBillId) {
+            console.log('No bill ID returned, trying to find latest bill...');
+
+            // Wait a moment for the bill to be saved
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            try {
+              const allBillsResponse = await fetch(`${BASE_URL}/HoaDon/GetAll`);
+              if (allBillsResponse.ok) {
+                const allBillsData = await allBillsResponse.json();
+                const allBills = allBillsData.items || allBillsData.value || allBillsData || [];
+
+                if (allBills.length > 0) {
+                  // Find bills matching our criteria
+                  const matchingBills = allBills.filter((bill: any) =>
+                    bill.maKH === customerId &&
+                    bill.maPhuongThuc === paymentMethod &&
+                    bill.tongTien === totalAmount &&
+                    bill.maGiam === discount &&
+                    bill.trangThai === 2
+                  );
+
+                  if (matchingBills.length > 0) {
+                    // Get the latest bill (highest ID)
+                    const latestBill = matchingBills.reduce((prev: any, current: any) =>
+                      (current.maHD || current.id) > (prev.maHD || prev.id) ? current : prev
+                    );
+                    newBillId = latestBill.maHD || latestBill.id;
+                    console.log('Found latest bill ID:', newBillId);
+                  }
+                }
+              }
+            } catch (fetchError) {
+              console.error('Error fetching latest bill:', fetchError);
+            }
+          }
 
           // Create service usage records for selected services
           if (selectedServices && selectedServices.length > 0 && selectedCustomerForBill) {
@@ -978,7 +1084,7 @@ const BillManagement = () => {
                   ngaySD: new Date().toISOString(),
                   soLuong: service.quantity,
                   thanhTien: service.quantity * service.price,
-                  trangThai: true,
+                  trangThai: 'Đã đặt',
                   xoa: false
                 };
 
@@ -990,13 +1096,13 @@ const BillManagement = () => {
                   });
 
                   if (serviceUsageResponse.ok) {
-                    // Service usage created successfully
+                    console.log('Service usage created successfully for service:', service.serviceId);
                   }
                 } catch (serviceError) {
                   console.error('Error creating service usage:', serviceError);
                 }
 
-                // 2. Create service detail for bill (if API exists)
+                // 2. Create service detail for bill (if we have bill ID)
                 if (newBillId) {
                   const serviceDetailData = {
                     maHD: newBillId,
@@ -1007,20 +1113,39 @@ const BillManagement = () => {
                   };
 
                   try {
-                    await fetch(`${BASE_URL}/ChiTietHoaDonDV/Create`, {
+                    const serviceDetailResponse = await fetch(`${BASE_URL}/ChiTietHoaDonDV/Create`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(serviceDetailData)
                     });
+
+                    if (serviceDetailResponse.ok) {
+                      console.log('Service detail created successfully for bill:', newBillId, 'service:', service.serviceId);
+                    } else {
+                      console.error('Failed to create service detail:', await serviceDetailResponse.text());
+                    }
                   } catch (serviceError) {
                     console.error('Error creating service detail:', serviceError);
                   }
+                } else {
+                  console.warn('No bill ID available, cannot create service detail for service:', service.serviceId);
                 }
               }
             }
           }
 
-          message.success('Tạo hóa đơn thành công!');
+          // Show success message with details
+          const serviceCount = selectedServices.length;
+          let successMessage = 'Tạo hóa đơn thành công!';
+
+          if (serviceCount > 0) {
+            successMessage += ` Đã thêm ${serviceCount} dịch vụ vào hóa đơn.`;
+            if (newBillId) {
+              successMessage += ` Mã hóa đơn: ${newBillId}`;
+            }
+          }
+
+          message.success(successMessage);
           setIsNewBillModalVisible(false);
           form.resetFields();
           setBillCalculation(null);
@@ -1572,6 +1697,87 @@ const BillManagement = () => {
                   );
                 }}
               />
+            </div>
+
+            {/* Service Details Section */}
+            <Divider />
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <h3 style={{ margin: 0 }}>Chi tiết dịch vụ</h3>
+                {viewBill.serviceDetails && viewBill.serviceDetails.length > 0 && (
+                  <div style={{ fontSize: '14px', color: '#666' }}>
+                    <span style={{ marginRight: 16 }}>
+                      📦 {viewBill.serviceDetails.length} dịch vụ
+                    </span>
+                    <span>
+                      💰 {viewBill.serviceDetails.reduce((sum: number, item: any) => sum + (item.thanhTien || 0), 0).toLocaleString('vi-VN')} VND
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {viewBill.serviceDetails && viewBill.serviceDetails.length > 0 ? (
+                <Table
+                  columns={[
+                    {
+                      title: 'Tên dịch vụ',
+                      dataIndex: 'tenDichVu',
+                      key: 'tenDichVu',
+                      render: (text, record) => (
+                        <div>
+                          <div style={{ fontWeight: 500 }}>
+                            {text || record.dichVu?.ten || `Dịch vụ ${record.maDichVu}`}
+                          </div>
+                          {record.moTaDichVu && (
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              {record.moTaDichVu}
+                            </div>
+                          )}
+                        </div>
+                      ),
+                    },
+                    {
+                      title: 'Số lượng',
+                      dataIndex: 'soLuong',
+                      key: 'soLuong',
+                      align: 'center',
+                      width: 100,
+                    },
+                    {
+                      title: 'Đơn giá',
+                      dataIndex: 'donGia',
+                      key: 'donGia',
+                      align: 'right',
+                      width: 120,
+                      render: (price) => `${price?.toLocaleString('vi-VN') || 0} VNĐ`,
+                    },
+                    {
+                      title: 'Thành tiền',
+                      dataIndex: 'thanhTien',
+                      key: 'thanhTien',
+                      align: 'right',
+                      width: 120,
+                      render: (amount) => (
+                        <span style={{ fontWeight: 500, color: '#1890ff' }}>
+                          {amount?.toLocaleString('vi-VN') || 0} VNĐ
+                        </span>
+                      ),
+                    },
+                  ]}
+                  dataSource={viewBill.serviceDetails}
+                  rowKey={(record) => record.maChiTiet || record.maDichVu || Math.random()}
+                  pagination={false}
+                  locale={{ emptyText: 'Không có dịch vụ nào' }}
+                  size="small"
+                />
+              ) : (
+                <Alert
+                  message="Không có dịch vụ"
+                  description="Hóa đơn này không có chi tiết dịch vụ nào."
+                  type="info"
+                  showIcon
+                />
+              )}
             </div>
           </div>
         )}

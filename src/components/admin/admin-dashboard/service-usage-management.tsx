@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { serviceApi, PaginatedResponse, ApiResponse } from '../../../services/serviceApi';
 import { getAllCustomersNoPagination, Customer } from '../../../services/customerService';
+import styles from '../../../styles/ServiceUsageManagement.module.css';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -207,7 +208,26 @@ const ServiceUsageManagement: React.FC = () => {
     };
     
     const statusInfo = statusMap[status] || { color: 'default', text: status };
-    return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
+    return (
+      <Tag
+        color={statusInfo.color}
+        className={styles.statusTag}
+        style={{
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important',
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
+          textRendering: 'optimizeLegibility',
+          fontFeatureSettings: 'normal',
+          fontVariantLigatures: 'normal'
+        }}
+      >
+        <span style={{
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important'
+        }}>
+          {statusInfo.text}
+        </span>
+      </Tag>
+    );
   };
 
   // Handle refresh
@@ -290,12 +310,12 @@ const ServiceUsageManagement: React.FC = () => {
       title: 'Khách hàng',
       key: 'khachHang',
       render: (_, record) => (
-        <div>
-          <div style={{ fontWeight: 'bold' }}>{record.khachHang?.tenKH || `KH-${record.maKH}`}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+        <div className={styles.customerInfo}>
+          <div className={styles.customerName}>{record.khachHang?.tenKH || `KH-${record.maKH}`}</div>
+          <div className={styles.customerDetails}>
             {record.khachHang?.email || ''}
           </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className={styles.customerDetails}>
             {record.khachHang?.phone || ''}
           </div>
         </div>
@@ -306,9 +326,9 @@ const ServiceUsageManagement: React.FC = () => {
       title: 'Dịch vụ',
       key: 'dichVu',
       render: (_, record) => (
-        <div>
-          <div style={{ fontWeight: 'bold' }}>{record.dichVu?.ten || `DV-${record.maDV}`}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+        <div className={styles.serviceInfo}>
+          <div className={styles.serviceName}>{record.dichVu?.ten || `DV-${record.maDV}`}</div>
+          <div className={styles.servicePrice}>
             Giá: {record.dichVu?.gia?.toLocaleString('vi-VN') || 0} VNĐ
           </div>
         </div>
@@ -419,13 +439,13 @@ const ServiceUsageManagement: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className={styles.serviceUsageContainer}>
       <h2>Quản lý sử dụng dịch vụ</h2>
 
       {/* Statistics */}
       <Row gutter={16} style={{ marginBottom: '24px' }}>
         <Col span={6}>
-          <Card>
+          <Card className={styles.statisticsCard}>
             <Statistic
               title="Tổng số bản ghi"
               value={pagination.total}
@@ -434,7 +454,7 @@ const ServiceUsageManagement: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card className={styles.statisticsCard}>
             <Statistic
               title="Đã hoàn thành (trang hiện tại)"
               value={serviceUsages.filter(u => u.trangThai === 'Hoàn thành').length}
@@ -443,7 +463,7 @@ const ServiceUsageManagement: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card className={styles.statisticsCard}>
             <Statistic
               title="Đang sử dụng (trang hiện tại)"
               value={serviceUsages.filter(u => u.trangThai === 'Đang sử dụng').length}
@@ -452,7 +472,7 @@ const ServiceUsageManagement: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card className={styles.statisticsCard}>
             <Statistic
               title="Tổng doanh thu (trang hiện tại)"
               value={serviceUsages.reduce((sum, u) => sum + u.thanhTien, 0)}
@@ -464,7 +484,7 @@ const ServiceUsageManagement: React.FC = () => {
       </Row>
 
       {/* Search and Filter Controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+      <div className={styles.searchControls} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
         <Space wrap>
           <Input.Search
             placeholder="Tìm kiếm theo khách hàng, dịch vụ, trạng thái"
@@ -516,6 +536,7 @@ const ServiceUsageManagement: React.FC = () => {
 
       {/* Service Usage Table */}
       <Table
+        className={styles.serviceUsageTable}
         columns={columns}
         dataSource={filteredServiceUsages}
         rowKey="maSDDV"
