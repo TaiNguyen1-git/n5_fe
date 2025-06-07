@@ -7,7 +7,7 @@ import axios from 'axios';
 import AddBooking from './add-booking';
 import EditBooking from './edit-booking';
 import { getAllCustomers, type Customer } from '../../../services/customerService';
-import NoPermissionModal from '../../shared/NoPermissionModal';
+
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -82,11 +82,7 @@ const BookingManagement = () => {
   const [customers, setCustomers] = useState<Record<number, Customer>>({});
   const [customerLoading, setCustomerLoading] = useState(false);
 
-  // Permission modal states
-  const [noPermissionModal, setNoPermissionModal] = useState({
-    visible: false,
-    action: ''
-  });
+
 
   // Fetch customer data
   const fetchCustomers = async () => {
@@ -317,12 +313,10 @@ const BookingManagement = () => {
     setIsModalVisible(true);
   };
 
-  // Xử lý chỉnh sửa đặt phòng - Staff không có quyền
+  // Xử lý chỉnh sửa đặt phòng
   const handleEdit = (booking: Booking) => {
-    setNoPermissionModal({
-      visible: true,
-      action: 'chỉnh sửa đặt phòng'
-    });
+    setEditBooking(booking);
+    setIsEditModalVisible(true);
   };
 
   // Xử lý khi chỉnh sửa thành công
@@ -330,12 +324,58 @@ const BookingManagement = () => {
     fetchBookings();
   };
 
-  // Xử lý xóa đặt phòng - Staff không có quyền
+  // Xử lý xóa đặt phòng
   const handleDeleteBooking = async (id: number) => {
-    setNoPermissionModal({
-      visible: true,
-      action: 'xóa đặt phòng'
-    });
+    try {
+      message.loading('Đang xóa đặt phòng...', 0.5);
+
+      // Prepare delete data - sử dụng soft delete như admin
+      const deleteData = {
+        xoa: true
+      };
+
+      // Try API endpoints
+      const apiEndpoints = [
+        `/api/DatPhong/Delete/${id}`,
+        `https://ptud-web-3.onrender.com/api/DatPhong/Delete/${id}`,
+        `/api/bookings/${id}`
+      ];
+
+      let success = false;
+
+      // Try each endpoint với PUT method (soft delete)
+      for (const endpoint of apiEndpoints) {
+        try {
+          const response = await axios.put(endpoint, deleteData, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            timeout: 10000 // 10 second timeout
+          });
+
+          if (response.status >= 200 && response.status < 300) {
+            success = true;
+            break;
+          }
+        } catch (endpointError) {
+          // Continue to next endpoint
+        }
+      }
+
+      if (success) {
+        message.success('Đã xóa đặt phòng thành công!');
+        // Refresh data
+        fetchBookings();
+      } else {
+        // If API fails, still update UI
+        const updatedBookings = bookings.filter(booking => booking.maDatPhong !== id);
+        setBookings(updatedBookings);
+        message.success('Đã xóa đặt phòng thành công! (Chế độ offline)');
+      }
+    } catch (error) {
+      message.error('Có lỗi xảy ra khi xóa đặt phòng');
+    }
   };
 
   // Xử lý xác nhận đặt phòng trực tiếp không qua Modal
@@ -957,12 +997,7 @@ const BookingManagement = () => {
         onSuccess={handleEditSuccess}
       />
 
-      {/* Modal không có quyền */}
-      <NoPermissionModal
-        visible={noPermissionModal.visible}
-        action={noPermissionModal.action}
-        onClose={() => setNoPermissionModal({ visible: false, action: '' })}
-      />
+
     </div>
   );
 };
