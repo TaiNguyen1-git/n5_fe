@@ -23,8 +23,7 @@ const { TabPane } = Tabs;
 // Interfaces
 interface Room {
   maPhong: number;
-  tenPhong: string;
-  soPhong: string;
+  soPhong?: string;
   loaiPhong: {
     maLoai: number;
     tenLoai: string;
@@ -175,10 +174,14 @@ const AdvancedSearchDashboard: React.FC<AdvancedSearchProps> = ({
   // Filter rooms based on search criteria
   const getFilteredRooms = () => {
     return rooms.filter(room => {
-      // Text search
+      // Text search - search in room number and room ID only
+      const searchLower = roomSearchText?.toLowerCase() || '';
+      const roomNumber = room.soPhong || '';
+      const roomId = room.maPhong?.toString() || '';
+
       const matchesText = !roomSearchText ||
-        room.tenPhong?.toLowerCase().includes(roomSearchText.toLowerCase()) ||
-        room.soPhong?.toLowerCase().includes(roomSearchText.toLowerCase());
+        roomNumber.toLowerCase().includes(searchLower) ||
+        roomId.includes(searchLower);
 
       // Room type filter
       const matchesType = !selectedRoomType || room.loaiPhong?.maLoai === selectedRoomType;
@@ -261,7 +264,7 @@ const AdvancedSearchDashboard: React.FC<AdvancedSearchProps> = ({
           data: getFilteredRooms(),
           columns: [
             { key: 'soPhong', title: 'Số phòng', dataIndex: 'soPhong' },
-            { key: 'tenPhong', title: 'Tên phòng', dataIndex: 'tenPhong' },
+
             { key: 'loaiPhong', title: 'Loại phòng', dataIndex: ['loaiPhong', 'tenLoai'] },
             { key: 'giaPhong', title: 'Giá phòng (VNĐ)', dataIndex: ['loaiPhong', 'giaPhong'], render: (value: number) => value?.toLocaleString('vi-VN') || '0' },
             { key: 'trangThai', title: 'Trạng thái', dataIndex: 'trangThai', render: (status: number) => ROOM_STATUS_CONFIG[status as keyof typeof ROOM_STATUS_CONFIG]?.label || 'Không xác định' }
@@ -313,7 +316,7 @@ const AdvancedSearchDashboard: React.FC<AdvancedSearchProps> = ({
         return (
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <Input
-              placeholder="Tìm theo tên phòng, số phòng..."
+              placeholder="Tìm theo số phòng, mã phòng..."
               prefix={<SearchOutlined />}
               value={roomSearchText}
               onChange={(e) => setRoomSearchText(e.target.value)}
@@ -480,7 +483,7 @@ const AdvancedSearchDashboard: React.FC<AdvancedSearchProps> = ({
                 <Row gutter={16}>
                   <Col span={6}>
                     <Input
-                      placeholder="Tìm theo tên phòng, số phòng..."
+                      placeholder="Tìm theo số phòng, mã phòng..."
                       prefix={<SearchOutlined />}
                       value={roomSearchText}
                       onChange={(e) => setRoomSearchText(e.target.value)}
@@ -538,11 +541,7 @@ const AdvancedSearchDashboard: React.FC<AdvancedSearchProps> = ({
                   key: 'soPhong',
                   render: (text: string) => <strong>{text}</strong>
                 },
-                {
-                  title: 'Tên phòng',
-                  dataIndex: 'tenPhong',
-                  key: 'tenPhong'
-                },
+
                 {
                   title: 'Loại phòng',
                   dataIndex: ['loaiPhong', 'tenLoai'],
@@ -570,7 +569,9 @@ const AdvancedSearchDashboard: React.FC<AdvancedSearchProps> = ({
                     <Col span={12}>
                       <Space direction="vertical" size={0}>
                         <span style={{ fontSize: '12px', color: '#666' }}>Số phòng</span>
-                        <strong style={{ fontSize: '16px' }}>{record.soPhong}</strong>
+                        <strong style={{ fontSize: '16px' }}>
+                          {record.soPhong || `P${record.maPhong}` || 'N/A'}
+                        </strong>
                       </Space>
                     </Col>
                     <Col span={12}>
@@ -581,12 +582,7 @@ const AdvancedSearchDashboard: React.FC<AdvancedSearchProps> = ({
                         </Tag>
                       </Space>
                     </Col>
-                    <Col span={24}>
-                      <Space direction="vertical" size={0}>
-                        <span style={{ fontSize: '12px', color: '#666' }}>Tên phòng</span>
-                        <span>{record.tenPhong}</span>
-                      </Space>
-                    </Col>
+
                     <Col span={12}>
                       <Space direction="vertical" size={0}>
                         <span style={{ fontSize: '12px', color: '#666' }}>Loại phòng</span>
