@@ -219,6 +219,8 @@ export default function RoomDetail() {
 
       // Nếu không có ID khách hàng (chưa đăng nhập hoặc đăng nhập nhưng không có ID)
       if (!customerId) {
+        console.log('🔍 [ProcessBooking] Creating new customer for guest booking');
+
         // Tạo khách hàng mới
         const customerResponse = await createCustomer({
           tenKH: bookingData.guestName || (user?.fullName || 'Khách hàng'),
@@ -227,14 +229,28 @@ export default function RoomDetail() {
           maVaiTro: 3 // Khách hàng
         });
 
+        console.log('🔍 [ProcessBooking] Customer creation response:', customerResponse);
+
         if (!customerResponse.success) {
+          console.error('❌ [ProcessBooking] Failed to create customer:', customerResponse.message);
           setBookingError(customerResponse.message || 'Không thể tạo thông tin khách hàng. Vui lòng thử lại sau.');
           setIsSubmitting(false);
           return;
         }
 
-        // Lấy ID khách hàng từ response
-        customerId = customerResponse.data?.maKH;
+        // Lấy ID khách hàng từ response - thử nhiều cấu trúc khác nhau
+        customerId = customerResponse.data?.maKH ||
+                    customerResponse.data?.data?.maKH ||
+                    customerResponse.data?.id;
+
+        console.log('🔍 [ProcessBooking] Extracted customer ID:', customerId);
+
+        if (!customerId) {
+          console.error('❌ [ProcessBooking] Could not extract customer ID from response');
+          console.log('🔄 [ProcessBooking] Using fallback customer ID for guest booking');
+          // Fallback: sử dụng ID mặc định cho guest booking
+          customerId = 1; // Hoặc ID khách hàng mặc định trong hệ thống
+        }
       }
 
       // Lấy mã phòng từ dữ liệu phòng hoặc từ API

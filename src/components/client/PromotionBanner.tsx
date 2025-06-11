@@ -19,22 +19,32 @@ const PromotionBanner: React.FC = () => {
       setLoading(true);
       const allDiscounts = await discountService.getAllDiscounts();
 
+      // Xử lý cấu trúc pagination - extract items array
+      let discountsArray = [];
+      if (Array.isArray(allDiscounts)) {
+        discountsArray = allDiscounts;
+      } else if (allDiscounts && Array.isArray(allDiscounts.items)) {
+        discountsArray = allDiscounts.items;
+      } else {
+        setPromotions([]);
+        return;
+      }
 
+      if (discountsArray.length === 0) {
+        setPromotions([]);
+        return;
+      }
 
       // Lọc các mã giảm giá đang hoạt động và còn hạn
       const now = dayjs();
-      const activePromotions = allDiscounts.filter(discount => {
-
-
+      const activePromotions = discountsArray.filter(discount => {
         // Kiểm tra thông tin cơ bản
         if (!discount.tenMa || !discount.giaTri || discount.giaTri <= 0) {
-
           return false;
         }
 
         // Kiểm tra trạng thái (có thể null hoặc undefined)
         if (discount.trangThai === false) {
-
           return false;
         }
 
@@ -44,19 +54,16 @@ const PromotionBanner: React.FC = () => {
           const endDate = dayjs(discount.ngayKetThuc);
 
           if (now.isBefore(startDate) || now.isAfter(endDate)) {
-
             return false;
           }
         }
 
-
         return true;
       });
 
-
       setPromotions(activePromotions);
     } catch (error) {
-
+      // Silently handle error
     } finally {
       setLoading(false);
     }

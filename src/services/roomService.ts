@@ -345,11 +345,13 @@ export const bookRoom = async (bookingData: Booking): Promise<ApiResponse<any>> 
       maKH: bookingData.maKH ? (typeof bookingData.maKH === 'string' ? parseInt(bookingData.maKH) : bookingData.maKH) : 0,
       maPhong: roomId,
       ngayDat: new Date().toISOString(),
-      ngayBD: bookingData.checkIn || bookingData.ngayBatDau, // Sử dụng ngayBD thay vì checkIn
-      ngayKT: bookingData.checkOut || bookingData.ngayKetThuc, // Sử dụng ngayKT thay vì checkOut
+      ngayBD: bookingData.ngayBD || bookingData.checkIn || bookingData.ngayBatDau, // Hỗ trợ nhiều tên field
+      ngayKT: bookingData.ngayKT || bookingData.checkOut || bookingData.ngayKetThuc, // Hỗ trợ nhiều tên field
       trangThai: 1, // Đang xử lý
       xoa: false
     };
+
+    console.log('🔍 [BookRoom] Booking data sent to API:', serverData);
 
 
 

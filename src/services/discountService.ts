@@ -35,10 +35,15 @@ class DiscountService {
     try {
       const response = await axios.get(`${BASE_URL}/GiamGia/GetAll`);
 
-      // Thử nhiều cấu trúc response khác nhau
+      // Xử lý cấu trúc response từ proxy API
       let data = [];
-      if (response.data?.items) {
-        // Cấu trúc paginated response với items array
+
+      // Proxy API trả về: { success: true, data: { items: [...] } }
+      if (response.data?.success && response.data?.data?.items) {
+        data = response.data.data.items;
+      }
+      // Fallback cho các cấu trúc khác
+      else if (response.data?.items) {
         data = response.data.items;
       } else if (response.data?.value?.data) {
         data = response.data.value.data;
@@ -51,9 +56,9 @@ class DiscountService {
       } else {
         data = [];
       }
-
       return data;
     } catch (error) {
+      console.error('❌ [DiscountService] Error fetching discounts:', error);
       return [];
     }
   }
