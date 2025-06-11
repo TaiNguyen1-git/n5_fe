@@ -299,7 +299,10 @@ export default function BookingHistory() {
       title: 'Tổng tiền',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
-      render: (amount: number) => `${amount.toLocaleString('vi-VN')} VNĐ`,
+      render: (amount: number) => {
+        if (typeof amount !== 'number') return '0 VNĐ';
+        return `${amount.toLocaleString('vi-VN')} VNĐ`;
+      },
     },
     {
       title: 'Trạng thái',
@@ -419,7 +422,7 @@ export default function BookingHistory() {
                     precision={0}
                     valueStyle={{ color: '#cf1322' }}
                     suffix="VNĐ"
-                    formatter={(value) => value?.toLocaleString('vi-VN')}
+                    formatter={(value) => (value || 0).toLocaleString('vi-VN')}
                   />
                 </Card>
               </Col>
@@ -513,7 +516,9 @@ export default function BookingHistory() {
                     <div className={styles.detailItem}>
                       <span className={styles.label}>Tổng tiền:</span>
                       <span className={styles.value}>
-                        {viewBooking.totalAmount.toLocaleString('vi-VN')} VNĐ
+                        {typeof viewBooking.totalAmount === 'number' 
+                          ? viewBooking.totalAmount.toLocaleString('vi-VN') 
+                          : '0'} VNĐ
                       </span>
                     </div>
                     <div className={styles.detailItem}>

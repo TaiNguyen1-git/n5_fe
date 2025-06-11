@@ -13,41 +13,41 @@ import CountdownTimer from '../components/client/CountdownTimer';
 import AnimatedCounter from '../components/client/AnimatedCounter';
 import VirtualTour from '../components/client/VirtualTour';
 
-// Cấu trúc phòng từ API mới
+// Interface định nghĩa cấu trúc phòng từ API
 interface APIRoom {
-  maPhong: number;
-  soPhong: string;
-  soNguoi: number;
-  hinhAnh: string | null;
-  moTa: string;
-  loaiPhong: {
-    maLoai: number;
-    tenLoai: string;
-    giaPhong: number;
-    phongs: null;
+  maPhong: number;        // Mã phòng
+  soPhong: string;        // Số phòng
+  soNguoi: number;        // Số người tối đa
+  hinhAnh: string | null; // Hình ảnh phòng
+  moTa: string;          // Mô tả phòng
+  loaiPhong: {           // Thông tin loại phòng
+    maLoai: number;      // Mã loại phòng
+    tenLoai: string;     // Tên loại phòng
+    giaPhong: number;    // Giá phòng
+    phongs: null;        // Danh sách phòng (null vì không cần thiết)
   };
-  trangThaiPhong: {
-    maTT: number;
-    tenTT: string;
-    phongs: null;
+  trangThaiPhong: {      // Trạng thái phòng
+    maTT: number;        // Mã trạng thái
+    tenTT: string;       // Tên trạng thái
+    phongs: null;        // Danh sách phòng (null vì không cần thiết)
   };
-  trangThai: number;
-  tenTT: string;
+  trangThai: number;     // Trạng thái phòng (số)
+  tenTT: string;         // Tên trạng thái
 }
 
-// Format phòng cho UI
+// Interface định dạng phòng cho UI
 interface FormattedRoom {
-  id: string;
-  maPhong: number;
-  tenPhong: string;
-  moTa: string;
-  hinhAnh: string;
-  giaTien: number;
-  soLuongKhach: number;
-  trangThai: number;
-  loaiPhong: string;
-  images?: string[];
-  features?: string[];
+  id: string;            // ID phòng
+  maPhong: number;       // Mã phòng
+  tenPhong: string;      // Tên phòng
+  moTa: string;          // Mô tả phòng
+  hinhAnh: string;       // Hình ảnh phòng
+  giaTien: number;       // Giá tiền
+  soLuongKhach: number;  // Số lượng khách
+  trangThai: number;     // Trạng thái phòng
+  loaiPhong: string;     // Loại phòng
+  images?: string[];     // Danh sách hình ảnh
+  features?: string[];   // Các tiện nghi
 }
 
 export default function Home() {
@@ -118,7 +118,7 @@ export default function Home() {
     fetchAllRooms();
   }, []);
 
-  // Lấy tất cả phòng từ API với pagination
+  // Hàm lấy tất cả phòng từ API với phân trang
   const fetchAllRooms = async () => {
     setLoading(true);
     setError('');
@@ -176,7 +176,7 @@ export default function Home() {
         localStorage.setItem('cached_rooms', JSON.stringify(allRoomsData));
         localStorage.setItem('rooms_cache_time', new Date().toISOString());
       } catch (cacheError) {
-        // Ignore cache errors
+        // Bỏ qua lỗi cache
       }
     } catch (err) {
       // Thử lấy dữ liệu từ cache nếu có lỗi
@@ -209,7 +209,7 @@ export default function Home() {
     }
   };
 
-  // Handle search submission
+  // Xử lý tìm kiếm phòng
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -218,21 +218,21 @@ export default function Home() {
       return;
     }
 
-    // Get total guest count
+    // Tính tổng số khách
     const totalGuests = adults + children;
 
-    // Filter rooms based on guest count
+    // Lọc phòng dựa trên số lượng khách
     const filteredRooms = hotelRooms.filter(room => room.soLuongKhach >= totalGuests);
     setHotelRooms(filteredRooms.length > 0 ? filteredRooms : hotelRooms);
 
-    // Scroll to the rooms section
+    // Cuộn đến phần hiển thị phòng
     const roomsSection = document.getElementById('popular-rooms');
     if (roomsSection) {
       roomsSection.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  // Handle Virtual Tour
+  // Xử lý Virtual Tour
   const openVirtualTour = (roomId: string) => {
     setSelectedRoomId(roomId);
     setTourType('room');

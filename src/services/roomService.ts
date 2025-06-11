@@ -4,49 +4,49 @@ import axios from 'axios';
 
 // Room interface
 export interface Room {
-  id?: string;
-  maPhong?: number;
-  tenPhong: string;
-  moTa: string;
-  hinhAnh: string;
-  giaTien: number;
-  soLuongKhach: number;
-  trangThai: number;
-  loaiPhong?: string;
-  images?: string[];
-  features?: string[];
-  soPhong?: string;
-  beds?: {
-    type: string;
-    count: number;
+  id?: string;              // ID phòng
+  maPhong?: number;         // Mã phòng
+  tenPhong: string;         // Tên phòng
+  moTa: string;             // Mô tả phòng
+  hinhAnh: string;          // Hình ảnh phòng
+  giaTien: number;          // Giá tiền
+  soLuongKhach: number;     // Số lượng khách
+  trangThai: number;        // Trạng thái phòng
+  loaiPhong?: string;       // Loại phòng
+  images?: string[];        // Danh sách hình ảnh
+  features?: string[];      // Các tiện nghi
+  soPhong?: string;         // Số phòng
+  beds?: {                  // Thông tin giường
+    type: string;           // Loại giường
+    count: number;          // Số lượng giường
   }[];
 }
 
 // Booking interface
 export interface Booking {
-  maHD?: number;
-  maPhong: number;
-  maKH?: number | string | null;
-  tenKH?: string;
-  email?: string;
-  soDienThoai?: string;
-  ngayBatDau?: string;
-  ngayKetThuc?: string;
-  soLuongKhach?: number;
-  tongTien?: number;
-  trangThai?: number;
-  ngayTao?: string;
-  ngayDat?: string;
-  checkIn?: string;
-  checkOut?: string;
-  xoa?: boolean;
+  maHD?: number;            // Mã hóa đơn
+  maPhong: number;          // Mã phòng
+  maKH?: number | string | null; // Mã khách hàng
+  tenKH?: string;           // Tên khách hàng
+  email?: string;           // Email
+  soDienThoai?: string;     // Số điện thoại
+  ngayBatDau?: string;      // Ngày bắt đầu
+  ngayKetThuc?: string;     // Ngày kết thúc
+  soLuongKhach?: number;    // Số lượng khách
+  tongTien?: number;        // Tổng tiền
+  trangThai?: number;       // Trạng thái
+  ngayTao?: string;         // Ngày tạo
+  ngayDat?: string;         // Ngày đặt
+  checkIn?: string;         // Ngày nhận phòng
+  checkOut?: string;        // Ngày trả phòng
+  xoa?: boolean;            // Trạng thái xóa
 }
 
 // Response interface
 export interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
+  success: boolean;         // Trạng thái thành công
+  message?: string;         // Thông báo
+  data?: T;                 // Dữ liệu
 }
 
 // Sử dụng proxy thay vì direct API call
@@ -54,11 +54,11 @@ const BASE_URL = '/api';
 
 // Define interface for paginated response
 export interface PaginatedRoomResponse {
-  items: Room[];
-  totalItems: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages: number;
+  items: Room[];            // Danh sách phòng
+  totalItems: number;       // Tổng số phòng
+  pageNumber: number;       // Số trang hiện tại
+  pageSize: number;         // Số phòng mỗi trang
+  totalPages: number;       // Tổng số trang
 }
 
 /**

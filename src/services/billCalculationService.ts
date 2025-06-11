@@ -4,32 +4,32 @@ import { serviceApi } from './serviceApi';
 
 // Interface cho thông tin tính toán hóa đơn
 export interface BillCalculation {
-  maKH: number;
-  maDatPhong?: number;
-  tienPhong: number;
-  tienDichVu: number;
-  tongTienTruocGiam: number;
-  giaTriGiam: number;
-  tongTien: number;
-  soNgay: number;
-  giaPhongMoiNgay: number;
-  chiTietPhong: {
-    maPhong: number;
-    tenPhong: string;
-    loaiPhong: string;
-    checkIn: string;
-    checkOut: string;
-    soNgay: number;
-    giaPhong: number;
+  maKH: number;                    // Mã khách hàng
+  maDatPhong?: number;             // Mã đặt phòng
+  tienPhong: number;               // Tiền phòng
+  tienDichVu: number;              // Tiền dịch vụ
+  tongTienTruocGiam: number;       // Tổng tiền trước giảm giá
+  giaTriGiam: number;              // Giá trị giảm giá
+  tongTien: number;                // Tổng tiền
+  soNgay: number;                  // Số ngày
+  giaPhongMoiNgay: number;         // Giá phòng mỗi ngày
+  chiTietPhong: {                  // Chi tiết phòng
+    maPhong: number;               // Mã phòng
+    tenPhong: string;              // Tên phòng
+    loaiPhong: string;             // Loại phòng
+    checkIn: string;               // Ngày nhận phòng
+    checkOut: string;              // Ngày trả phòng
+    soNgay: number;                // Số ngày
+    giaPhong: number;              // Giá phòng
   };
-  chiTietDichVu: Array<{
-    maSDDV: number;
-    tenDichVu: string;
-    soLuong: number;
-    donGia: number;
-    thanhTien: number;
-    ngaySD: string;
-    trangThai: string;
+  chiTietDichVu: Array<{          // Chi tiết dịch vụ
+    maSDDV: number;                // Mã sử dụng dịch vụ
+    tenDichVu: string;             // Tên dịch vụ
+    soLuong: number;               // Số lượng
+    donGia: number;                // Đơn giá
+    thanhTien: number;             // Thành tiền
+    ngaySD: string;                // Ngày sử dụng
+    trangThai: string;             // Trạng thái
   }>;
 }
 
@@ -249,48 +249,23 @@ export const calculateBill = async (maKH: number, maDatPhong?: number, maGiam?: 
     // 12. Lấy thông tin chi tiết dịch vụ
     const chiTietDichVu = await Promise.all(
       serviceUsages.map(async (usage) => {
-        let tenDichVu = `Dịch vụ ${usage.maDV}`;
-        let donGia = 0;
-
-        // Lấy thông tin dịch vụ từ API
-        try {
-          const serviceResponse = await axios.get('/api/services', {
-            params: { id: usage.maDV },
-            timeout: 10000
-          });
-
-          if (serviceResponse.data && serviceResponse.data.success) {
-            const serviceData = serviceResponse.data.data;
-            tenDichVu = serviceData.ten || tenDichVu;
-            donGia = serviceData.gia || 0;
-          }
-        } catch (error) {
-          console.error(`Error fetching service ${usage.maDV}:`, error);
-          // Fallback to hardcoded prices
-          if (usage.maDV === 1) {
-            tenDichVu = 'Giặt ủi';
-            donGia = 100000;
-          } else if (usage.maDV === 2) {
-            tenDichVu = 'Buffet';
-            donGia = 500000;
-          }
-        }
-
+        const serviceInfo = await serviceApi.getServiceById(usage.maDV);
         return {
           maSDDV: usage.maSDDV,
-          tenDichVu,
+          tenDichVu: serviceInfo?.ten || 'Dịch vụ không xác định',
           soLuong: usage.soLuong,
-          donGia,
-          thanhTien: usage.thanhTien || (usage.soLuong * donGia),
+          donGia: serviceInfo?.gia || 0,
+          thanhTien: usage.thanhTien,
           ngaySD: usage.ngaySD,
           trangThai: usage.trangThai
         };
       })
     );
 
+    // 13. Trả về kết quả tính toán
     return {
       maKH,
-      maDatPhong: booking.maDatPhong,
+      maDatPhong: booking.maHD,
       tienPhong,
       tienDichVu,
       tongTienTruocGiam,
@@ -301,10 +276,9 @@ export const calculateBill = async (maKH: number, maDatPhong?: number, maGiam?: 
       chiTietPhong,
       chiTietDichVu
     };
-
   } catch (error) {
     console.error('Error calculating bill:', error);
-    throw error; // Ném lỗi để có thể catch ở component
+    return null;
   }
 };
 
