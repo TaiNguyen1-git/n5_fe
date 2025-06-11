@@ -10,6 +10,13 @@ const RETRY_CONFIG = {
   timeoutMs: 8000   // 8 seconds
 };
 
+// Faster retry config for status toggles
+const TOGGLE_RETRY_CONFIG = {
+  maxRetries: 3,     // More retries for critical operations
+  retryDelay: 500,   // Faster retry (0.5s)
+  timeoutMs: 4000    // Shorter timeout
+};
+
 // Utility function to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -18,18 +25,22 @@ export async function callDiscountAPI(
   endpoint: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
   data?: any,
-  config?: AxiosRequestConfig
+  config?: AxiosRequestConfig,
+  useToggleConfig: boolean = false
 ): Promise<any> {
   const url = `${BASE_URL}/${endpoint}`;
   let lastError: any;
 
-  for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries + 1; attempt++) {
+  // Choose retry config based on operation type
+  const retryConfig = useToggleConfig ? TOGGLE_RETRY_CONFIG : RETRY_CONFIG;
+
+  for (let attempt = 1; attempt <= retryConfig.maxRetries + 1; attempt++) {
     try {
       const requestConfig: AxiosRequestConfig = {
         method,
         url,
         data,
-        timeout: RETRY_CONFIG.timeoutMs,
+        timeout: config?.timeout || retryConfig.timeoutMs,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -40,27 +51,28 @@ export async function callDiscountAPI(
       };
 
       const response = await axios(requestConfig);
-      
+
       // Return successful response
       return response;
 
     } catch (error: any) {
       lastError = error;
-      
+
       // Don't retry on certain errors
       if (error.response?.status === 400 || error.response?.status === 404) {
         throw error;
       }
 
       // If this is the last attempt, throw the error
-      if (attempt > RETRY_CONFIG.maxRetries) {
+      if (attempt > retryConfig.maxRetries) {
         throw error;
       }
 
-      // Wait before retrying
-      await delay(RETRY_CONFIG.retryDelay * attempt);
-      
-      console.log(`Retrying discount API call (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries + 1})`);
+      // Wait before retrying (shorter delay for toggles)
+      await delay(retryConfig.retryDelay * attempt);
+
+      const operationType = useToggleConfig ? 'status toggle' : 'discount API';
+      console.log(`Retrying ${operationType} call (attempt ${attempt + 1}/${retryConfig.maxRetries + 1})`);
     }
   }
 
@@ -96,9 +108,21 @@ export const discountAPI = {
       trangThai: !discount.trangThai
     };
 
-    return callDiscountAPI(`GiamGia/Update?id=${discount.id}`, 'PUT', updateData, {
-      timeout: 6000 // Shorter timeout for status toggle
-    });
+    return callDiscountAPI(
+      `GiamGia/Update?id=${discount.id}`,
+      'PUT',
+      updateData,
+      {
+        timeout: 4000, // Shorter timeout for status toggle
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          'X-Request-Type': 'status-toggle' // Help identify quick requests
+        }
+      },
+      true // Use toggle retry config
+    );
   }
 };
 

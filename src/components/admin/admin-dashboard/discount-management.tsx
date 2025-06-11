@@ -31,6 +31,9 @@ const DiscountManagement = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [validityFilter, setValidityFilter] = useState<string>('all');
 
+  // Individual loading states for each discount toggle
+  const [toggleLoadingStates, setToggleLoadingStates] = useState<Record<number, boolean>>({});
+
   // Statistics
   const [stats, setStats] = useState({
     total: 0,
@@ -169,39 +172,46 @@ const DiscountManagement = () => {
   };
 
   const handleToggleStatus = async (discount: Discount) => {
-    setLoading(true);
+    const discountId = discount.id;
+    const newStatus = !discount.trangThai;
+
+    // Set individual loading state
+    setToggleLoadingStates(prev => ({ ...prev, [discountId]: true }));
+
+    // 🚀 OPTIMISTIC UI: Update UI immediately
+    setDiscounts(prev => prev.map(d =>
+      d.id === discountId ? { ...d, trangThai: newStatus } : d
+    ));
+
+    // Show immediate feedback
+    const statusText = newStatus ? 'kích hoạt' : 'tạm dừng';
+    message.loading(`Đang ${statusText} mã giảm giá...`, 0.5);
 
     try {
-      // Sử dụng utility function với retry logic
+      // Call API in background
       const response = await discountAPI.toggleStatus(discount);
 
       if (response.data?.success !== false) {
-        message.success(`Đã ${!discount.trangThai ? 'kích hoạt' : 'tạm dừng'} mã giảm giá`);
+        message.success(`Đã ${statusText} mã giảm giá thành công`);
 
-        // Cập nhật state local trước để UI phản hồi nhanh hơn
-        setDiscounts(prev => prev.map(d =>
-          d.id === discount.id ? { ...d, trangThai: !d.trangThai } : d
-        ));
-
-        // Fetch lại data sau một khoảng thời gian ngắn để đảm bảo đồng bộ
-        setTimeout(() => {
-          fetchDiscounts();
-        }, 300);
+        // Optional: Sync with server data after a delay (only if needed)
+        // setTimeout(() => fetchDiscounts(), 1000);
       } else {
         throw new Error(response.data?.message || 'Cập nhật thất bại');
       }
     } catch (error: any) {
       console.error('Error toggling discount status:', error);
 
-      const errorMessage = getDiscountErrorMessage(error);
-      message.error(errorMessage);
-
-      // Khôi phục trạng thái ban đầu nếu có lỗi
+      // 🔄 ROLLBACK: Revert optimistic update on error
       setDiscounts(prev => prev.map(d =>
-        d.id === discount.id ? { ...d, trangThai: discount.trangThai } : d
+        d.id === discountId ? { ...d, trangThai: discount.trangThai } : d
       ));
+
+      const errorMessage = getDiscountErrorMessage(error);
+      message.error(`Lỗi ${statusText}: ${errorMessage}`);
     } finally {
-      setLoading(false);
+      // Clear individual loading state
+      setToggleLoadingStates(prev => ({ ...prev, [discountId]: false }));
     }
   };
 
@@ -306,9 +316,19 @@ const DiscountManagement = () => {
                 onChange={() => handleToggleStatus(record)}
                 checkedChildren="ON"
                 unCheckedChildren="OFF"
-                loading={loading}
+                loading={toggleLoadingStates[record.id] || false}
+                disabled={toggleLoadingStates[record.id] || false}
                 data-discount-id={record.id}
+                style={{
+                  opacity: toggleLoadingStates[record.id] ? 0.7 : 1,
+                  transition: 'opacity 0.2s ease'
+                }}
               />
+              {toggleLoadingStates[record.id] && (
+                <div style={{ fontSize: '10px', color: '#1890ff', marginTop: '2px' }}>
+                  Đang cập nhật...
+                </div>
+              )}
             </div>
           </div>
         );
