@@ -74,18 +74,19 @@ export default function Register() {
         fullName: formData.fullName,
         phone: formData.phoneNumber || ''
       };
-      // Sử dụng API auth register (tự động tạo cả Customer record)
-      const response = await fetch('/api/auth?action=register', {
+      // Sử dụng API register-handler (gọi đúng API /User/RegisterUser)
+      const response = await fetch('/api/register-handler', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: formData.username,
+          userName: formData.username,
           password: formData.password,
+          confirmPassword: formData.confirmPassword,
           email: formData.email,
           fullName: formData.fullName,
-          phoneNumber: formData.phoneNumber || ''
+          phone: formData.phoneNumber || ''
         })
       });
       

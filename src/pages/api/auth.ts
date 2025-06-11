@@ -193,6 +193,30 @@ async function handleRegister(req: NextApiRequest, res: NextApiResponse<Response
 
       const responseData = await backendResponse.json();
       if (backendResponse.ok) {
+        console.log('✅ [Register] User account created successfully:', responseData);
+
+        // Thử tạo Customer record tương ứng
+        try {
+          const customerData = {
+            tenKH: fullName,
+            email: email,
+            phone: phoneNumber || '',
+            maVaiTro: 3 // Khách hàng
+          };
+
+          const customerResponse = await axios.post(`${BACKEND_API_URL}/KhachHang/Create`, customerData, {
+            timeout: 30000,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': '*/*'
+            }
+          });
+
+          console.log('✅ [Register] Customer record created:', customerResponse.data);
+        } catch (customerError) {
+          console.log('⚠️ [Register] Could not create customer record, but user account created successfully');
+        }
+
         return res.status(201).json({
           success: true,
           message: 'Đăng ký tài khoản thành công',
@@ -211,6 +235,31 @@ async function handleRegister(req: NextApiRequest, res: NextApiResponse<Response
           },
           timeout: 60000 // 60 giây timeout
         });
+
+        console.log('✅ [Register] User account created via axios:', axiosResponse.data);
+
+        // Thử tạo Customer record tương ứng
+        try {
+          const customerData = {
+            tenKH: fullName,
+            email: email,
+            phone: phoneNumber || '',
+            maVaiTro: 3 // Khách hàng
+          };
+
+          const customerResponse = await axios.post(`${BACKEND_API_URL}/KhachHang/Create`, customerData, {
+            timeout: 30000,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': '*/*'
+            }
+          });
+
+          console.log('✅ [Register] Customer record created via axios:', customerResponse.data);
+        } catch (customerError) {
+          console.log('⚠️ [Register] Could not create customer record via axios, but user account created successfully');
+        }
+
         return res.status(201).json({
           success: true,
           message: 'Đăng ký tài khoản thành công',
