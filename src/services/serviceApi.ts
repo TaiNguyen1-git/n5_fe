@@ -4,28 +4,28 @@ const BASE_URL = '/api'; // Sử dụng proxy đã cấu hình trong next.config
 
 // Định nghĩa interface cho dữ liệu dịch vụ
 export interface DichVu {
-  maDichVu?: number;
-  ten: string;
-  hinhAnh: string;
-  moTa: string;
-  gia: number;
-  trangThai: number;
+  maDichVu?: number;      // Mã dịch vụ
+  ten: string;            // Tên dịch vụ
+  hinhAnh: string;        // Hình ảnh dịch vụ
+  moTa: string;           // Mô tả dịch vụ
+  gia: number;            // Giá dịch vụ
+  trangThai: number;      // Trạng thái dịch vụ
 }
 
-// Interface cho response từ API
+// Interface cho phản hồi từ API
 interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
+  success: boolean;       // Trạng thái thành công
+  message?: string;       // Thông báo
+  data?: T;               // Dữ liệu
 }
 
-// Interface cho paginated response
+// Interface cho phản hồi phân trang
 interface PaginatedResponse<T> {
-  items: T[];
-  totalItems: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages: number;
+  items: T[];             // Danh sách items
+  totalItems: number;     // Tổng số items
+  pageNumber: number;     // Số trang hiện tại
+  pageSize: number;       // Số items mỗi trang
+  totalPages: number;     // Tổng số trang
 }
 
 // API services cho dịch vụ
@@ -38,7 +38,7 @@ export const serviceApi = {
           pageNumber,
           pageSize
         },
-        timeout: 15000 // 15 second timeout
+        timeout: 15000 // 15 giây timeout
       });
       if (response.data && response.data.success && response.data.data) {
         return {
@@ -76,7 +76,7 @@ export const serviceApi = {
   // Lấy tất cả dịch vụ không phân trang (cho backward compatibility)
   getAllServicesNoPagination: async (): Promise<DichVu[]> => {
     try {
-      const response = await serviceApi.getAllServices(1, 1000); // Get a large page
+      const response = await serviceApi.getAllServices(1, 1000); // Lấy một trang lớn
 
       if (response.success && response.data) {
         return response.data.items;
@@ -174,12 +174,12 @@ export const serviceApi = {
 
   // Đặt dịch vụ
   bookService: async (dichVuDat: {
-    maDV: number;
-    maKH?: number | string;
-    soLuong: number;
-    ngayDat: string;
-    tongTien: number;
-    ghiChu?: string;
+    maDV: number;           // Mã dịch vụ
+    maKH?: number | string; // Mã khách hàng
+    soLuong: number;        // Số lượng
+    ngayDat: string;        // Ngày đặt
+    tongTien: number;       // Tổng tiền
+    ghiChu?: string;        // Ghi chú
   }): Promise<any> => {
     try {
       const response = await axios.post(`${BASE_URL}/DichVuDat/Create`, dichVuDat);
@@ -213,12 +213,12 @@ export const serviceApi = {
 
   // Tạo bản ghi sử dụng dịch vụ
   createServiceUsage: async (serviceUsage: {
-    maKH: number;
-    maDV: number;
-    ngaySD: string;
-    soLuong: number;
-    thanhTien: number;
-    trangThai?: string;
+    maKH: number;           // Mã khách hàng
+    maDV: number;           // Mã dịch vụ
+    ngaySD: string;         // Ngày sử dụng
+    soLuong: number;        // Số lượng
+    thanhTien: number;      // Thành tiền
+    trangThai?: string;     // Trạng thái
   }): Promise<ApiResponse<any>> => {
     try {
       const response = await axios.post(`${BASE_URL}/service-usage`, serviceUsage, {
