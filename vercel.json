@@ -1,19 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next",
-      "config": {
-        "eslint": {
-          "ignoreDuringBuilds": true
-        },
-        "typescript": {
-          "ignoreBuildErrors": true
-        }
-      }
-    }
-  ],
   "env": {
     "NEXT_PUBLIC_API_URL": "https://ptud-web-1.onrender.com/api"
   },
@@ -25,6 +10,8 @@
       "maxDuration": 20
     }
   },
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
   "headers": [
     {
       "source": "/(.*)",
